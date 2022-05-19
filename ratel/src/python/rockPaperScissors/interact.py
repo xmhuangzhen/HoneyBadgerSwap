@@ -11,6 +11,7 @@ from ratel.src.python.utils import parse_contract, getAccount, players, prime, s
 contract_name = 'rockPaperScissors'
 
 def createGame(appContract, value1, account):
+    print(f'**** CreateGame {value1}')
     idx = reserveInput(web3, appContract, 1, account)[0]
     mask = asyncio.run(get_inputmasks(players(appContract), f'{idx}', threshold(appContract)))[0]
     maskedValue = (value1 + mask) % prime
@@ -31,6 +32,7 @@ def createGame(appContract, value1, account):
 
 
 def joinGame(appContract, gameId, value2, account):
+    print(f'**** JoinGame {value2}')
     idx = reserveInput(web3, appContract, 1, account)[0]
     mask = asyncio.run(get_inputmasks(players(appContract), f'{idx}', threshold(appContract)))[0]
     maskedValue = (value2 + mask) % prime
