@@ -61,8 +61,9 @@ contract colAuction{
         address appAddr = appAddrList[colAuctionId];
         address creatorAddr = creatorAddrList[colAuctionId];
 
-        mpc(uint colAuctionId, uint curPrice, uint FloorPrice, uint totalAmt, address token_addr, address appAddr, address creatorAddr){
-            n = len(bids)
+        uint n = biddersCnt[colAuctionId]
+
+        mpc(uint colAuctionId, uint n, uint curPrice, uint FloorPrice, uint totalAmt, address token_addr, address appAddr, address creatorAddr){
 
             if curPrice < FloorPrice:
                 for i in range(n):
@@ -207,11 +208,6 @@ contract colAuction{
         address appAddr = appAddrList[colAuctionId];
 
         mpc(uint colAuctionId, uint bidders_id, uint FloorPrice, $uint price, address P, $uint Amt, address token_addr, address appAddr){
-            times = []
-
-            import time
-            times.append(time.perf_counter())
-
             cur_token_balance = readDB(f'balanceBoard_{token_addr}_{P}',int)
             cur_app_balance = readDB(f'balanceBoard_{token_addr}_{appAddr}',int)
 
@@ -234,17 +230,6 @@ contract colAuction{
             
             curStatus = bidders_id+2
             set(status, uint curStatus, uint colAuctionId)
-
-            times.append(time.perf_counter())
-
-            with open(f'ratel/benchmark/data/latency_{server.serverID}.csv', 'a') as f:
-                for op, t in enumerate(times):
-                    f.write(f'submitBids\t'
-                            f'colAuctionId\t{colAuctionId}\t'
-                            f'bidders_id\t{bidders_id}\t'
-                            f'op\t{op+1}\t'
-                            f'cur_time\t{t}\n')
-
         }
     }
 }
