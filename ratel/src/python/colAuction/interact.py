@@ -93,7 +93,7 @@ if __name__=='__main__':
     n_token = 21
     for i in range(n_cli):
         for token_id in range(n_token):
-            print(i,token_id)
+#            print(i,token_id)
             initClient(appContract,clients[i],token_addrs[token_id])
 
     aucapp_addr = getAccount(web3,f'/opt/poa/keystore/client_2/').address
