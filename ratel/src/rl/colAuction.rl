@@ -61,7 +61,7 @@ contract colAuction{
         address appAddr = appAddrList[colAuctionId];
         address creatorAddr = creatorAddrList[colAuctionId];
 
-        uint n = biddersCnt[colAuctionId]
+        uint n = biddersCnt[colAuctionId];
 
         mpc(uint colAuctionId, uint n, uint curPrice, uint FloorPrice, uint totalAmt, address token_addr, address appAddr, address creatorAddr){
 
