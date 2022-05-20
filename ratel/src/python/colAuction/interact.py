@@ -66,7 +66,7 @@ def submitBids(appContract,colAuctionId,price,amt,account):
         if status == 1:
             return
 
-def init_clients(appContract,account,token_addr):
+def initClient(appContract,account,token_addr):
     web3.eth.defaultAccount = account.address
     tx = appContract.functions.initClient(token_addr).buildTransaction({
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
@@ -81,8 +81,6 @@ if __name__=='__main__':
     abi, bytecode = parse_contract(contract_name)
     appContract = web3.eth.contract(address=app_addr, abi=abi)
 
-    clients=[]
-
     client_1 = getAccount(web3,f'/opt/poa/keystore/client_3/')
     client_2 = getAccount(web3,f'/opt/poa/keystore/client_4/')
     client_3 = getAccount(web3,f'/opt/poa/keystore/client_5/')
@@ -90,12 +88,13 @@ if __name__=='__main__':
     client_5 = getAccount(web3,f'/opt/poa/keystore/client_7/')
     client_6 = getAccount(web3,f'/opt/poa/keystore/client_8/')
 
-    clients.append(client_1,client_2,client_3,client_4,client_5,client_6)
+    clients = [client_1,client_2,client_3,client_4,client_5,client_6]
     n_cli = len(clients)
     n_token = 21
     for i in range(n_cli):
         for token_id in range(n_token):
-            init_clients(appContract,clients[i],token_addrs[token_id])
+            print(i,token_id)
+            initClient(appContract,clients[i],token_addrs[token_id])
 
     aucapp_addr = getAccount(web3,f'/opt/poa/keystore/client_2/').address
 

@@ -61,7 +61,7 @@ if __name__=='__main__':
                 liveAuct.remove(aucId)
                 print("cur Live Auct Id(removing):",liveAuct)
         
-        if ccnt == 1000:
+        if ccnt == 100000:
             ccnt = 0
             print("curLiveAuctionId:",liveAuct)
 

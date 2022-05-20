@@ -127,14 +127,14 @@ contract colAuction{
                         cur_eth_balance = readDB(f'balanceBoard_{0}_{Pi}',int)
                         cur_token_balance = readDB(f'balanceBoard_{token_addr}_{Pi}',int)
 
-                        mpcInput(sint cur_eth_balance,sint cur_token_balance,sint pricei,sint vi,sint curPrice,sint curAmt,sint Amti,sint appamt)
+                        mpcInput(sint cur_eth_balance,sint cur_token_balance,sint pricei,sint vi,sint curPrice,sint curAmt,sint Amti,sint app_token_amt)
                         v1 = (curAmt.greater_equal(Amti,bit_length=bit_length)) 
                         realAmt = vi*v1*Amti + vi*(1-v1)*curAmt
                         cur_eth_balance = cur_eth_balance + realAmt
                         cur_token_balance = cur_token_balance + pricei*Amti - curPrice*realAmt
                         curAmt -= realAmt
                         app_token_amt = app_token_amt + vi*Amti*pricei
-                        mpcOutput(sint cur_balance,sint curAmt,sint cur_eth_balance,sint cur_token_balance,sint app_token_amt)
+                        mpcOutput(sint curAmt,sint cur_eth_balance,sint cur_token_balance,sint app_token_amt)
 
                         writeDB(f'balanceBoard_{0}_{Pi}',cur_eth_balance,int)
                         writeDB(f'balanceBoard_{token_addr}_{Pi}',cur_token_balance,int)
@@ -166,7 +166,7 @@ contract colAuction{
         }
     }
 
-    function initClient(address token_addr){
+    function initClient(address token_addr) public{
         address user_addr = msg.sender;
         mpc(address user_addr,address token_addr){
             init_balance = 100000
