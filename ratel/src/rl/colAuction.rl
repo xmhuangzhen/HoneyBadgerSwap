@@ -170,7 +170,7 @@ contract colAuction{
         address user_addr = msg.sender;
         mpc(address user_addr,address token_addr){
             init_balance = 100000
-            writeDB(f'balanceBoard_{token_addr}_{user_addr}',balance,int)
+            writeDB(f'balanceBoard_{token_addr}_{user_addr}',init_balance,int)
         }
     }
 
