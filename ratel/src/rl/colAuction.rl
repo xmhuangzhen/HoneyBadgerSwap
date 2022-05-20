@@ -204,7 +204,7 @@ contract colAuction{
                 'price': price,
                 'amt': Amt,
                 'address': P,
-                'valid',valid,
+                'valid':valid,
             }
 
             writeDB(f'bidsBoard_{colAuctionId}_{bidders_id}',bids,dict)
