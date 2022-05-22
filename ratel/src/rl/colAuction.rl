@@ -73,7 +73,7 @@ contract colAuction{
                 amtSold = 0
 
                 for i in range(n):
-                    amtSold = await runCheckAuction(server, i, colAuctionId, amtSold)
+                    amtSold = await runCheckAuction(server, i, colAuctionId, curPrice, amtSold)
 
                 cur_eth_creator_balance = readDB(f'balanceBoard_{0}_{creatorAddr}',int)
 
@@ -92,7 +92,7 @@ contract colAuction{
         }
     }
 
-    pureMpc checkAuction(server, i, colAuctionId,amtSold) {
+    pureMpc checkAuction(server, i, colAuctionId, curPrice,amtSold) {
         bids = readDB(f'bidsBoard_{colAuctionId}_{i+1}', dict)
 
         Xi = bids['price']
