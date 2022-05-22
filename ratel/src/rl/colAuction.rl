@@ -92,8 +92,8 @@ contract colAuction{
         }
     }
 
-    pureMpc checkAuction(server, i, colAuctionId) {
-        await runCheckAuctionUpdate(server, i, colAuctionId)
+    pureMpc checkAuction(server, i, colAuctionId,amtSold) {
+        await runCheckAuctionUpdate(server, i, colAuctionId,amtSold)
     }
 
     pureMpc checkAuctionUpdate(server, i, colAuctionId, amtSold) {

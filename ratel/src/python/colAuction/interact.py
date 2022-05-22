@@ -106,7 +106,6 @@ if __name__=='__main__':
     FloorPrice1 = 10 
     colAuctionId1 = createAuction(appContract,StartPrice1,FloorPrice1,totalAmt1,token_addrs[1],aucapp_addr,client_1)
     print('new Auction id:',colAuctionId1)
-    time.sleep(10)
 
     # auction2 faild due to total amt > sum of all bidder's amt 
 
@@ -115,27 +114,22 @@ if __name__=='__main__':
     FloorPrice2 = 10 
     colAuctionId2 = createAuction(appContract,StartPrice2,FloorPrice2,totalAmt2,token_addrs[2],aucapp_addr,client_1)
     print('new Auction id:',colAuctionId2)
-    time.sleep(10)
 
     price11 = 60
     Amt11 = 2
     submitBids(appContract,colAuctionId1,price11,Amt11,client_1)
     print('finished input client_1 AuctionId:',colAuctionId1)
-    time.sleep(20)
 
     submitBids(appContract,colAuctionId2,price11,Amt11,client_1)
     print('finished input client_1 AuctionId:',colAuctionId2)
-    time.sleep(20)
 
     price12 = 50
     Amt12 = 10
     submitBids(appContract,colAuctionId1,price12,Amt12,client_2)
     print('finished input client_2 AuctionId:',colAuctionId1)
-    time.sleep(20)
 
     submitBids(appContract,colAuctionId2,price12,Amt12,client_2)
     print('finished input client_2 AuctionId:',colAuctionId2)
-    time.sleep(20)
 
 
     # auction3 failed due to the FloorPrice is too high
@@ -145,57 +139,46 @@ if __name__=='__main__':
     FloorPrice3 = 50 
     colAuctionId3 = createAuction(appContract,StartPrice3,FloorPrice3,totalAmt3,token_addrs[3],aucapp_addr,client_1)
     print('new Auction id:',colAuctionId3)
-    time.sleep(10)
     
     submitBids(appContract,colAuctionId3,price11,Amt11,client_1)
     print('finished input client_1 AuctionId:',colAuctionId3)
-    time.sleep(20)
 
     submitBids(appContract,colAuctionId3,price12,Amt12,client_2)
     print('finished input client_2 AuctionId:',colAuctionId3)
-    time.sleep(20)
 
 
     price13 = 30
     Amt13 = 6
     submitBids(appContract,colAuctionId1,price13,Amt13,client_3)
     print('finished input client_3 AuctionId:',colAuctionId1)
-    time.sleep(20)
     
     submitBids(appContract,colAuctionId2,price13,Amt13,client_3)
     print('finished input client_3 AuctionId:',colAuctionId2)
-    time.sleep(20)
 
     submitBids(appContract,colAuctionId3,price13,Amt13,client_3)
     print('finished input client_3 AuctionId:',colAuctionId3)
-    time.sleep(20)
+
 
 
     price14 = 70
     Amt14 = 7
     submitBids(appContract,colAuctionId1,price14,Amt14,client_4)
     print('finished input client_4 AuctionId:',colAuctionId1)
-    time.sleep(20)
     
     submitBids(appContract,colAuctionId2,price14,Amt14,client_4)
     print('finished input client_4 AuctionId:',colAuctionId2)
-    time.sleep(20)
 
     submitBids(appContract,colAuctionId3,price14,Amt14,client_4)
     print('finished input client_4 AuctionId:',colAuctionId3)
-    time.sleep(20)
 
     price15 = 20
     Amt15 = 9
     submitBids(appContract,colAuctionId1,price15,Amt15,client_5)
     print('finished input client_5 AuctionId:',colAuctionId1)
-    time.sleep(20)
 
     submitBids(appContract,colAuctionId2,price15,Amt15,client_5)
     print('finished input client_5 AuctionId:',colAuctionId2)
-    time.sleep(20)
 
     submitBids(appContract,colAuctionId3,price15,Amt15,client_5)
     print('finished input client_5 AuctionId:',colAuctionId3)
-    time.sleep(20)
 
