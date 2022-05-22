@@ -148,7 +148,7 @@ contract colAuction{
                 'valid':valid,
             }
 
-            writeDB(f'bidsBoard_{colAuctionId}_{bidders_id}',bids,dict)
+            writeDB(f'bidsBoard_{colAuctionId}_{bidders_id}',bid,dict)
             writeDB(f'balanceBoard_{token_addr}_{P}',cur_token_balance,int)
             writeDB(f'balanceBoard_{token_addr}_{appAddr}',cur_app_balance,int)
             
