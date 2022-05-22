@@ -90,7 +90,7 @@ if __name__=='__main__':
 
     clients = [client_1,client_2,client_3,client_4,client_5,client_6]
     n_cli = len(clients)
-    n_token = 21
+    n_token = 4
     for i in range(n_cli):
         for token_id in range(n_token):
             print(i,token_id)

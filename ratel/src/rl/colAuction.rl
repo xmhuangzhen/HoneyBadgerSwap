@@ -76,7 +76,7 @@ contract colAuction{
                 amtSold = 0
 
                 for i in range(n):
-                    server.loop.create_task(amtSold=runCheckAuction(server, i, colAuctionId))
+                    amtSold = await runCheckAuction(server, i, colAuctionId)
 
                 cur_eth_creator_balance = readDB(f'balanceBoard_{0}_{creatorAddr}',int)
 
@@ -90,7 +90,7 @@ contract colAuction{
                     app_token_amt = 0
 
                     for i in range(n):
-                        server.loop.create_task(curAmt, app_token_amt = runCheckSuccess(server, token_addr, i, colAuctionId, token_addr,curPrice, curAmt, app_token_amt))
+                        curAmt, app_token_amt = await runCheckSuccess(server, token_addr, i, colAuctionId, token_addr,curPrice, curAmt, app_token_amt)
                     
                     mpcInput(sint cur_eth_creator_balance,sint totalAmt)
                     cur_eth_creator_balance = cur_eth_creator_balance - totalAmt
