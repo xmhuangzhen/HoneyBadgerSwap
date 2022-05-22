@@ -97,7 +97,7 @@ contract colAuction{
 
         Xi = bids['price']
         Pi = bids['address']
-        Amti = bids['Amt']
+        Amti = bids['amt']
         vi = bids['valid']
 
         mpcInput(sint Xi, sint curPrice, sint Amti, sint amtSold, sint totalAmt,sint vi)
