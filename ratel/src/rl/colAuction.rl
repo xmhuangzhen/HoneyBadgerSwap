@@ -93,10 +93,6 @@ contract colAuction{
     }
 
     pureMpc checkAuction(server, i, colAuctionId,amtSold) {
-        await runCheckAuctionUpdate(server, i, colAuctionId,amtSold)
-    }
-
-    pureMpc checkAuctionUpdate(server, i, colAuctionId, amtSold) {
         bids = readDB(f'bidsBoard_{colAuctionId}_{i+1}', dict)
 
         Xi = bids['price']
