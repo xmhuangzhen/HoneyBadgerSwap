@@ -101,6 +101,13 @@ contract colAuction{
         vi = bids['valid']
 
         mpcInput(sint Xi, sint curPrice, sint Amti, sint amtSold,sint vi)
+        
+        print_ln('***Xi %s',Xi.reveal())
+        print_ln('***curPrice %s',curPrice.reveal())
+        print_ln('***Amti %s',Amti.reveal())
+        print_ln('***amtSold %s', amtSold.reveal())
+        print_ln('***vi %s',vi.reveal())
+
         valid = (curPrice.less_equal(Xi,bit_length = bit_length))
         amtSold = amtSold + Amti*valid*vi
         mpcOutput(sint amtSold)
