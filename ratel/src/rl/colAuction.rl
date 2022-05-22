@@ -8,6 +8,7 @@ contract colAuction{
     using SafeMath for uint;
     using SafeERC20 for IERC20;
 
+
     uint public colAuctionCnt;
 
     mapping (uint => uint) public biddersCnt;
@@ -15,6 +16,10 @@ contract colAuction{
     mapping (uint => uint) public curPriceList;
     mapping (uint => uint) public floorPriceList;
     mapping (uint => uint) public startPriceList;
+    mapping (uint => uint) public totalAmtList;
+    mapping (uint => address) public tokenAddrList;
+    mapping (uint => address) public appAddrList;
+    mapping (uint => address) public creatorAddrList;
     
     mapping (uint => uint) public checkTime;
 
@@ -24,24 +29,20 @@ contract colAuction{
 
     constructor() public {}
 
-    function createAuction(uint StartPrice, uint FloorPrice, uint totalAmt) public{
+    function createAuction(uint StartPrice, uint FloorPrice, uint totalAmt, address token, address appAddr) public{
         uint colAuctionId = ++colAuctionCnt;
         curPriceList[colAuctionId] = StartPrice;
         floorPriceList[colAuctionId] = FloorPrice;
         startPriceList[colAuctionId] = StartPrice;
+        totalAmtList[colAuctionId] = totalAmt;
 
         checkTime[colAuctionId] = block.number;
 
         status[colAuctionId] = 2;
 
-        mpc(uint colAuctionId, uint StartPrice, uint FloorPrice, uint totalAmt) {
-            auc = {
-                'totalAmt': totalAmt,
-                'StartPrice': StartPrice,
-                'FloorPrice': FloorPrice,
-            }
-            writeDB(f'aucBoard_{colAuctionId}', auc, dict)
-        }
+        tokenAddrList[colAuctionId] = token;
+        appAddrList[colAuctionId] = appAddr;
+        creatorAddrList[colAuctionId] = msg.sender;
     }
 
     function scheduleCheck(uint colAuctionId) public {
@@ -50,44 +51,64 @@ contract colAuction{
         require(lastTime + 10 < curTime);
         checkTime[colAuctionId] = block.number;
 
-        uint curPrice = curPriceList[colAuctionId]*99/100;
+        uint curPrice = curPriceList[colAuctionId]*(1000-curTime+lastTime)/1000;
         curPriceList[colAuctionId] = curPrice;
 
         uint FloorPrice = floorPriceList[colAuctionId];
+        uint totalAmt = totalAmtList[colAuctionId];
 
-        mpc(uint colAuctionId, uint curPrice, uint FloorPrice){
-            bids = readDB(f'bidsBoard_{colAuctionId}', list)
-            auc = readDB(f'aucBoard_{colAuctionId}',dict)
+        address token_addr = tokenAddrList[colAuctionId];
+        address appAddr = appAddrList[colAuctionId];
+        address creatorAddr = creatorAddrList[colAuctionId];
 
-            totalAmt = auc['totalAmt']
+        uint n = biddersCnt[colAuctionId];
+
+        mpc(uint colAuctionId, uint n, uint curPrice, uint FloorPrice, uint totalAmt, address token_addr, address appAddr, address creatorAddr){
 
             if curPrice < FloorPrice:
                 print(colAuctionId,'Auction failed!!!!!!!!!')
-
                 curStatus = 1
                 set(status, uint curStatus, uint colAuctionId)
-            
             else:
-                n = len(bids)
                 amtSold = 0
 
                 for i in range(n):
-                    (Xi,Pi,Amti) = bids[i]
-
-                    mpcInput(sint Xi, sint curPrice, sint Amti, sint amtSold, sint totalAmt)
-                    valid = (curPrice.less_equal(Xi,bit_length = bit_length))
-                    amtSold += Amti*valid
-                    mpcOutput(sint amtSold)
-
-                mpcInput(sint amtSold, sint totalAmt)
-                aucDone = (amtSold.greater_equal(totalAmt,bit_length = bit_length).reveal())
-                mpcOutput(cint aucDone)
+                    amtSold = await runCheckAuction(server, i, colAuctionId)
 
                 if aucDone == 1:
                     print(colAuctionId,'Auction success!!!!!!!!!')
                     curStatus = 1
                     set(status, uint curStatus, uint colAuctionId)
 
+                writeDB(f'balanceBoard_{0}_{creatorAddr}',cur_eth_creator_balance,int)
+        }
+    }
+
+    pureMpc checkAuction(server, i, colAuctionId) {
+        await runCheckAuctionUpdate(server, i, colAuctionId)
+    }
+
+    pureMpc checkAuctionUpdate(server, i, colAuctionId) {
+        bids = readDB(f'bidsBoard_{colAuctionId}_{i+1}', dict)
+
+        Xi = bids['price']
+        Pi = bids['address']
+        Amti = bids['Amt']
+        vi = bids['valid']
+
+        mpcInput(sint Xi, sint curPrice, sint Amti, sint amtSold, sint totalAmt,sint vi)
+        valid = (curPrice.less_equal(Xi,bit_length = bit_length))
+        amtSold += Amti*valid*vi
+        mpcOutput(sint amtSold)
+
+        return amtSold
+    }
+
+    function initClient(address token_addr) public{
+        address user_addr = msg.sender;
+        mpc(address user_addr,address token_addr){
+            init_balance = 100000
+            writeDB(f'balanceBoard_{token_addr}_{user_addr}',init_balance,int)
         }
     }
 
@@ -99,17 +120,29 @@ contract colAuction{
 
         uint FloorPrice = floorPriceList[colAuctionId];
 
-        mpc(uint colAuctionId, uint bidders_id, uint FloorPrice, $uint price, address P, $uint Amt){
-            bids = readDB(f'bidsBoard_{colAuctionId}', list)
-            auc = readDB(f'aucBoard_{colAuctionId}', dict)
+        address token_addr = tokenAddrList[colAuctionId];
+        address appAddr = appAddrList[colAuctionId];
 
-            mpcInput(sint price, sint FloorPrice)
-            valid = (price.greater_equal(FloorPrice, bit_length=bit_length)).reveal()
-            mpcOutput(cint valid)
+        mpc(uint colAuctionId, uint bidders_id, uint FloorPrice, $uint price, address P, $uint Amt, address token_addr, address appAddr){
+            cur_token_balance = readDB(f'balanceBoard_{token_addr}_{P}',int)
+            cur_app_balance = readDB(f'balanceBoard_{token_addr}_{appAddr}',int)
 
-            if valid == 1:
-                bids.append((price,P,Amt))
-            writeDB(f'bidsBoard_{colAuctionId}',bids,list)
+            mpcInput(sint cur_token_balance,sint cur_app_balance,sint price,sint Amt)
+            valid = cur_token_balance.greater_equal(price*Amt,bit_length=bit_length)
+            cur_token_balance = cur_token_balance - valid*price*Amt
+            cur_app_balance = cur_app_balance + valid*price*Amt
+            mpcOutput(sint valid,sint cur_token_balance,sint cur_app_balance)
+
+            bid = {
+                'price': price,
+                'amt': Amt,
+                'address': P,
+                'valid':valid,
+            }
+
+            writeDB(f'bidsBoard_{colAuctionId}_{bidders_id}',bids,dict)
+            writeDB(f'balanceBoard_{token_addr}_{P}',cur_token_balance,int)
+            writeDB(f'balanceBoard_{token_addr}_{appAddr}',cur_app_balance,int)
             
             curStatus = bidders_id+2
             set(status, uint curStatus, uint colAuctionId)

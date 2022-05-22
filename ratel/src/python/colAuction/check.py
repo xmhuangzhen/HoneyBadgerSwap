@@ -36,12 +36,9 @@ if __name__=='__main__':
     abi, bytecode = parse_contract(contract_name)
     appContract = web3.eth.contract(address=app_addr, abi=abi)
 
-
-
     client_1 = getAccount(web3,f'/opt/poa/keystore/client_1/')
 
     cur_n = 0
-
     ccnt = 0
 
     while True:
@@ -61,14 +58,14 @@ if __name__=='__main__':
                 liveAuct.remove(aucId)
                 print("cur Live Auct Id(removing):",liveAuct)
         
-        if ccnt == 1000:
+        if ccnt == 100000:
             ccnt = 0
             print("curLiveAuctionId:",liveAuct)
 
         for aucId in liveAuct:
             scheduleCheck(appContract,aucId,client_1)
 
-        time.sleep(5)
+#        time.sleep(5)
         ccnt = ccnt+1
 
 

@@ -6,14 +6,15 @@ from web3 import Web3
 from web3.middleware import geth_poa_middleware
 
 from ratel.src.python.Client import get_inputmasks, reserveInput
-from ratel.src.python.deploy import url, app_addr
+from ratel.src.python.deploy import url, app_addr, token_addrs
 from ratel.src.python.utils import fp,parse_contract, getAccount, players, prime, sign_and_send, threshold
 
 contract_name = 'colAuction'
 
 bids_cnt = []
 
-def createAuction(appContract,StartPrice,FloorPrice,totalAmt,account):
+def createAuction(appContract,StartPrice,FloorPrice,totalAmt,token,aucapp_addr,account):
+    colAuctionlast = appContract.functions.colAuctionCnt().call()
 
     bids_cnt.append(0)
 
@@ -22,17 +23,16 @@ def createAuction(appContract,StartPrice,FloorPrice,totalAmt,account):
 #    maskedTM = (totalAmt + mask1) % prime
     
     web3.eth.defaultAccount = account.address
-    tx = appContract.functions.createAuction(StartPrice,FloorPrice,totalAmt).buildTransaction({
+    tx = appContract.functions.createAuction(StartPrice,FloorPrice,totalAmt,token,aucapp_addr).buildTransaction({
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
     })
-    receipt = sign_and_send(tx, web3, account)
+    sign_and_send(tx, web3, account)
 
-    log = appContract.events.CreateAuction().processReceipt(receipt)
-    colAuctionId = log[0]['args']['colAuctionId']
     while True:
+        colAuctionId = appContract.functions.colAuctionCnt().call()
         time.sleep(1)
         status = appContract.functions.status(colAuctionId).call()
-        if status == 2:
+        if status == 2 and colAuctionId != colAuctionlast:
             return colAuctionId
 
 
@@ -44,7 +44,7 @@ def submitBids(appContract,colAuctionId,price,amt,account):
         return
 
     cur_bidcnt = bids_cnt[colAuctionId-1]
-    print("curbid cnt",colAuctionId,cur_bidcnt)
+#    print("curbid cnt",colAuctionId,cur_bidcnt)
 
 
     idx1, idx2 = reserveInput(web3, appContract, 2, account)
@@ -66,6 +66,12 @@ def submitBids(appContract,colAuctionId,price,amt,account):
         if status == 1:
             return
 
+def initClient(appContract,account,token_addr):
+    web3.eth.defaultAccount = account.address
+    tx = appContract.functions.initClient(token_addr).buildTransaction({
+        'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
+    })
+    sign_and_send(tx, web3, account)
 
 
 if __name__=='__main__':
@@ -75,21 +81,30 @@ if __name__=='__main__':
     abi, bytecode = parse_contract(contract_name)
     appContract = web3.eth.contract(address=app_addr, abi=abi)
 
+    client_1 = getAccount(web3,f'/opt/poa/keystore/client_3/')
+    client_2 = getAccount(web3,f'/opt/poa/keystore/client_4/')
+    client_3 = getAccount(web3,f'/opt/poa/keystore/client_5/')
+    client_4 = getAccount(web3,f'/opt/poa/keystore/client_6/')
+    client_5 = getAccount(web3,f'/opt/poa/keystore/client_7/')
+    client_6 = getAccount(web3,f'/opt/poa/keystore/client_8/')
 
-    client_1 = getAccount(web3,f'/opt/poa/keystore/client_2/')
-    client_2 = getAccount(web3,f'/opt/poa/keystore/client_3/')
-    client_3 = getAccount(web3,f'/opt/poa/keystore/client_4/')
-    client_4 = getAccount(web3,f'/opt/poa/keystore/client_5/')
-    client_5 = getAccount(web3,f'/opt/poa/keystore/client_6/')
-#    client_6 = getAccount(web3,f'/opt/poa/keystore/client_7/')
+    clients = [client_1,client_2,client_3,client_4,client_5,client_6]
+    n_cli = len(clients)
+    n_token = 4
+    for i in range(n_cli):
+        for token_id in range(n_token):
+            print(i,token_id)
+            initClient(appContract,clients[i],token_addrs[token_id])
 
-    
+    aucapp_addr = getAccount(web3,f'/opt/poa/keystore/client_2/').address
+
+
     # auction1 success
     
     totalAmt1 = 20
     StartPrice1 = 100
     FloorPrice1 = 10 
-    colAuctionId1 = createAuction(appContract,StartPrice1,FloorPrice1,totalAmt1,client_1)
+    colAuctionId1 = createAuction(appContract,StartPrice1,FloorPrice1,totalAmt1,token_addrs[1],aucapp_addr,client_1)
     print('new Auction id:',colAuctionId1)
     time.sleep(10)
 
@@ -98,7 +113,7 @@ if __name__=='__main__':
     totalAmt2 = 40
     StartPrice2 = 100
     FloorPrice2 = 10 
-    colAuctionId2 = createAuction(appContract,StartPrice2,FloorPrice2,totalAmt2,client_1)
+    colAuctionId2 = createAuction(appContract,StartPrice2,FloorPrice2,totalAmt2,token_addrs[2],aucapp_addr,client_1)
     print('new Auction id:',colAuctionId2)
     time.sleep(10)
 
@@ -128,7 +143,7 @@ if __name__=='__main__':
     totalAmt3 = 20
     StartPrice3 = 100
     FloorPrice3 = 50 
-    colAuctionId3 = createAuction(appContract,StartPrice3,FloorPrice3,totalAmt3,client_1)
+    colAuctionId3 = createAuction(appContract,StartPrice3,FloorPrice3,totalAmt3,token_addrs[3],aucapp_addr,client_1)
     print('new Auction id:',colAuctionId3)
     time.sleep(10)
     
