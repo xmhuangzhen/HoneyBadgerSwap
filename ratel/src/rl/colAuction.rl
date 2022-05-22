@@ -96,20 +96,15 @@ contract colAuction{
         bids = readDB(f'bidsBoard_{colAuctionId}_{i+1}', dict)
 
         Xi = bids['price']
-        Pi = bids['address']
         Amti = bids['amt']
         vi = bids['valid']
 
-        mpcInput(sint Xi, sint curPrice, sint Amti, sint amtSold,sint vi)
+        mpcInput(sint Xi, sint curPrice, sint Amti, sint amtSold, sint vi)
         
-        print_ln('***Xi %s',Xi.reveal())
-        print_ln('***curPrice %s',curPrice.reveal())
-        print_ln('***Amti %s',Amti.reveal())
-        print_ln('***amtSold %s', amtSold.reveal())
-        print_ln('***vi %s',vi.reveal())
+        v1 = (curPrice.less_equal(Xi,bit_length = bit_length))
+        tmpamt = Amti*v1
+        amtSold = amtSold + tmpamt*vi
 
-        valid = (curPrice.less_equal(Xi,bit_length = bit_length))
-        amtSold = amtSold + Amti*valid*vi
         mpcOutput(sint amtSold)
 
         return amtSold
