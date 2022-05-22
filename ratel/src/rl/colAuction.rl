@@ -73,7 +73,13 @@ contract colAuction{
                 amtSold = 0
 
                 for i in range(n):
-                    amtSold = await runCheckAuction(server, i, colAuctionId)
+                    amtSold = await runCheckAuction(server, i, colAuctionId, amtSold)
+
+                mpcInput(sint amtSold, sint totalAmt)
+                aucDone = (amtSold.greater_equal(totalAmt,bit_length = bit_length))
+                aucDone = aucDone.reveal()
+                mpcOutput(cint aucDone)
+
 
                 if aucDone == 1:
                     print(colAuctionId,'Auction success!!!!!!!!!')
@@ -88,7 +94,7 @@ contract colAuction{
         await runCheckAuctionUpdate(server, i, colAuctionId)
     }
 
-    pureMpc checkAuctionUpdate(server, i, colAuctionId) {
+    pureMpc checkAuctionUpdate(server, i, colAuctionId, amtSold) {
         bids = readDB(f'bidsBoard_{colAuctionId}_{i+1}', dict)
 
         Xi = bids['price']
