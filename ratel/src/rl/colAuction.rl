@@ -75,8 +75,10 @@ contract colAuction{
                 for i in range(n):
                     amtSold = await runCheckAuction(server, i, colAuctionId, amtSold)
 
-                mpcInput(sint amtSold, sint totalAmt)
-                aucDone = (amtSold.greater_equal(totalAmt,bit_length = bit_length))
+                cur_eth_creator_balance = readDB(f'balanceBoard_{0}_{creatorAddr}',int)
+
+                mpcInput(sint amtSold, sint totalAmt,sint cur_eth_creator_balance,sint curPrice,sint totalAmt)
+                aucDone = (amtSold.greater_equal(totalAmt,bit_length = bit_length))*(cur_eth_creator_balance.greater_equal(curPrice*totalAmt,bit_length=bit_length))
                 aucDone = aucDone.reveal()
                 mpcOutput(cint aucDone)
 
