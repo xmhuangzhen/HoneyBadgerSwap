@@ -130,7 +130,7 @@ contract colAuction{
         await runCheckFailUpdate(server, token_addr, i, colAuctionId,vi,pricei,Pi,Amti)
     }
 
-    pureMpc checkFailUpdate(server, token_addr, i, colAuctionId,vi,pricei,Pi,Amti){
+    pureMpc checkFailUpdate(server, token_addr, i, colAuctionId,vi,pricei,Pi,Amti,port=4901){
 
         cur_token_balance = readDB(f'balanceBoard_{token_addr}_{Pi}',int)
 
