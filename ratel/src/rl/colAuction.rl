@@ -168,7 +168,7 @@ contract colAuction{
         vi = bids['valid']
         pricei = bids['price']
         Pi = bids['address']
-        Amti = bids['Amt']
+        Amti = bids['amt']
 
         curAmt,app_token_amt = await runCheckSuccessUpdate(server, i, colAuctionId, token_addr, curPrice, curAmt, app_token_amt,vi,pricei,Pi,Amti)
 
