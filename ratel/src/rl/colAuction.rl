@@ -124,12 +124,13 @@ contract colAuction{
 
     pureMpc checkFail(server, token_addr, i, colAuctionId) {
         bids = readDB(f'bidsBoard_{colAuctionId}_{i+1}', dict)
-        cur_token_balance = readDB(f'balanceBoard_{token_addr}_{Pi}',int)
 
         vi = bids['valid']
         price = bids['price']
         Pi = bids['address']
         Amti = bids['amt']
+
+        cur_token_balance = readDB(f'balanceBoard_{token_addr}_{Pi}',int)
 
         mpcInput(sint cur_token_balance,sint price,sint Amti,sint vi)
         cur_token_balance = cur_token_balance + vi*price*Amti
@@ -159,13 +160,14 @@ contract colAuction{
 
     pureMpc checkSuccess(server, i, colAuctionId, token_addr, curPrice, curAmt, app_token_amt) {
         bids = readDB(f'bidsBoard_{colAuctionId}_{i+1}', dict)
-        cur_eth_balance = readDB(f'balanceBoard_{0}_{Pi}',int)
-        cur_token_balance = readDB(f'balanceBoard_{token_addr}_{Pi}',int)
 
         vi = bids['valid']
         pricei = bids['price']
         Pi = bids['address']
         Amti = bids['Amt']
+
+        cur_eth_balance = readDB(f'balanceBoard_{0}_{Pi}',int)
+        cur_token_balance = readDB(f'balanceBoard_{token_addr}_{Pi}',int)
 
 
         mpcInput(sint cur_eth_balance,sint cur_token_balance,sint pricei,sint vi,sint curPrice,sint curAmt,sint Amti,sint app_token_amt)
