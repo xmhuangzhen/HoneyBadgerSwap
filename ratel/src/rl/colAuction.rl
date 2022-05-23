@@ -104,6 +104,11 @@ contract colAuction{
                     writeDB(f'balanceBoard_{token_addr}_{creatorAddr}',cur_token_creator_balance,int)
 
 
+                    cur_token_app_balance = readDB(f'balanceBoard_{token_addr}_{appAddr}',int)
+
+                    
+                    writeDB(f'balanceBoard_{token_addr}_{appAddr}',cur_token_app_balance,int)
+
                     print(colAuctionId,'Auction success!!!!!!!!!')
                     curStatus = 1
                     set(status, uint curStatus, uint colAuctionId)
