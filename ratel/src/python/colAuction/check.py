@@ -50,7 +50,6 @@ if __name__=='__main__':
                 cur_n += 1
                 liveAuct.append(cur_n)
                 print("cur Live Auct Id(adding):",liveAuct)
-                time.sleep(20)
             else:
                 break
         
@@ -59,7 +58,6 @@ if __name__=='__main__':
             if status == 1:
                 liveAuct.remove(aucId)
                 print("cur Live Auct Id(removing):",liveAuct)
-                time.sleep(20)
         
         if ccnt == 100000:
             ccnt = 0
@@ -68,5 +66,4 @@ if __name__=='__main__':
         for aucId in liveAuct:
             scheduleCheck(appContract,aucId,client_1)
 
-        time.sleep(20)
         ccnt = ccnt+1
