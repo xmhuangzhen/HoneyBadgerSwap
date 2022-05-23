@@ -51,7 +51,7 @@ contract colAuction{
         require(lastTime + 10 < curTime);
         checkTime[colAuctionId] = block.number;
 
-        uint curPrice = curPriceList[colAuctionId]*(1000-curTime+lastTime)/1000;
+        uint curPrice = curPriceList[colAuctionId]*(10-curTime+lastTime)/10;
         curPriceList[colAuctionId] = curPrice;
 
         uint FloorPrice = floorPriceList[colAuctionId];
@@ -94,7 +94,7 @@ contract colAuction{
                     app_token_amt = 0
 
                     for i in range(n):
-                        curAmt, app_token_amt = await runCheckSuccess(server, token_addr, i, colAuctionId, token_addr,curPrice, curAmt, app_token_amt)
+                        curAmt, app_token_amt = await runCheckSuccess(server, i, colAuctionId, token_addr,curPrice, curAmt, app_token_amt)
 
 
                     mpcInput(sint cur_token_creator_balance,sint curPrice,sint totalAmt)
