@@ -175,7 +175,7 @@ contract colAuction{
         return curAmt, app_token_amt
     }
 
-    pureMpc runCheckSuccessUpdate(server, i, colAuctionId, token_addr, curPrice, curAmt, app_token_amt,vi,pricei,Pi,Amti){
+    pureMpc checkSuccessUpdate(server, i, colAuctionId, token_addr, curPrice, curAmt, app_token_amt,vi,pricei,Pi,Amti){
         
         cur_eth_balance = readDB(f'balanceBoard_{0}_{Pi}',int)
         cur_token_balance = readDB(f'balanceBoard_{token_addr}_{Pi}',int)
