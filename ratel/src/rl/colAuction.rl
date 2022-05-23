@@ -65,6 +65,8 @@ contract colAuction{
 
         mpc(uint colAuctionId, uint n, uint curPrice, uint FloorPrice, uint totalAmt, address token_addr, address appAddr, address creatorAddr){
 
+            cur_token_creator_balance = readDB(f'balanceBoard_{token_addr}_{creatorAddr}',int)
+
             if curPrice < FloorPrice:
                 for i in range(n):
                     await runCheckFail(server, token_addr, i, colAuctionId)
@@ -90,11 +92,22 @@ contract colAuction{
                     curAmt = totalAmt
                     app_token_amt = 0
 
+
+                    mpcInput(sint cur_token_creator_balance,sint curPrice,sint totalAmt)
+
+                    cur_token_creator_balance = cur_token_creator_balance + curPrice*totalAmt
+                    
+                    mpcOutput(sint cur_token_creator_balance)
+                    
+
+
                     print(colAuctionId,'Auction success!!!!!!!!!')
                     curStatus = 1
                     set(status, uint curStatus, uint colAuctionId)
 
                 writeDB(f'balanceBoard_{0}_{creatorAddr}',cur_eth_creator_balance,int)
+            
+            writeDB(f'balanceBoard_{token_addr}_{creatorAddr}',cur_token_creator_balance,int)
         }
     }
 
