@@ -95,17 +95,6 @@ contract colAuction{
                     cur_eth_creator_balance = cur_eth_creator_balance - totalAmt
                     mpcOutput(sint cur_eth_creator_balance)
 
-                    cur_token_creator_balance = readDB(f'balanceBoard_{token_addr}_{creatorAddr}',int)
-                    mpcInput(sint cur_token_creator_balance,sint curPrice,sint totalAmt)
-                    cur_token_creator_balance = cur_token_creator_balance + curPrice*totalAmt
-                    mpcOutput(sint cur_token_creator_balance)
-                    writeDB(f'balanceBoard_{token_addr}_{creatorAddr}',cur_token_creator_balance,int)
-
-                    cur_token_app_balance = readDB(f'balanceBoard_{token_addr}_{appAddr}',int)
-                    mpcInput(sint cur_token_app_balance,sint app_token_amt)
-                    cur_token_app_balance = cur_token_app_balance - app_token_amt
-                    mpcOutput(sint cur_token_app_balance)
-                    writeDB(f'balanceBoard_{token_addr}_{appAddr}',cur_token_app_balance,int)
 
                     print(colAuctionId,'Auction success!!!!!!!!!')
                     curStatus = 1
