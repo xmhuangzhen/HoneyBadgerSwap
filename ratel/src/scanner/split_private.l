@@ -636,7 +636,9 @@ SPACE [ \t\r]+
         textPythonLower += textFuncUpper + textFuncLower;
 
         if (!inPureMpc) textPythonLower += "    mark_finish(server, seq" + funcName + ", port)";
-
+        else {
+            textPythonLower += "    server.portLock[port].release()\n";
+        }
         textPythonLower += returnLine;
 
         inPureMpc = false;
