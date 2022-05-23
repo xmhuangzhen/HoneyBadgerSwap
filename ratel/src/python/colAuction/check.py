@@ -21,7 +21,7 @@ def scheduleCheck(appContract,colAuctionId,account):
     if(lastTime + 10 >= curTime):
         return
 
-    print('check', colAuctionId)
+#    print('check', colAuctionId)
     web3.eth.defaultAccount = account.address
     tx = appContract.functions.scheduleCheck(colAuctionId).buildTransaction({
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
@@ -50,6 +50,7 @@ if __name__=='__main__':
                 cur_n += 1
                 liveAuct.append(cur_n)
                 print("cur Live Auct Id(adding):",liveAuct)
+                time.sleep(20)
             else:
                 break
         
@@ -58,6 +59,7 @@ if __name__=='__main__':
             if status == 1:
                 liveAuct.remove(aucId)
                 print("cur Live Auct Id(removing):",liveAuct)
+                time.sleep(20)
         
         if ccnt == 100000:
             ccnt = 0
@@ -66,10 +68,5 @@ if __name__=='__main__':
         for aucId in liveAuct:
             scheduleCheck(appContract,aucId,client_1)
 
-#        time.sleep(5)
+        time.sleep(20)
         ccnt = ccnt+1
-
-
-        
-
-
