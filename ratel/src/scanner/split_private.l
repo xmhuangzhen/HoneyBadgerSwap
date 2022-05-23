@@ -181,9 +181,8 @@ void processPureMpc() {
         textFuncUpper += ", " + args[i];
     }
 
-    textFuncUpper += "):\n";
+    textFuncUpper += ", port=4900):\n";
 
-    textFuncUpper += "    seq" + funcName + " = -1\n";
     textFuncUpper += "\n";
 
 }
@@ -337,7 +336,7 @@ void acquireLocks() {
     }
 
     textFuncUpper += "    port = mpcPort(seq" + funcName + ", server.concurrency)\n";
-    textFuncUpper += "    tasks.append(server.portLock[port].acquire())\n";
+    if (!inPureMpc) textFuncUpper += "    port = mpcPort(seq" + funcName + ", server.concurrency)\n";
 
     textFuncUpper += "    await asyncio.wait(tasks)\n";
 
