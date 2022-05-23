@@ -335,8 +335,8 @@ void acquireLocks() {
         textFuncUpper += "            tasks.append(server.dbLock[key].acquire())\n";
     }
 
-    textFuncUpper += "    port = mpcPort(seq" + funcName + ", server.concurrency)\n";
     if (!inPureMpc) textFuncUpper += "    port = mpcPort(seq" + funcName + ", server.concurrency)\n";
+    textFuncUpper += "    tasks.append(server.portLock[port].acquire())\n";
 
     textFuncUpper += "    await asyncio.wait(tasks)\n";
 
