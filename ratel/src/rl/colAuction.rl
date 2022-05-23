@@ -90,9 +90,7 @@ contract colAuction{
                     curAmt = totalAmt
                     app_token_amt = 0
 
-                    for i in range(n):
-                        curAmt, app_token_amt = await runCheckSuccess(server, token_addr, i, colAuctionId, token_addr,curPrice, curAmt, app_token_amt)
-                    
+
                     mpcInput(sint cur_eth_creator_balance,sint totalAmt)
                     cur_eth_creator_balance = cur_eth_creator_balance - totalAmt
                     mpcOutput(sint cur_eth_creator_balance)
@@ -117,22 +115,6 @@ contract colAuction{
         }
     }
 
-    pureMpc checkFail(server, token_addr, i, colAuctionId) {
-        bids = readDB(f'bidsBoard_{colAuctionId}_{i+1}', dict)
-        cur_token_balance = readDB(f'balanceBoard_{token_addr}_{Pi}',int)
-
-        vi = bids['valid']
-        price = bids['price']
-        Pi = bids['address']
-        Amti = bids['amt']
-
-        mpcInput(sint cur_token_balance,sint price,sint Amti,sint vi)
-        cur_token_balance = cur_token_balance + vi*price*Amti
-        mpcOutput(sint cur_token_balance)
-
-        writeDB(f'balanceBoard_{token_addr}_{Pi}',cur_token_balance,int)
-    }
-
     pureMpc checkAuction(server, i, colAuctionId, curPrice,amtSold) {
         bids = readDB(f'bidsBoard_{colAuctionId}_{i+1}', dict)
 
@@ -149,31 +131,6 @@ contract colAuction{
         mpcOutput(sint amtSold)
 
         return amtSold
-    }
-
-    pureMpc checkSuccess(server, i, colAuctionId, token_addr, curPrice, curAmt, app_token_amt) {
-        bids = readDB(f'bidsBoard_{colAuctionId}_{i+1}', dict)
-        cur_eth_balance = readDB(f'balanceBoard_{0}_{Pi}',int)
-        cur_token_balance = readDB(f'balanceBoard_{token_addr}_{Pi}',int)
-
-        vi = bids['valid']
-        pricei = bids['price']
-        Pi = bids['address']
-        Amti = bids['amt']
-
-        mpcInput(sint cur_eth_balance,sint cur_token_balance,sint pricei,sint vi,sint curPrice,sint curAmt,sint Amti,sint app_token_amt)
-        v1 = (curAmt.greater_equal(Amti,bit_length=bit_length)) 
-        realAmt = vi*v1*Amti + vi*(1-v1)*curAmt
-        cur_eth_balance = cur_eth_balance + realAmt
-        cur_token_balance = cur_token_balance + pricei*Amti - curPrice*realAmt
-        curAmt -= realAmt
-        app_token_amt = app_token_amt + vi*Amti*pricei
-        mpcOutput(sint curAmt,sint cur_eth_balance,sint cur_token_balance,sint app_token_amt)
-
-        writeDB(f'balanceBoard_{0}_{Pi}',cur_eth_balance,int)
-        writeDB(f'balanceBoard_{token_addr}_{Pi}',cur_token_balance,int)
-
-        return curAmt,app_token_amt
     }
 
     function initClient(address token_addr) public{
