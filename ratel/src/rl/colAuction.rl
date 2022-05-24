@@ -55,7 +55,6 @@ contract colAuction{
 
         print('checkFail',i)
 
-        return i
     } 
 
     function scheduleCheck(uint colAuctionId) public {
@@ -86,8 +85,8 @@ contract colAuction{
             if curPrice < FloorPrice:
 
                 for i in range(n):
-                    t = server.loop.create_task(runCheckFail(server, token_addr, i, colAuctionId)).result()
-                    print('here t:',t)
+                    server.loop.run_until_complete(runCheckFail(server, token_addr, i, colAuctionId))
+                    
 
                 print(colAuctionId,'Auction failed!!!!!!!!!')
 
