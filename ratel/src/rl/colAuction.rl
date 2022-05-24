@@ -70,8 +70,7 @@ contract colAuction{
 
             if curPrice < FloorPrice:
                 for i in range(n):
-                    vi,pricei,Pi,Amti = await runCheckFail(server, token_addr, i, colAuctionId)
-                    await runCheckFailUpdate(server, token_addr, i, colAuctionId,vi,pricei,Pi,Amti)
+                    await runCheckFail(server, token_addr, i, colAuctionId)
 
 
                 print(colAuctionId,'Auction failed!!!!!!!!!')
@@ -129,10 +128,10 @@ contract colAuction{
         Pi = bids['address']
         Amti = bids['amt']
 
-        return vi,pricei,Pi,Amti
+        await runCheckFailUpdate(server, token_addr, i, colAuctionId,vi,pricei,Pi,Amti,4800)
     }
 
-    pureMpc checkFailUpdate(server, token_addr, i, colAuctionId,vi,pricei,Pi,Amti,port=4901){
+    pureMpc checkFailUpdate(server, token_addr, i, colAuctionId,vi,pricei,Pi,Amti){
 
         cur_token_balance = readDB(f'balanceBoard_{token_addr}_{Pi}',int)
 
