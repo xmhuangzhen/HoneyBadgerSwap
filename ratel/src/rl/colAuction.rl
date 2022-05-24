@@ -85,8 +85,8 @@ contract colAuction{
             if curPrice < FloorPrice:
 
                 for i in range(n):
-                    t = server.loop.run_until_complete(runCheckFail(server, token_addr, i, colAuctionId))
-                    await t
+                    loop = asyncio.get_event_loop()
+                    loop.run_until_complete(checkFail)
 
                 print(colAuctionId,'Auction failed!!!!!!!!!')
 
