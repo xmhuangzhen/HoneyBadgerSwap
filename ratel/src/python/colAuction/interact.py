@@ -51,13 +51,13 @@ def submitBids(appContract,colAuctionId,price,amt,account):
     mask1, mask2 = asyncio.run(get_inputmasks(players(appContract), f'{idx1},{idx2}', threshold(appContract)))
     maskedP, maskedAmt = (price + mask1) % prime, (amt + mask2) % prime
 
-    web3.eth.defaultAccount = account.address
-    tx = appContract.functions.submitBids(colAuctionId, idx1, maskedP, idx2, maskedAmt).buildTransaction({
-        'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
-    })
-    sign_and_send(tx, web3, account)
-
     while True:
+        web3.eth.defaultAccount = account.address
+        tx = appContract.functions.submitBids(colAuctionId, idx1, maskedP, idx2, maskedAmt).buildTransaction({
+            'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
+        })
+        sign_and_send(tx, web3, account)
+
         time.sleep(1)
         status = appContract.functions.status(colAuctionId).call()
         
