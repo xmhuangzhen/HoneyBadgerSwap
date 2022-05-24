@@ -80,9 +80,26 @@ contract colAuction{
             else:
                 amtSold = 0
 
-                aucDone = 0
+                mpcInput(sint amtSold, sint totalAmt,sint cur_eth_creator_balance,sint curPrice,sint totalAmt)
+                aucDone = (amtSold.greater_equal(totalAmt,bit_length = bit_length))*(cur_eth_creator_balance.greater_equal(curPrice*totalAmt,bit_length=bit_length))
+                aucDone = aucDone.reveal()
+                mpcOutput(cint aucDone)
 
                 if aucDone == 1:
+
+                    mpcInput(sint cur_token_creator_balance,sint curPrice,sint totalAmt)
+
+                    cur_token_creator_balance = cur_token_creator_balance + curPrice*totalAmt
+                    
+                    mpcOutput(sint cur_token_creator_balance)
+                    
+
+                    mpcInput(sint cur_token_app_balance,sint app_token_amt)
+                    
+                    cur_token_app_balance = cur_token_app_balance - app_token_amt
+                    
+                    mpcOutput(sint cur_token_app_balance)
+
                     print(colAuctionId,'Auction success!!!!!!!!!')
                     curStatus = 1
                     set(status, uint curStatus, uint colAuctionId)
