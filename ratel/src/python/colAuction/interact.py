@@ -13,22 +13,22 @@ contract_name = 'colAuction'
 
 bids_cnt = []
 
-def createAuction(appContract,StartPrice,FloorPrice,totalAmt,account):
+def createAuction(appContract,StartPrice,FloorPrice,totalAmt,token,aucapp_addr,account):
+    colAuctionlast = appContract.functions.colAuctionCnt().call()
 
     bids_cnt.append(0)
 
     web3.eth.defaultAccount = account.address
-    tx = appContract.functions.createAuction(StartPrice,FloorPrice,totalAmt).buildTransaction({
+    tx = appContract.functions.createAuction(StartPrice,FloorPrice,totalAmt,token,aucapp_addr).buildTransaction({
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
     })
-    receipt = sign_and_send(tx, web3, account)
+    sign_and_send(tx, web3, account)
 
-    log = appContract.events.CreateAuction().processReceipt(receipt)
-    colAuctionId = log[0]['args']['colAuctionId']
     while True:
+        colAuctionId = appContract.functions.colAuctionCnt().call()
         time.sleep(1)
         status = appContract.functions.status(colAuctionId).call()
-        if status == 2:
+        if status == 2 and colAuctionId != colAuctionlast:
             return colAuctionId
 
 

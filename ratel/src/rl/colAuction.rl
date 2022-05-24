@@ -15,6 +15,10 @@ contract colAuction{
     mapping (uint => uint) public curPriceList;
     mapping (uint => uint) public floorPriceList;
     mapping (uint => uint) public startPriceList;
+    mapping (uint => uint) public totalAmtList;
+    mapping (uint => address) public tokenAddrList;
+    mapping (uint => address) public appAddrList;
+    mapping (uint => address) public creatorAddrList;
     
     mapping (uint => uint) public checkTime;
 
@@ -22,26 +26,23 @@ contract colAuction{
     mapping (address => uint) public statusValue;
     mapping (uint => uint) public statusCount;
 
+
     constructor() public {}
 
-    function createAuction(uint StartPrice, uint FloorPrice, uint totalAmt) public{
+    function createAuction(uint StartPrice, uint FloorPrice, uint totalAmt, address token, address appAddr) public{
         uint colAuctionId = ++colAuctionCnt;
         curPriceList[colAuctionId] = StartPrice;
         floorPriceList[colAuctionId] = FloorPrice;
         startPriceList[colAuctionId] = StartPrice;
+        totalAmtList[colAuctionId] = totalAmt;
 
         checkTime[colAuctionId] = block.number;
 
         status[colAuctionId] = 2;
 
-        mpc(uint colAuctionId, uint StartPrice, uint FloorPrice, uint totalAmt) {
-            auc = {
-                'totalAmt': totalAmt,
-                'StartPrice': StartPrice,
-                'FloorPrice': FloorPrice,
-            }
-            writeDB(f'aucBoard_{colAuctionId}', auc, dict)
-        }
+        tokenAddrList[colAuctionId] = token;
+        appAddrList[colAuctionId] = appAddr;
+        creatorAddrList[colAuctionId] = msg.sender;
     }
 
     function scheduleCheck(uint colAuctionId) public {
@@ -50,16 +51,21 @@ contract colAuction{
         require(lastTime + 10 < curTime);
         checkTime[colAuctionId] = block.number;
 
-        uint curPrice = curPriceList[colAuctionId]*99/100;
+        uint curPrice = curPriceList[colAuctionId]*(50-curTime+lastTime)/50;
         curPriceList[colAuctionId] = curPrice;
 
         uint FloorPrice = floorPriceList[colAuctionId];
+        uint totalAmt = totalAmtList[colAuctionId];
 
-        mpc(uint colAuctionId, uint curPrice, uint FloorPrice){
+        address token_addr = tokenAddrList[colAuctionId];
+        address appAddr = appAddrList[colAuctionId];
+        address creatorAddr = creatorAddrList[colAuctionId];
+
+        uint n = biddersCnt[colAuctionId];
+
+        mpc(uint colAuctionId, uint n, uint curPrice, uint FloorPrice, uint totalAmt, address token_addr, address appAddr, address creatorAddr){
             bids = readDB(f'bidsBoard_{colAuctionId}', list)
-            auc = readDB(f'aucBoard_{colAuctionId}',dict)
 
-            totalAmt = auc['totalAmt']
 
             if curPrice < FloorPrice:
                 print(colAuctionId,'Auction failed!!!!!!!!!')
@@ -101,7 +107,6 @@ contract colAuction{
 
         mpc(uint colAuctionId, uint bidders_id, uint FloorPrice, $uint price, address P, $uint Amt){
             bids = readDB(f'bidsBoard_{colAuctionId}', list)
-            auc = readDB(f'aucBoard_{colAuctionId}', dict)
 
             mpcInput(sint price, sint FloorPrice)
             valid = (price.greater_equal(FloorPrice, bit_length=bit_length)).reveal()
