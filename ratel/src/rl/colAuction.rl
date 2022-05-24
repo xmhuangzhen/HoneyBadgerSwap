@@ -69,10 +69,6 @@ contract colAuction{
             cur_token_app_balance = readDB(f'balanceBoard_{token_addr}_{appAddr}',int)
 
             if curPrice < FloorPrice:
-                for i in range(n):
-                    vi,pricei,Pi,Amti = await runCheckFail(server, token_addr, i, colAuctionId)
- 
-
                 print(colAuctionId,'Auction failed!!!!!!!!!')
                 curStatus = 1
                 set(status, uint curStatus, uint colAuctionId)
@@ -120,18 +116,6 @@ contract colAuction{
         }
     }
 
-    pureMpc checkFail(server, token_addr, i, colAuctionId) {
-        bids = readDB(f'bidsBoard_{colAuctionId}_{i+1}', dict)
-
-        vi = bids['valid']
-        pricei = bids['price']
-        Pi = bids['address']
-        Amti = bids['amt']
-
-        return vi,pricei,Pi,Amti
-    }
-
-
 
     pureMpc checkAuction(server, i, colAuctionId, curPrice,amtSold) {
         bids = readDB(f'bidsBoard_{colAuctionId}_{i+1}', dict)
@@ -150,8 +134,6 @@ contract colAuction{
 
         return amtSold
     }
-
-
 
 
     function initClient(address token_addr) public{
