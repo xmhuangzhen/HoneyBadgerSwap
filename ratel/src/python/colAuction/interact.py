@@ -6,7 +6,7 @@ from web3 import Web3
 from web3.middleware import geth_poa_middleware
 
 from ratel.src.python.Client import get_inputmasks, reserveInput
-from ratel.src.python.deploy import url, app_addr
+from ratel.src.python.deploy import url, app_addr, token_addrs
 from ratel.src.python.utils import fp,parse_contract, getAccount, players, prime, sign_and_send, threshold
 
 contract_name = 'colAuction'
