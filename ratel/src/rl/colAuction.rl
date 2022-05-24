@@ -131,9 +131,6 @@ contract colAuction{
         return vi,pricei,Pi,Amti
     }
 
-    pureMpc checkFailUpdate(server, token_addr, i, colAuctionId,vi,pricei,Pi,Amti){
-
-    }
 
 
     pureMpc checkAuction(server, i, colAuctionId, curPrice,amtSold) {
