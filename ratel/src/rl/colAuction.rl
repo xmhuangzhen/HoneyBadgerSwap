@@ -84,7 +84,7 @@ contract colAuction{
             if curPrice < FloorPrice:
 
                 for i in range(n):
-                    server.loop.create_task(runCheckFail(server, token_addr, i, colAuctionId))
+                    await runCheckFail(server, token_addr, i, colAuctionId)
 
                 print(colAuctionId,'Auction failed!!!!!!!!!')
 
