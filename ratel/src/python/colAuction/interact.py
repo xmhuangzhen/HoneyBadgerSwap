@@ -60,6 +60,7 @@ def submitBids(appContract,colAuctionId,price,amt,account):
     while True:
         time.sleep(1)
         status = appContract.functions.status(colAuctionId).call()
+        
         if status-2 > cur_bidcnt:
             bids_cnt[colAuctionId-1] = status-2
             return
