@@ -69,3 +69,5 @@ if __name__=='__main__':
             scheduleCheck(appContract,aucId,client_1)
 
         ccnt = ccnt+1
+
+        time.sleep(20)

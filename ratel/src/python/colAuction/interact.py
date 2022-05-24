@@ -58,7 +58,7 @@ def submitBids(appContract,colAuctionId,price,amt,account):
         })
         sign_and_send(tx, web3, account)
 
-        time.sleep(1)
+        time.sleep(10)
         status = appContract.functions.status(colAuctionId).call()
         
         if status-2 > cur_bidcnt:
@@ -66,6 +66,7 @@ def submitBids(appContract,colAuctionId,price,amt,account):
             return
         if status == 1:
             return
+
 
 def initClient(appContract,account,token_addr):
     web3.eth.defaultAccount = account.address
