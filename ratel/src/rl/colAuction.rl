@@ -86,7 +86,7 @@ contract colAuction{
 
                 for i in range(n):
                     loop = asyncio.get_event_loop()
-                    loop.run_until_complete(checkFail)
+                    loop.run_until_complete(runCheckFail(server, token_addr, i, colAuctionId))
 
                 print(colAuctionId,'Auction failed!!!!!!!!!')
 
