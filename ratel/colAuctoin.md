@@ -33,8 +33,8 @@ sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 
 #### pull docker image & enter the container
 ```
-sudo docker pull initc3/honeybadgerswap:8fc1863
-sudo docker tag initc3/honeybadgerswap:8fc1863 hbswap:latest
+sudo docker pull initc3/honeybadgerswap:latest
+sudo docker tag initc3/honeybadgerswap:latest hbswap:latest
 sudo docker-compose up -d
 sudo docker exec -it honeybadgerswap_dev_1 bash
 ```
@@ -68,7 +68,9 @@ python3 -m ratel.src.python.refill client_1 0 \
 & python3 -m ratel.src.python.refill client_3 0 \
 & python3 -m ratel.src.python.refill client_4 0 \
 & python3 -m ratel.src.python.refill client_5 0 \
-& python3 -m ratel.src.python.refill client_6 0
+& python3 -m ratel.src.python.refill client_6 0 \
+& python3 -m ratel.src.python.refill client_7 0 \
+& python3 -m ratel.src.python.refill client_8 0
 ```
 #### Start MPC servers to monitor events emitted by application contract and take MPC tasks:
 
