@@ -55,7 +55,8 @@ if __name__=='__main__':
         
         for aucId in liveAuct:
             status = appContract.functions.status(aucId).call()
-            print('status:',aucId,status)
+            if ccnt == 1000:
+                print('status:',aucId,status)
             if status == 1:
                 liveAuct.remove(aucId)
                 print("cur Live Auct Id(removing):",liveAuct)
