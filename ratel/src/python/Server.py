@@ -1,3 +1,5 @@
+import json
+
 import aiohttp_cors
 import ast
 import asyncio
@@ -54,6 +56,18 @@ class Server:
         #     pass
         # print('**** input_mask_queue_tail', self.input_mask_queue_tail)
 
+        self.zkrpShares = {}
+
+
+    async def get_zkrp_shares(self, players, inputmask_idxes):
+        request = f"zkrp_share_idxes/{inputmask_idxes}"
+        results = await send_requests(players, request)
+        parsed_results = []
+        for i in range(len(results)):
+            parsed_results.append(json.loads(results[i]['zkrp_share_idx']))
+
+        return parsed_results
+
 
     async def http_server(self):
 
@@ -97,6 +111,18 @@ class Server:
         #     print(f"s{self.serverID} response: {res}")
         #     return web.json_response(data)
 
+        async def handler_mpc_verify(request):
+            print(f"s{self.serverID} request: s{request} request from {request.remote}")
+            mask_idx = re.split(',', request.match_info.get("mask_idxes"))[0]
+
+            while mask_idx not in self.zkrpShares.keys():
+                await asyncio.sleep(1)
+
+            data = {
+                "zkrp_share_idx": json.dumps(self.zkrpShares[mask_idx]),
+            }
+            return web.json_response(data)
+
 
         app = web.Application()
 
@@ -112,6 +138,9 @@ class Server:
         cors.add(resource.add_route("GET", handler_inputmask))
         # resource = cors.add(app.router.add_resource("/recoverdb/{list}"))
         # cors.add(resource.add_route("GET", handler_recover_db))
+        resource = cors.add(app.router.add_resource("/zkrp_share_idxes/{mask_idxes}"))
+        cors.add(resource.add_route("GET", handler_mpc_verify))
+
 
         print('Starting http server...')
         runner = web.AppRunner(app)
