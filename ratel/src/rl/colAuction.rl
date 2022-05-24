@@ -75,7 +75,6 @@ contract colAuction{
                 set(status, uint curStatus, uint colAuctionId)
             
             else:
-                n = len(bids)
                 amtSold = 0
 
                 aucDone = 0
