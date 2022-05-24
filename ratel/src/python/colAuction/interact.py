@@ -79,6 +79,8 @@ if __name__=='__main__':
     client_4 = getAccount(web3,f'/opt/poa/keystore/client_7/')
     client_5 = getAccount(web3,f'/opt/poa/keystore/client_8/')
 
+    aucapp_addr = getAccount(web3,f'/opt/poa/keystore/client_2/').address
+
     totalAmt1 = 20
     StartPrice1 = 100
     FloorPrice1 = 10 
