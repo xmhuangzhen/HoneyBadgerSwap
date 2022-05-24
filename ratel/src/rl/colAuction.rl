@@ -45,6 +45,16 @@ contract colAuction{
         creatorAddrList[colAuctionId] = msg.sender;
     }
 
+    pureMpc checkFail(server, token_addr, i, colAuctionId) {
+        bids = readDB(f'bidsBoard_{colAuctionId}_{i+1}', dict)
+    
+        vi = bids['valid']
+        pricei = bids['price']
+        Pi = bids['address']
+        Amti = bids['amt']
+
+        print('checkFail',i)
+    } 
 
     function scheduleCheck(uint colAuctionId) public {
         uint lastTime = checkTime[colAuctionId];
@@ -72,6 +82,9 @@ contract colAuction{
 
 
             if curPrice < FloorPrice:
+
+                for i in range(n):
+                    server.loop.create_task(runCheckFail(server, token_addr, i, colAuctionId))
 
                 print(colAuctionId,'Auction failed!!!!!!!!!')
 
