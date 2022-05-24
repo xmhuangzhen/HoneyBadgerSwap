@@ -79,10 +79,7 @@ contract colAuction{
                 n = len(bids)
                 amtSold = 0
 
-                mpcInput(sint amtSold, sint totalAmt,sint cur_eth_creator_balance,sint curPrice,sint totalAmt)
-                aucDone = (amtSold.greater_equal(totalAmt,bit_length = bit_length))*(cur_eth_creator_balance.greater_equal(curPrice*totalAmt,bit_length=bit_length))
-                aucDone = aucDone.reveal()
-                mpcOutput(cint aucDone)
+                aucDone = 0
 
                 if aucDone == 1:
                     print(colAuctionId,'Auction success!!!!!!!!!')
