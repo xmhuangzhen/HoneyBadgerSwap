@@ -105,16 +105,29 @@ contract colAuction{
 
         uint FloorPrice = floorPriceList[colAuctionId];
 
-        mpc(uint colAuctionId, uint bidders_id, uint FloorPrice, $uint price, address P, $uint Amt){
-            bids = readDB(f'bidsBoard_{colAuctionId}', list)
+        address token_addr = tokenAddrList[colAuctionId];
+        address appAddr = appAddrList[colAuctionId];
 
-            mpcInput(sint price, sint FloorPrice)
-            valid = (price.greater_equal(FloorPrice, bit_length=bit_length)).reveal()
-            mpcOutput(cint valid)
+        mpc(uint colAuctionId, uint bidders_id, uint FloorPrice, $uint price, address P, $uint Amt, address token_addr, address appAddr){
+            cur_token_balance = readDB(f'balanceBoard_{token_addr}_{P}',int)
+            cur_app_balance = readDB(f'balanceBoard_{token_addr}_{appAddr}',int)
 
-            if valid == 1:
-                bids.append((price,P,Amt))
-            writeDB(f'bidsBoard_{colAuctionId}',bids,list)
+            mpcInput(sint cur_token_balance,sint cur_app_balance,sint price,sint Amt)
+            valid = cur_token_balance.greater_equal(price*Amt,bit_length=bit_length)
+            cur_token_balance = cur_token_balance - valid*price*Amt
+            cur_app_balance = cur_app_balance + valid*price*Amt
+            mpcOutput(sint valid,sint cur_token_balance,sint cur_app_balance)
+
+            bid = {
+                'price': price,
+                'amt': Amt,
+                'address': P,
+                'valid':valid,
+            }
+
+            writeDB(f'bidsBoard_{colAuctionId}_{bidders_id}',bid,dict)
+            writeDB(f'balanceBoard_{token_addr}_{P}',cur_token_balance,int)
+            writeDB(f'balanceBoard_{token_addr}_{appAddr}',cur_app_balance,int)
             
             curStatus = bidders_id+2
             set(status, uint curStatus, uint colAuctionId)
