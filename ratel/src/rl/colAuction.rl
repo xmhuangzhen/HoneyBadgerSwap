@@ -75,9 +75,6 @@ contract colAuction{
             else:
                 amtSold = 0
 
-                for i in range(n):
-                    amtSold = await runCheckAuction(server, i, colAuctionId, curPrice, amtSold)
-
                 cur_eth_creator_balance = readDB(f'balanceBoard_{0}_{creatorAddr}',int)
 
                 mpcInput(sint amtSold, sint totalAmt,sint cur_eth_creator_balance,sint curPrice,sint totalAmt)
@@ -116,26 +113,6 @@ contract colAuction{
 
         }
     }
-
-
-    pureMpc checkAuction(server, i, colAuctionId, curPrice,amtSold) {
-        bids = readDB(f'bidsBoard_{colAuctionId}_{i+1}', dict)
-
-        Xi = bids['price']
-        Amti = bids['amt']
-        vi = bids['valid']
-
-        mpcInput(sint Xi, sint curPrice, sint Amti, sint amtSold, sint vi)
-        
-        v1 = (curPrice.less_equal(Xi,bit_length = bit_length))
-        tmpamt = Amti*v1
-        amtSold = amtSold + tmpamt*vi
-
-        mpcOutput(sint amtSold)
-
-        return amtSold
-    }
-
 
     function initClient(address token_addr) public{
         address user_addr = msg.sender;
