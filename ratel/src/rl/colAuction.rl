@@ -136,9 +136,6 @@ contract colAuction{
 
         cur_token_balance = readDB(f'balanceBoard_{token_addr}_{Pi}',int)
 
-        mpcInput(sint cur_token_balance,sint pricei,sint Amti,sint vi)
-        cur_token_balance = cur_token_balance + vi*pricei*Amti
-        mpcOutput(sint cur_token_balance)
 
         writeDB(f'balanceBoard_{token_addr}_{Pi}',cur_token_balance,int)
     }
