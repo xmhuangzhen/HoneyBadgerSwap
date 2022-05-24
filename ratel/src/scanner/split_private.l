@@ -181,8 +181,9 @@ void processPureMpc() {
         textFuncUpper += ", " + args[i];
     }
 
-    textFuncUpper += ", port=4900):\n";
+    textFuncUpper += "):\n";
 
+    textFuncUpper += "    seq" + funcName + " = -1\n";
     textFuncUpper += "\n";
 
 }
@@ -335,7 +336,7 @@ void acquireLocks() {
         textFuncUpper += "            tasks.append(server.dbLock[key].acquire())\n";
     }
 
-    if (!inPureMpc) textFuncUpper += "    port = mpcPort(seq" + funcName + ", server.concurrency)\n";
+    textFuncUpper += "    port = mpcPort(seq" + funcName + ", server.concurrency)\n";
     textFuncUpper += "    tasks.append(server.portLock[port].acquire())\n";
 
     textFuncUpper += "    await asyncio.wait(tasks)\n";
@@ -722,4 +723,3 @@ int main(int argc, char **argv) {
 
 	return 0;
 }
-
