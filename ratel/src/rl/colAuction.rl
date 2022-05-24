@@ -51,7 +51,7 @@ contract colAuction{
         require(lastTime + 10 < curTime);
         checkTime[colAuctionId] = block.number;
 
-        uint curPrice = curPriceList[colAuctionId]*(50-curTime+lastTime)/50;
+        uint curPrice = curPriceList[colAuctionId]*(100-curTime+lastTime)/100;
         curPriceList[colAuctionId] = curPrice;
 
         uint FloorPrice = floorPriceList[colAuctionId];
@@ -64,8 +64,10 @@ contract colAuction{
         uint n = biddersCnt[colAuctionId];
 
         mpc(uint colAuctionId, uint n, uint curPrice, uint FloorPrice, uint totalAmt, address token_addr, address appAddr, address creatorAddr){
-            bids = readDB(f'bidsBoard_{colAuctionId}', list)
 
+            cur_token_creator_balance = readDB(f'balanceBoard_{token_addr}_{creatorAddr}',int)
+            cur_token_app_balance = readDB(f'balanceBoard_{token_addr}_{appAddr}',int)
+            cur_eth_creator_balance = readDB(f'balanceBoard_{0}_{creatorAddr}',int)
 
             if curPrice < FloorPrice:
                 print(colAuctionId,'Auction failed!!!!!!!!!')
@@ -77,16 +79,9 @@ contract colAuction{
                 n = len(bids)
                 amtSold = 0
 
-                for i in range(n):
-                    (Xi,Pi,Amti) = bids[i]
-
-                    mpcInput(sint Xi, sint curPrice, sint Amti, sint amtSold, sint totalAmt)
-                    valid = (curPrice.less_equal(Xi,bit_length = bit_length))
-                    amtSold += Amti*valid
-                    mpcOutput(sint amtSold)
-
-                mpcInput(sint amtSold, sint totalAmt)
-                aucDone = (amtSold.greater_equal(totalAmt,bit_length = bit_length).reveal())
+                mpcInput(sint amtSold, sint totalAmt,sint cur_eth_creator_balance,sint curPrice,sint totalAmt)
+                aucDone = (amtSold.greater_equal(totalAmt,bit_length = bit_length))*(cur_eth_creator_balance.greater_equal(curPrice*totalAmt,bit_length=bit_length))
+                aucDone = aucDone.reveal()
                 mpcOutput(cint aucDone)
 
                 if aucDone == 1:
@@ -94,6 +89,9 @@ contract colAuction{
                     curStatus = 1
                     set(status, uint curStatus, uint colAuctionId)
 
+            writeDB(f'balanceBoard_{0}_{creatorAddr}',cur_eth_creator_balance,int)
+            writeDB(f'balanceBoard_{token_addr}_{creatorAddr}',cur_token_creator_balance,int)
+            writeDB(f'balanceBoard_{token_addr}_{appAddr}',cur_token_app_balance,int)
         }
     }
 
