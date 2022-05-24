@@ -104,15 +104,16 @@ contract colAuction{
                     
                     mpcOutput(sint cur_token_app_balance)
 
+                writeDB(f'balanceBoard_{0}_{creatorAddr}',cur_eth_creator_balance,int)
+                writeDB(f'balanceBoard_{token_addr}_{creatorAddr}',cur_token_creator_balance,int)
+                writeDB(f'balanceBoard_{token_addr}_{appAddr}',cur_token_app_balance,int)
 
+                if aucDone == 1:
                     print(colAuctionId,'Auction success!!!!!!!!!')
                     curStatus = 1
                     set(status, uint curStatus, uint colAuctionId)
 
-                writeDB(f'balanceBoard_{0}_{creatorAddr}',cur_eth_creator_balance,int)
-            
-            writeDB(f'balanceBoard_{token_addr}_{creatorAddr}',cur_token_creator_balance,int)
-            writeDB(f'balanceBoard_{token_addr}_{appAddr}',cur_token_app_balance,int)
+
         }
     }
 
