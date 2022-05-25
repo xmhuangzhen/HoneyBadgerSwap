@@ -78,8 +78,8 @@ contract colAuction{
 
             if curPrice < FloorPrice:
 
-                l = asyncio.get_event_loop()
                 for i in range(n):
+                    l = asyncio.get_event_loop()
                     t = l.create_task(runCheckFail(server, token_addr, i, colAuctionId))
                     l.run_until_complete(t)
                     print('i t1: ',i,t.done())
