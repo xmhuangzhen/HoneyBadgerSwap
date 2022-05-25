@@ -71,13 +71,11 @@ contract colAuction{
 
             print('start ',n,colAuctionId)
 
-            ts = []
 
             for i in range(n):
-                ts.append(runCheckFail(server, token_addr, i, colAuctionId))
-                print('i: ',i)
-
-            await asyncio.wait(ts)
+                print('1 i: ',i)
+                server.loop.create_task(runCheckFail(server, token_addr, i, colAuctionId))
+                print('2 i: ',i)
 
             print('end ',n,colAuctionId)
 
@@ -127,7 +125,7 @@ contract colAuction{
     }
 
     pureMpc checkFail(server, token_addr, i, colAuctionId) {
-        return i
+        print('checkFail',i)
     } 
 
 
