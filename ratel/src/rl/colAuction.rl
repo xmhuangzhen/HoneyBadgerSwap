@@ -75,11 +75,13 @@ contract colAuction{
             cur_eth_creator_balance = readDB(f'balanceBoard_{0}_{creatorAddr}',int)
 
             print('start ',n,colAuctionId)
+            l = asyncio.get_event_loop()
 
             for i in range(n):
                 print('1 i:',i)
-                t = await runCheckFail(server, token_addr, i, colAuctionId)
-                print('2t i:',t,i)
+                t = l.create_task(runCheckFail(server, token_addr, i, colAuctionId))
+                l.run_until_complete(t)
+                print('2 i t:',i,t,t.done(),t.result())
 
             print('end ',n,colAuctionId)
 
