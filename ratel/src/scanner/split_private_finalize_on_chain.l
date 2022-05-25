@@ -86,6 +86,10 @@ void initPython() {
     textPythonUpper += "from ratel.src.python.utils import location_sharefile, prog, mpcPort, blsPrime, sz, int_to_hex, hex_to_int, recover_input, fp, MultiAcquire\n";
     textPythonUpper += "\n";
 
+    textPythonUpper += "import nest_asyncio\n";
+    textPythonUpper += "nest_asyncio.apply()\n";
+
+
     textPythonUpper += "async def monitor(server, loop):\n";
     textPythonUpper += "    blkNum = server.web3.eth.get_block_number()\n";
     textPythonUpper += "    while True:\n";
