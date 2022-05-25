@@ -50,7 +50,7 @@ string removeType(string st) {
 
 
 string getType(string st) {
-    for (int i = st.length() - 1; i >= 0; i--) {
+    for (int i = 0; i < st.length(); i++) {
         if (st[i] == ' ') {
             return st.substr(0, i);
         }
@@ -80,18 +80,47 @@ string getFuncName(string st) {
 }
 
 
+string argWithType(string arg, bool isEvent=false) {
+    string ret;
+    if (arg[0] == '$') {
+        string varType = getType(arg).substr(1);
+        string postVarName = removeType(arg);
+        postVarName[0] = toupper(postVarName[0]);
+        string tmp = "";
+        string mem = isEvent ? "" : "memory" ;
+        if (varType[0] == '#') {
+            varType = varType.substr(1);
+            tmp = ", uint idx" + postVarName + "Blinding, uint masked" + postVarName + "Blinding, uint8[] " + mem + " proof" + postVarName + ", uint8[] " + mem + " commitment" + postVarName;
+        }
+        ret = "uint idx" + postVarName + ", uint masked" + postVarName + tmp;
+    } else {
+        ret = arg;
+    }
+    return ret;
+}
+
+
+string argWithoutType(string arg) {
+    string ret;
+    if (arg[0] == '$') {
+        string postVarName = removeType(arg);
+        postVarName[0] = toupper(postVarName[0]);
+        ret = "idx" + postVarName + ", masked" + postVarName;
+        if (arg[1] == '#') {
+            ret += ", idx" + postVarName + "Blinding, masked" + postVarName + "Blinding, proof" + postVarName + ", commitment" + postVarName;
+        }
+    } else {
+        ret = removeType(arg);
+    }
+    return ret;
+}
+
+
 void addEventDeclare() {
     textPublicEvents += "    event " + funcName + "(uint seq" + funcName;
     for (int i = 0; i < args.size(); i++) {
-        textPublicEvents += ", ";
-        if (args[i][0] == '$') {
-            string varType = getType(args[i]).substr(1);
-            string postVarName = removeType(args[i]);
-            postVarName[0] = toupper(postVarName[0]);
-            textPublicEvents += "uint idx" + postVarName + ", " + varType + " masked" + postVarName;
-        } else {
-            textPublicEvents += args[i];
-        }
+        textPublicEvents += ", " + argWithType(args[i], true);
+
     }
     textPublicEvents += ");\n";
 }
@@ -104,36 +133,17 @@ void addEventEmit() {
         textRecover += "pass\n\n";
     } else {
         for (int i = 0; i < args.size(); i++) {
-            if (i > 0) textRecover += ", ";
-            if (args[i][0] == '$') {
-                string postVarName = removeType(args[i]);
-                postVarName[0] = toupper(postVarName[0]);
-                textRecover += "idx" + postVarName + ", masked" + postVarName;
-            } else {
-                textRecover += removeType(args[i]);
-            }
+            textRecover += argWithoutType(args[i]) + ", ";
         }
         textRecover += " = decode_single(\'(";
         for (int i = 0; i < args.size(); i++) {
             if (i > 0) textRecover += ",";
-            if (args[i][0] == '$') {
-                string varType = getType(args[i]).substr(1);
-                textRecover += "uint256," + varType;
-            } else {
-                textRecover += getType(args[i]);
-            }
+            textRecover += argWithType(args[i], true);
         }
         textRecover += ")\', opContent)\n";
-        textRecover += "        return recover" + funcName + "(opSeq";
+        textRecover += "        return eval(f'\{op\}" + funcName + "')(opSeq";
         for (int i = 0; i < args.size(); i++) {
-            textRecover += ", ";
-            if (args[i][0] == '$') {
-                string postVarName = removeType(args[i]);
-                postVarName[0] = toupper(postVarName[0]);
-                textRecover += "idx" + postVarName + ", masked" + postVarName;
-            } else {
-                textRecover += removeType(args[i]);
-            }
+            textRecover += ", " + argWithoutType(args[i]);
         }
         textRecover += ")\n";
         textRecover += "\n";
@@ -144,27 +154,14 @@ void addEventEmit() {
     textPublic += "        opContent[seq" + funcName + "] = abi.encode(";
     for (int i = 0; i < args.size(); i++) {
         if (i > 0) textPublic += ", ";
-        if (args[i][0] == '$') {
-            string postVarName = removeType(args[i]);
-            postVarName[0] = toupper(postVarName[0]);
-            textPublic += "idx" + postVarName + ", masked" + postVarName;
-        } else {
-            textPublic += removeType(args[i]);
-        }
+        textPublic += argWithoutType(args[i]);
     }
     textPublic += ");\n";
     textPublic += "\n";
 
     textPublic += "        emit " + funcName + "(seq" + funcName ;
     for (int i = 0; i < args.size(); i++) {
-        textPublic += ", ";
-        if (args[i][0] == '$') {
-            string postVarName = removeType(args[i]);
-            postVarName[0] = toupper(postVarName[0]);
-            textPublic += "idx" + postVarName + ", " + "masked" + postVarName;
-        } else {
-            textPublic += removeType(args[i]);
-        }
+        textPublic += ", " + argWithoutType(args[i]);
     }
     textPublic += ");\n";
 }
@@ -181,14 +178,7 @@ void addMpcParam() {
 void addFuncParam() {
     for (int i = 0; i < args.size(); i++) {
         if (i > 0) textLine += ", ";
-        if (args[i][0] == '$') {
-            string varType = getType(args[i]).substr(1);
-            string postVarName = removeType(args[i]);
-            postVarName[0] = toupper(postVarName[0]);
-            textLine += "uint idx" + postVarName + ", " + varType + " masked" + postVarName;
-        } else {
-            textLine += args[i];
-        }
+        textLine += argWithType(args[i]);
     }
 }
 
@@ -200,10 +190,30 @@ void addInputMaskCheck() {
         varName[0] = toupper(varName[0]);
         if (args[i][0] == '$') {
             textLine += "        require(inputMaskOwner[idx" + varName + "] == msg.sender);\n";
+            if (args[i][1] == '#') {
+                textLine += "        require(inputMaskOwner[idx" + varName + "Blinding] == msg.sender);\n";
+            }
             flag = true;
         }
     }
     if (flag) textLine += "\n";
+}
+
+
+void declareVariable(string varName, string type, vector<string> args) {
+    if (args.size() > 2) {
+        textPublicExtraFunctions += "    ";
+        for (int i = 2; i < args.size(); i++) {
+            textPublicExtraFunctions += "mapping(" + getType(args[i]) + " => ";
+        }
+        textPublicExtraFunctions += type;
+        for (int i = 2; i < args.size(); i++) {
+            textPublicExtraFunctions += ")";
+        }
+        textPublicExtraFunctions += " public " + varName + ";\n";
+    } else {
+        textPublicExtraFunctions += "    " + type + " public " + varName + ";\n";
+    }
 }
 
 
@@ -217,33 +227,44 @@ void setData() {
         string type = getType(args[1]);
         string parameter = "";
         for (int i = 2; i < args.size(); i++) {
-            parameter += "[" + removeType(args[i]) + "]";
+          parameter += "[" + removeType(args[i]) + "]";
         }
 
+        string varNameValue = varName + "Value";
+        string varNameCount = varName + "Count";
+
+        /* declare variables */
+        args.push_back("address ");
+        declareVariable(varNameValue, type, args);
+        args.pop_back();
+        args.push_back(type + " ");
+        declareVariable(varNameCount, "uint", args);
+        args.pop_back();
+
+        /* define function call */
         textPublicExtraFunctions += "    function " + varName + "Set(";
         for (int i = 1; i < args.size(); i++) {
             if (i > 1) textPublicExtraFunctions += ", ";
             textPublicExtraFunctions += args[i];
         }
-        textPublicExtraFunctions += ") public {\n";
+        textPublicExtraFunctions += ") public onlyServer {\n";
         textPublicExtraFunctions += "        address server = msg.sender;\n";
-        textPublicExtraFunctions += "        require(isServer[server]);\n";
         if (type == "string memory") {
-            textPublicExtraFunctions += "        if (bytes(" + varName + "Value[server]).length > 0) {\n";
-            textPublicExtraFunctions += "            " + varName + "Count[" + varName + "Value[server]]--;\n";
+            textPublicExtraFunctions += "        if (bytes(" + varNameValue + parameter + "[server]).length > 0) {\n";
+            textPublicExtraFunctions += "            " + varNameCount + parameter + "[" + varNameValue + parameter + "[server]]--;\n";
             textPublicExtraFunctions += "        }\n";
         } else if (type == "uint") {
-            textPublicExtraFunctions += "        if (" + varName + "Value[server] != 0) {\n";
-            textPublicExtraFunctions += "            " + varName + "Count[" + varName + "Value[server]]--;\n";
+            textPublicExtraFunctions += "        if (" + varNameValue + parameter + "[server] != 0) {\n";
+            textPublicExtraFunctions += "            " + varNameCount + parameter + "[" + varNameValue + parameter + "[server]]--;\n";
             textPublicExtraFunctions += "        }\n";
         } else if (type == "address") {
-            textPublicExtraFunctions += "        if (" + varName + "Value[server] != address(0)) {\n";
-            textPublicExtraFunctions += "            " + varName + "Count[" + varName + "Value[server]]--;\n";
+            textPublicExtraFunctions += "        if (" + varNameValue + parameter + "[server] != address(0)) {\n";
+            textPublicExtraFunctions += "            " + varNameCount + parameter + "[" + varNameValue + parameter + "[server]]--;\n";
             textPublicExtraFunctions += "        }\n";
         }
-        textPublicExtraFunctions += "        " + varName + "Value[server] = " + value + ";\n";
-        textPublicExtraFunctions += "        " + varName + "Count[" + varName + "Value[server]]++;\n";
-        textPublicExtraFunctions += "        if (" + varName + "Count[" + value + "] > T) {\n";
+        textPublicExtraFunctions += "        " + varNameValue + parameter + "[server] = " + value + ";\n";
+        textPublicExtraFunctions += "        " + varNameCount + parameter + "[" + varNameValue + parameter + "[server]]++;\n";
+        textPublicExtraFunctions += "        if (" + varNameCount + parameter + "[" + value + "] > T) {\n";
         textPublicExtraFunctions += "            " + varName + parameter + " = " + value + ";\n";
         textPublicExtraFunctions += "        }\n";
         textPublicExtraFunctions += "    }\n";
@@ -255,34 +276,48 @@ void setData() {
 
 void addData() {
     string varName = args[0];
-    string opName = removeType(args[1]);
-    opName = opName.substr(3, opName.length());
-    opName[0] = tolower(opName[0]);
 
-    if (addDataPool.find(opName) == addDataPool.end()) {
-        addDataPool.insert(opName);
+    if (addDataPool.find(varName) == addDataPool.end()) {
+        assert(args.size() > 2);
+        addDataPool.insert(varName);
 
-        string value = removeType(args[2]);
-        string parameter = "";
-        for (int i = 3; i < args.size(); i++) {
-          parameter += "[" + removeType(args[i]) + "]";
+        string value = removeType(args[1]);
+        string type = getType(args[1]);
+        string parameterWithoutSeq = "";
+        for (int i = 2; i < args.size() - 1; i++) {
+            parameterWithoutSeq += "[" + removeType(args[i]) + "]";
         }
+        string parameter = parameterWithoutSeq + "[" + removeType(args.back()) + "]";
 
-        textPublicExtraFunctions += "    function " + opName + "Add(";
+        string varNameValue = varName + "Value";
+        string varNameCount = varName + "Count";
+        string varNameFinish = varName + "Finish";
+
+        /* declare variables */
+        args.push_back("address ");
+        declareVariable(varNameValue, type, args);
+        args.pop_back();
+        args.push_back(type + " ");
+        declareVariable(varNameCount, "uint", args);
+        args.pop_back();
+        declareVariable(varNameFinish, "bool", args);
+
+        /* define function call */
+
+        textPublicExtraFunctions += "    function " + varName + "Add(";
         for (int i = 1; i < args.size(); i++) {
           if (i > 1) textPublicExtraFunctions += ", ";
           textPublicExtraFunctions += args[i];
         }
-        textPublicExtraFunctions += ") public {\n";
+        textPublicExtraFunctions += ") public onlyServer {\n";
         textPublicExtraFunctions += "        address server = msg.sender;\n";
-        textPublicExtraFunctions += "        require(isServer[server]);\n";
-        textPublicExtraFunctions += "        require(" + opName + "Value[server][" + removeType(args[1]) + "] == 0);\n";
-        textPublicExtraFunctions += "        require(" + opName + "Finish[" + removeType(args[1]) + "] == false);\n";
-        textPublicExtraFunctions += "        " + opName + "Value[server][" + removeType(args[1]) + "] = " + value + ";\n";
-        textPublicExtraFunctions += "        " + opName + "Count[" + removeType(args[1]) + "][" + value + "]++;\n";
-        textPublicExtraFunctions += "        if (" + opName + "Count[" + removeType(args[1]) + "][" + value + "] > T) {\n";
-        textPublicExtraFunctions += "            " + opName + "Finish[" + removeType(args[1]) + "] = true;\n";
-        textPublicExtraFunctions += "            " + varName + parameter + " += " + value + ";\n";
+        textPublicExtraFunctions += "        require(" + varNameValue + parameter + "[server] == 0);\n";
+        textPublicExtraFunctions += "        require(" + varNameFinish + parameter + " == false);\n";
+        textPublicExtraFunctions += "        " + varNameValue + parameter + "[server] = " + value + ";\n";
+        textPublicExtraFunctions += "        " + varNameCount + parameter + "[" + value + "]++;\n";
+        textPublicExtraFunctions += "        if (" + varNameCount + parameter + "[" + value + "] > T) {\n";
+        textPublicExtraFunctions += "            " + varNameFinish + parameter + " = true;\n";
+        textPublicExtraFunctions += "            " + varName + parameterWithoutSeq + " += " + value + ";\n";
         textPublicExtraFunctions += "        }\n";
         textPublicExtraFunctions += "    }\n";
         textPublicExtraFunctions += "\n";
@@ -291,34 +326,21 @@ void addData() {
 }
 
 
-void callFunc(string op) {
+void callFunc(string op, int init) {
     string varName = args[0];
-    string opName;
-    int init;
-    if (op == "Add") {
-        opName = removeType(args[1]);
-        opName = opName.substr(3, opName.length());
-        opName[0] = tolower(opName[0]);
-        init = 1;
-    } else {
-        assert(op == "Set");
-        opName = args[0];
-    }
 
     textPrivate += "\n";
-    textPrivate += indent + "tx = server.contract.functions." + opName + op + "(";
+    textPrivate += indent + "tx = server.contract.functions." + varName + op + "(";
     for (int i = 1; i < args.size(); i++) {
         if (i > 1) textPrivate += ", ";
         textPrivate += removeType(args[i]);
     }
     textPrivate += ").buildTransaction({'from': server.account.address, 'gas': 1000000, 'nonce': server.web3.eth.get_transaction_count(server.account.address)})\n";
-    textPrivate += indent + "signedTx = server.web3.eth.account.sign_transaction(tx, private_key=server.account.privateKey)\n";
-    textPrivate += indent + "server.web3.eth.send_raw_transaction(signedTx.rawTransaction)\n";
-    textPrivate += indent + "server.web3.eth.wait_for_transaction_receipt(signedTx.hash)\n";
+    textPrivate += indent + "sign_and_send(tx, server.web3, server.account)\n";
     textPrivate += indent + "print(server.contract.functions." + varName + "(";
 
-    for (int i = 2 + init; i < args.size(); i++) {
-        if (i > 2 + init) textPrivate += ", ";
+    for (int i = 2; i < args.size() - init; i++) {
+        if (i > 2) textPrivate += ", ";
         textPrivate += removeType(args[i]);
     }
     textPrivate += ").call())\n";
@@ -443,7 +465,7 @@ SPACE [ \t\r]+
 \n {
     textLine += string(yytext);
 
-    //printf("textLine:%s", textLine.c_str());
+//    printf("textLine:%s", textLine.c_str());
 
     if (isMpc) {
         if (braces == mpcBracesPos) {
@@ -460,13 +482,13 @@ SPACE [ \t\r]+
             textPrivate += textLine.substr(mpcIndentLen);
         } else if (isSetData) {
             setData();
-            callFunc("Set");
+            callFunc("Set", 0);
 
             isSetData = false;
             args.clear();
         } else if (isAddData) {
             addData();
-            callFunc("Add");
+            callFunc("Add", 1);
 
             isAddData = false;
             args.clear();
@@ -489,8 +511,6 @@ SPACE [ \t\r]+
         textPublic += textLine;
     }
 
-    //printf("-\n");
-
     textLine = "";
 }
 %%
@@ -502,7 +522,7 @@ int main(int argc, char **argv) {
 
     textRecover += "from eth_abi import decode_single\n";
     textRecover += "\n";
-    textRecover += "def recover(contract, opSeq):\n";
+    textRecover += "def recover(contract, opSeq, op):\n";
     textRecover += "    opEvent = contract.functions.opEvent(opSeq).call()\n";
     textRecover += "    opContent = contract.functions.opContent(opSeq).call()\n";
     textRecover += "\n";
