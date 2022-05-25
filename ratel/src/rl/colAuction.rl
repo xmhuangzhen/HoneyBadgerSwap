@@ -77,7 +77,7 @@ contract colAuction{
             print('start ',n,colAuctionId)
 
             for i in range(n):
-                print('1t i:',t,i)
+                print('1 i:',i)
                 t = await runCheckFail(server, token_addr, i, colAuctionId)
                 print('2t i:',t,i)
 
