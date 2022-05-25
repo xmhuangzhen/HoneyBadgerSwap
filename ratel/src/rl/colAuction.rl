@@ -88,7 +88,7 @@ contract colAuction{
                 for i in range(n):
                     t = server.loop.create_task(runCheckFail(server, token_addr, i, colAuctionId))
                     print('t1: ',t.done())
-                    while !t.done():
+                    while t.done() == False:
                         time.sleep(1)
                     print('t2: ',t.done())
 
