@@ -90,6 +90,7 @@ contract colAuction{
                     print('t1: ',t.done())
                     while t.done() == False:
                         time.sleep(1)
+                        print('t1: ',t.done())
                     print('t2: ',t.done())
 
                 print(colAuctionId,'Auction failed!!!!!!!!!')
