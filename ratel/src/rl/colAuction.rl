@@ -47,8 +47,7 @@ contract colAuction{
 
     pureMpc checkFail(server, token_addr, i, colAuctionId) {
 
-        print('checkFail',i)
-
+        return i
     } 
 
     function scheduleCheck(uint colAuctionId) public {
@@ -75,11 +74,15 @@ contract colAuction{
             cur_token_app_balance = readDB(f'balanceBoard_{token_addr}_{appAddr}',int)
             cur_eth_creator_balance = readDB(f'balanceBoard_{0}_{creatorAddr}',int)
 
+            for i in range(n):
+                t = await runCheckFail(server, token_addr, i, colAuctionId)
+                print('2t i:',t,i)
 
             if curPrice < FloorPrice:
 
                 for i in range(n):
-                    await runCheckFail(server, token_addr, i, colAuctionId)
+                    t = await runCheckFail(server, token_addr, i, colAuctionId)
+                    print('t i:',t,i)
                 
                 print(colAuctionId,'Auction failed!!!!!!!!!')
 
