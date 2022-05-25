@@ -82,6 +82,8 @@ contract colAuction{
                 l = asyncio.get_event_loop()
                 for i in range(n):
                     ts.append(runCheckFail(server, token_addr, i, colAuctionId))
+                print('ts: ',ts)
+                print('n: ',n)
                 g = asyncio.gather(*ts)
                 res = l.run_until_complete(g)
                 print('res:',res)

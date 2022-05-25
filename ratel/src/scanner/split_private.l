@@ -103,6 +103,10 @@ void initPython() {
     textPythonUpper += "from ratel.src.python.utils import location_sharefile, prog, mpcPort, prime, sz, int_to_hex, hex_to_int, recover_input, fp, replay, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd\n";
     textPythonUpper += "\n";
 
+    textPythonUpper += "import nest_asyncio\n";
+    textPythonUpper += "nest_asyncio.apply()\n";
+
+
     textPythonUpper += "async def monitor(server):\n";
     textPythonUpper += "    blkNum = server.web3.eth.get_block_number()\n";
     textPythonUpper += "    while True:\n";
