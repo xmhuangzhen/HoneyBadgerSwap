@@ -81,8 +81,8 @@ contract colAuction{
                 l = asyncio.get_event_loop()
                 for i in range(n):
                     t = l.create_task(runCheckFail(server, token_addr, i, colAuctionId))
-                    print('t1: ',t.done())
                     l.run_until_complete(t)
+                    print('i t1: ',i,t.done())
 
                 print(colAuctionId,'Auction failed!!!!!!!!!')
 
