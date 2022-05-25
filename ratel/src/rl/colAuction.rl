@@ -45,11 +45,6 @@ contract colAuction{
         creatorAddrList[colAuctionId] = msg.sender;
     }
 
-    pureMpc checkFail(server, token_addr, i, colAuctionId) {
-
-        return i
-    } 
-
     function scheduleCheck(uint colAuctionId) public {
         uint lastTime = checkTime[colAuctionId];
         uint curTime = block.number;
@@ -130,6 +125,12 @@ contract colAuction{
 
         }
     }
+
+    pureMpc checkFail(server, token_addr, i, colAuctionId) {
+        return i
+    } 
+
+
 
     function submitBids(uint colAuctionId, $uint price, $uint Amt) public {
         address P = msg.sender;
