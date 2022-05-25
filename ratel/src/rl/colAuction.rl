@@ -85,6 +85,7 @@ contract colAuction{
                 print('ts: ',ts)
                 print('n: ',n)
                 g = asyncio.gather(*ts)
+                print('g: ', g)
                 res = l.run_until_complete(g)
                 print('res:',res)
 
