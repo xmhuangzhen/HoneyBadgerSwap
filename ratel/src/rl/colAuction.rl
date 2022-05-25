@@ -74,10 +74,14 @@ contract colAuction{
             cur_token_app_balance = readDB(f'balanceBoard_{token_addr}_{appAddr}',int)
             cur_eth_creator_balance = readDB(f'balanceBoard_{0}_{creatorAddr}',int)
 
+            print('start ',n,colAuctionId)
+
             for i in range(n):
                 print('1t i:',t,i)
                 t = await runCheckFail(server, token_addr, i, colAuctionId)
                 print('2t i:',t,i)
+
+            print('end ',n,colAuctionId)
 
             if curPrice < FloorPrice:
 
