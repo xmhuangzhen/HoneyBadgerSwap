@@ -83,7 +83,7 @@ contract colAuction{
                 for i in range(n):
                     ts.append(runCheckFail(server, token_addr, i, colAuctionId))
                 g = asyncio.gather(*ts)
-                res = loop.run_until_complete(g)
+                res = l.run_until_complete(g)
                 print('res:',res)
 
                 
