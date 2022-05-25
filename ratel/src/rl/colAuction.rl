@@ -81,17 +81,13 @@ contract colAuction{
             cur_token_app_balance = readDB(f'balanceBoard_{token_addr}_{appAddr}',int)
             cur_eth_creator_balance = readDB(f'balanceBoard_{0}_{creatorAddr}',int)
 
-            import time
 
             if curPrice < FloorPrice:
 
                 for i in range(n):
                     t = server.loop.create_task(runCheckFail(server, token_addr, i, colAuctionId))
                     print('t1: ',t.done())
-                    while t.done() == False:
-                        time.sleep(1)
-                        print('t1: ',t.done())
-                    print('t2: ',t.done())
+                    server.loop.run_until_complete(t)
 
                 print(colAuctionId,'Auction failed!!!!!!!!!')
 
