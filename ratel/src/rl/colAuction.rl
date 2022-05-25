@@ -46,12 +46,6 @@ contract colAuction{
     }
 
     pureMpc checkFail(server, token_addr, i, colAuctionId) {
-        bids = readDB(f'bidsBoard_{colAuctionId}_{i+1}', dict)
-    
-        vi = bids['valid']
-        pricei = bids['price']
-        Pi = bids['address']
-        Amti = bids['amt']
 
         print('checkFail',i)
 
