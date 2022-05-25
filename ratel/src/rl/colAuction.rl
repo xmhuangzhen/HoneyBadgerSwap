@@ -76,12 +76,13 @@ contract colAuction{
 
             print('start ',n,colAuctionId)
 
+            ts = []
+
             for i in range(n):
-                print('1 i:',i)
-                l = asyncio.get_event_loop()
-                t = l.create_task(runCheckFail(server, token_addr, i, colAuctionId))
-                l.run_until_complete(t)
-                print('2 i t:',i,t,t.done(),t.result())
+                ts.append(runCheckFail(server, token_addr, i, colAuctionId))
+                print('i: ',i)
+
+            await asyncio.wait(ts)
 
             print('end ',n,colAuctionId)
 
