@@ -3,13 +3,13 @@ import sys
 
 from web3 import Web3
 
-from ratel.genfiles.python import colAuction
-from ratel.genfiles.python.colAuctionRecover import recover
+from ratel.genfiles.python import rockPaperScissors
+from ratel.genfiles.python.rockPaperScissorsRecover import recover
 from ratel.src.python.Server import Server
 from ratel.src.python.deploy import url, app_addr
 from ratel.src.python.utils import parse_contract
 
-contract_name = 'colAuction'
+contract_name = 'rockPaperScissors'
 
 if __name__ == '__main__':
     serverID = int(sys.argv[1])
@@ -33,8 +33,7 @@ if __name__ == '__main__':
         init_threshold,
         concurrency,
         recover,
-        test,
+        # test,
     )
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(server.init(colAuction.monitor(server)))
+    server.loop.run_until_complete(server.init(rockPaperScissors.monitor(server)))
