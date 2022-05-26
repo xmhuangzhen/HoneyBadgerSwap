@@ -127,12 +127,18 @@ contract colAuction{
         Amti = bids['amt']
         vi = bids['valid']
 
+        print('colAuctionId: ',colAuctionId)
+
         mpcInput(sint Xi, sint curPrice, sint Amti, sint amtSold, sint totalAmt,sint vi)
         valid = (curPrice.less_equal(Xi,bit_length = bit_length))
-        amtSold += Amti*valid*vi
-        mpcOutput(sint amtSold)
+        delta_amt = Amti*valid*vi
+        new_amtSold = amtSold + delta_amt
 
-        return amtSold
+        print_ln('delta_amt, new_amtSold: %s %s',delta_amt.reveal(),new_amtSold.reveal())
+
+        mpcOutput(sint new_amtSold)
+
+        return new_amtSold
     }
 
     pureMpc checkFail(server, token_addr, i, colAuctionId) {
