@@ -84,6 +84,9 @@ contract colAuction{
                     amtSold = await runCheckAuction(server, i, colAuctionId,amtSold,totalAmt,curPrice)
 
                 mpcInput(sint amtSold, sint totalAmt,sint cur_eth_creator_balance,sint curPrice,sint totalAmt)
+                
+                print_ln('**** amtSold, totalAmt: %s %s',amtSold.reveal(),totalAmt.reveal())
+                
                 aucDone = (amtSold.greater_equal(totalAmt,bit_length = bit_length))*(cur_eth_creator_balance.greater_equal(curPrice*totalAmt,bit_length=bit_length))
                 aucDone = aucDone.reveal()
                 mpcOutput(cint aucDone)
