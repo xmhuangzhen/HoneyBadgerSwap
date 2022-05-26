@@ -65,7 +65,7 @@ contract colAuction{
 
             cur_token_creator_balance = readDB(f'balanceBoard_{token_addr}_{creatorAddr}',int)
             cur_token_app_balance = readDB(f'balanceBoard_{token_addr}_{appAddr}',int)
-            cur_eth_creator_balance = readDB(f'balanceBoard_{0}_{creatorAddr}',int)
+            cur_eth_creator_balance = readDB(f'balanceBoard_{0x0}_{creatorAddr}',int)
 
             if curPrice < FloorPrice:
                 for i in range(n):
@@ -116,7 +116,7 @@ contract colAuction{
                     curStatus = 1
                     set(status, uint curStatus, uint colAuctionId)
 
-            writeDB(f'balanceBoard_{0}_{creatorAddr}',cur_eth_creator_balance,int)
+            writeDB(f'balanceBoard_{0x0}_{creatorAddr}',cur_eth_creator_balance,int)
             writeDB(f'balanceBoard_{token_addr}_{creatorAddr}',cur_token_creator_balance,int)
             writeDB(f'balanceBoard_{token_addr}_{appAddr}',cur_token_app_balance,int)
 
@@ -179,7 +179,7 @@ contract colAuction{
 
     pureMpc checkSuccessUpdate(server, i, colAuctionId, token_addr, curPrice, curAmt, app_token_amt,vi,pricei,Pi,Amti){
         
-        cur_eth_balance = readDB(f'balanceBoard_{0}_{Pi}',int)
+        cur_eth_balance = readDB(f'balanceBoard_{0x0}_{Pi}',int)
         cur_token_balance = readDB(f'balanceBoard_{token_addr}_{Pi}',int)
 
         mpcInput(sint cur_eth_balance,sint cur_token_balance,sint pricei,sint vi,sint curPrice,sint curAmt,sint Amti,sint app_token_amt)
@@ -191,7 +191,7 @@ contract colAuction{
         app_token_amt = app_token_amt + vi*Amti*pricei
         mpcOutput(sint curAmt,sint cur_eth_balance,sint cur_token_balance,sint app_token_amt)
 
-        writeDB(f'balanceBoard_{0}_{Pi}',cur_eth_balance,int)
+        writeDB(f'balanceBoard_{0x0}_{Pi}',cur_eth_balance,int)
         writeDB(f'balanceBoard_{token_addr}_{Pi}',cur_token_balance,int)
     
         return curAmt, app_token_amt
