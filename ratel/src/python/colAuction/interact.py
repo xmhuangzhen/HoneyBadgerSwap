@@ -83,7 +83,7 @@ if __name__=='__main__':
 
     totalAmt1 = 20
     StartPrice1 = 100
-    FloorPrice1 = 10 
+    FloorPrice1 = 1 
     colAuctionId1 = createAuction(appContract,StartPrice1,FloorPrice1,totalAmt1,token_addrs[1],aucapp_addr,client_0)
     print('new Auction id:',colAuctionId1)
 
