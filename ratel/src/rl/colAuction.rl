@@ -85,9 +85,12 @@ contract colAuction{
 
                 mpcInput(sint amtSold, sint totalAmt,sint cur_eth_creator_balance,sint curPrice,sint totalAmt)
                 
-                print_ln('**** amtSold, totalAmt: %s %s',amtSold.reveal(),totalAmt.reveal())
-                
-                aucDone = (amtSold.greater_equal(totalAmt,bit_length = bit_length))*(cur_eth_creator_balance.greater_equal(curPrice*totalAmt,bit_length=bit_length))
+                v1 = amtSold.greater_equal(totalAmt,bit_length = bit_length)
+                v2 = cur_eth_creator_balance.greater_equal(curPrice*totalAmt,bit_length=bit_length)
+
+                print_ln('**** amtSold, totalAmt, v1, v2: %s %s %s %s',amtSold.reveal(),totalAmt.reveal(),v1.reveal(),v2.reveal())
+
+                aucDone = v1*v2
                 aucDone = aucDone.reveal()
                 mpcOutput(cint aucDone)
 
