@@ -89,6 +89,7 @@ contract colAuction{
                 v2 = cur_eth_creator_balance.greater_equal(curPrice*totalAmt,bit_length=bit_length)
 
                 print_ln('**** amtSold, totalAmt, v1, v2: %s %s %s %s',amtSold.reveal(),totalAmt.reveal(),v1.reveal(),v2.reveal())
+                print_ln('cur_eth_creator_balance, curPrice, totalAmt: %s %s %s',cur_eth_creator_balance.reveal(),curPrice.reveal(),totalAmt.reveal())
 
                 aucDone = v1*v2
                 aucDone = aucDone.reveal()
