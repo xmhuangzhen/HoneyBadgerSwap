@@ -13,6 +13,14 @@ contract_name = 'colAuction'
 
 bids_cnt = []
 
+def initClient(appContract,account,token_addr):
+    web3.eth.defaultAccount = account.address
+    tx = appContract.functions.initClient(token_addr).buildTransaction({
+        'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
+    })
+    sign_and_send(tx, web3, account)
+
+
 def createAuction(appContract,StartPrice,FloorPrice,totalAmt,token,aucapp_addr,account):
     colAuctionlast = appContract.functions.colAuctionCnt().call()
 
@@ -80,6 +88,14 @@ if __name__=='__main__':
     client_5 = getAccount(web3,f'/opt/poa/keystore/client_8/')
 
     aucapp_addr = getAccount(web3,f'/opt/poa/keystore/client_2/').address
+
+    clients=[client_0,client_1,client_2,client_3,client_4,client_5]
+    n_cli = len(clients)
+    n_token = 4
+    for i in range(n_cli):
+        for token_id in range(n_token):
+            print(i,token_id)
+            initClient(appContract,clients[i],token_addrs[token_id])
 
     totalAmt1 = 20
     StartPrice1 = 100
