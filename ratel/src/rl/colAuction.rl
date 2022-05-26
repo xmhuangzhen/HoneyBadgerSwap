@@ -23,9 +23,7 @@ contract colAuction{
     mapping (uint => uint) public checkTime;
 
     mapping (uint => uint) public status; // closed-1 created-2 submitted --- bidders_num+2 
-    mapping (address => uint) public statusValue;
-    mapping (uint => uint) public statusCount;
-
+   
 
     constructor() public {}
 
