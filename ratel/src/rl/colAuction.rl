@@ -97,6 +97,9 @@ contract colAuction{
                 mpcOutput(cint aucDone)
 
                 if aucDone == 1:
+                    curAmt = 0
+                    app_token_amt = 0
+
                     for i in range(n):
                         vi, pricei, Pi, Amti = await runCheckSuccess(server, i, colAuctionId)
                         curAmt, app_token_amt = await runCheckSuccessUpdate(server, i, colAuctionId, token_addr, ETH_addr, curPrice, curAmt, app_token_amt,vi,pricei,Pi,Amti)
