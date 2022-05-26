@@ -70,7 +70,8 @@ contract colAuction{
             print('start ',n,colAuctionId)
 
             for i in range(n):
-                server.loop.create_task(runCheckFail(server, token_addr, i, colAuctionId))
+                t = await runCheckFail(server, token_addr, i, colAuctionId)
+                print('t: ',t)
 
             print('end ',n,colAuctionId)
 
@@ -117,6 +118,7 @@ contract colAuction{
 
     pureMpc checkFail(server, token_addr, i, colAuctionId) {
         print('checkFail',i)
+        return i+1
     } 
 
     function submitBids(uint colAuctionId, $uint price, $uint Amt) public {
