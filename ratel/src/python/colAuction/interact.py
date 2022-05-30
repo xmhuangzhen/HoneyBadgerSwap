@@ -87,8 +87,8 @@ if __name__=='__main__':
 
     start_time = int(tmp_list[0]); StartPrice = int(tmp_list[1])
     FloorPrice = 1; totalAmt = float(tmp_list[3])
-    creator_addr = hex(int(tmp_list[4],16)) 
-    aucapp_addr = hex(int(tmp_list[5],16))
+    creator_addr = web3.utils.toChecksumAddress(tmp_list[4])
+    aucapp_addr = web3.utils.toChecksumAddress(tmp_list[5])
     print(start_time,StartPrice,totalAmt,app_addr)
 
 
@@ -121,7 +121,7 @@ if __name__=='__main__':
         tmp_list = file.readline().strip('\n').split(',')
         pricei = int(tmp_list[1])
         amti = float(tmp_list[2])
-        addri = hex(int(tmp_list[4],16))
+        addri = web3.utils.toChecksumAddress(tmp_list[4])
 
         initClient(appContract,clients[cur_cli],token_addrs[0],addri)
         initClient(appContract,clients[cur_cli],token_addrs[1],addri)
