@@ -82,7 +82,7 @@ if __name__=='__main__':
     appContract = web3.eth.contract(address=app_addr, abi=abi)
 
 
-    file = open('aucdata.txt', 'r')
+    file = open('ratel/src/python/colAuction/aucdata.txt', 'r')
     tmp_list = file.readline().strip('\n').split(',')
 
     start_time = int(tmp_list[0]); StartPrice = int(tmp_list[1])
@@ -103,11 +103,12 @@ if __name__=='__main__':
 
     clients=[client_0,client_1,client_2,client_3,client_4,client_5]
     n_cli = len(clients)
-    n_token = 2
-    for i in range(n_cli):
-        for token_id in range(n_token):
-            print(i,token_id)
-            initClient(appContract,clients[i],token_addrs[token_id])
+    # n_token = 2
+    # for i in range(n_cli):
+    #     for token_id in range(n_token):
+    #         print(i,token_id)
+    initClient(appContract,clients[0],token_addrs[0],creator_addr)
+    initClient(appContract,clients[0],token_addrs[1],creator_addr)
 
     colAuctionId1 = createAuction(appContract,StartPrice,FloorPrice,totalAmt,token_addrs[1],aucapp_addr,creator_addr,client_0)
     print('new Auction id:',colAuctionId1)
@@ -121,7 +122,11 @@ if __name__=='__main__':
         pricei = int(tmp_list[1])
         amti = float(tmp_list[2])
         addri = hex(int(tmp_list[4],16))
-        submitBids(appContract,colAuctionId1,pricei,amti,addri,clients[i])
+
+        initClient(appContract,clients[cur_cli],token_addrs[0],addri)
+        initClient(appContract,clients[cur_cli],token_addrs[1],addri)
+
+        submitBids(appContract,colAuctionId1,pricei,amti,addri,clients[cur_cli])
         cur_cli = (cur_cli + 1) % n_cli
         print('finished input bidders ',cnt)
 
