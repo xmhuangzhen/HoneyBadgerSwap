@@ -243,6 +243,14 @@ contract colAuction{
             
             curStatus = bidders_id+2
             set(status, uint curStatus, uint colAuctionId)
+
+            import time
+            cur_time = time.strftime("%D %H:%M:%S",time.localtime())
+            with open(f'ratel/benchmark/data/latency_{server.serverID}.csv', 'a') as f:
+                f.write(f'submit_bid\t'
+                        f'bidders_id\t{bidders_id}\t'
+                        f'cur_time\t{cur_time}\n')
+        
         }
     }
 
