@@ -239,9 +239,12 @@ contract colAuction{
             cur_app_balance = readDB(f'balanceBoard_{token_addr}_{appAddr}',int)
 
             mpcInput(sfix cur_token_balance,sfix cur_app_balance,sint price,sfix Amt)
-            valid = (cur_token_balance >= (price*Amt))
+            valid = (cur_token_balance >= ((sfix(price))*Amt))
             cur_token_balance = cur_token_balance - valid*price*Amt
             cur_app_balance = cur_app_balance + valid*price*Amt
+
+            print_ln('******valid cur_token_balance price Amt %s %s %s %s',valid.reveal(),cur_token_balance.reveal(),price.reveal(),Amt.reveal())
+
             mpcOutput(sint valid,sfix cur_token_balance,sfix cur_app_balance)
 
             bid = {
