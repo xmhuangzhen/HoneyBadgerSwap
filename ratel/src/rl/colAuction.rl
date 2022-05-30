@@ -78,7 +78,7 @@ contract colAuction{
 
                 print(colAuctionId,'Auction failed!!!!!!!!!')
 
-                add_benchmark_res_info = 'auctionFailed\t colAuctionId\t' + string(colAuctionId) +'\t'
+                add_benchmark_res_info = 'auctionFailed\t colAuctionId\t' + str(colAuctionId) +'\t'
 
                 curStatus = 1
                 set(status, uint curStatus, uint colAuctionId)
@@ -121,7 +121,7 @@ contract colAuction{
                     
                     mpcOutput(sint cur_token_app_balance)
 
-                    add_benchmark_res_info = 'auctionSuccess\t colAuctionId\t' + string(colAuctionId) +'\t'
+                    add_benchmark_res_info = 'auctionSuccess\t colAuctionId\t' + str(colAuctionId) +'\t'
 
 
                     print(colAuctionId,'Auction success!!!!!!!!!')
