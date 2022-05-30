@@ -94,7 +94,7 @@ contract colAuction{
                 mpcInput(sfix amtSold, sfix totalAmt,sfix cur_eth_creator_balance,sint curPrice)
                 
                 v1 = (amtSold >= totalAmt)
-                v2 = (cur_eth_creator_balance >= (curPrice*totalAmt))
+                v2 = (cur_eth_creator_balance >= ((sfix(curPrice))*totalAmt))
 
                 print_ln('**** amtSold, totalAmt, v1, v2: %s %s %s %s',amtSold.reveal(),totalAmt.reveal(),v1.reveal(),v2.reveal())
                 print_ln('cur_eth_creator_balance, curPrice, totalAmt: %s %s %s',cur_eth_creator_balance.reveal(),curPrice.reveal(),totalAmt.reveal())
@@ -155,7 +155,7 @@ contract colAuction{
         print('colAuctionId: ',colAuctionId)
 
         mpcInput(sint Xi, sint curPrice, sfix Amti, sfix amtSold, sfix totalAmt,sint vi)
-        valid = (curPrice <= Xi)
+        valid = (curPrice <= (sfix(Xi)))
         delta_amt = Amti*valid*vi
         new_amtSold = amtSold + delta_amt
 
@@ -210,6 +210,9 @@ contract colAuction{
         cur_token_balance = cur_token_balance + pricei*Amti - curPrice*realAmt
         curAmt -= realAmt
         app_token_amt = app_token_amt + vi*Amti*pricei
+
+        print('********v1',v1.reveal())
+
         mpcOutput(sfix curAmt,sfix cur_eth_balance,sfix cur_token_balance,sfix app_token_amt)
 
         writeDB(f'balanceBoard_{ETH_addr}_{Pi}',cur_eth_balance,int)
@@ -239,11 +242,12 @@ contract colAuction{
             cur_app_balance = readDB(f'balanceBoard_{token_addr}_{appAddr}',int)
 
             mpcInput(sfix cur_token_balance,sfix cur_app_balance,sint price,sfix Amt)
-            valid = (cur_token_balance >= ((sfix(price))*Amt))
-            cur_token_balance = cur_token_balance - valid*price*Amt
-            cur_app_balance = cur_app_balance + valid*price*Amt
+            tmp_cur_balance = (sfix(price))*Amt
+            valid = (cur_token_balance >= tmp_cur_balance)
+            cur_token_balance = cur_token_balance - valid*tmp_cur_balance
+            cur_app_balance = cur_app_balance + valid*tmp_cur_balance
 
-            print_ln('******valid cur_token_balance price Amt %s %s %s %s',valid.reveal(),cur_token_balance.reveal(),price.reveal(),Amt.reveal())
+            print_ln('******valid cur_token_balance price Amt product %s %s %s %s %s',valid.reveal(),cur_token_balance.reveal(),price.reveal(),Amt.reveal(),tmp_cur_balance.reveal())
 
             mpcOutput(sint valid,sfix cur_token_balance,sfix cur_app_balance)
 
