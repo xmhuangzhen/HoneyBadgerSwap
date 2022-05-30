@@ -94,7 +94,8 @@ contract colAuction{
                 mpcInput(sfix amtSold, sfix totalAmt,sfix cur_eth_creator_balance,sint curPrice)
                 
                 v1 = (amtSold >= totalAmt)
-                v2 = (cur_eth_creator_balance >= ((sfix(curPrice))*totalAmt))
+                tmp_balance = curPrice*totalAmt
+                v2 = (cur_eth_creator_balance >= tmp_balance)
 
                 print_ln('**** amtSold, totalAmt, v1, v2: %s %s %s %s',amtSold.reveal(),totalAmt.reveal(),v1.reveal(),v2.reveal())
                 print_ln('cur_eth_creator_balance, curPrice, totalAmt: %s %s %s',cur_eth_creator_balance.reveal(),curPrice.reveal(),totalAmt.reveal())
@@ -156,7 +157,7 @@ contract colAuction{
 
         mpcInput(sint Xi, sint curPrice, sfix Amti, sfix amtSold, sfix totalAmt,sint vi)
         valid = (curPrice <= Xi)
-        delta_amt = Amti*sfix(valid)*sfix(vi)
+        delta_amt = Amti*valid*vi
         new_amtSold = amtSold + delta_amt
 
         print_ln('valid Amti vi delta_amt, new_amtSold: %s %s %s %s %s',valid.reveal(),Amti.reveal(),vi.reveal(),delta_amt.reveal(),new_amtSold.reveal())
@@ -181,7 +182,7 @@ contract colAuction{
         cur_token_balance = readDB(f'balanceBoard_{token_addr}_{Pi}',int)
 
         mpcInput(sfix cur_token_balance,sint pricei,sfix Amti,sint vi)
-        cur_token_balance = cur_token_balance + sfix(vi)*sfix(pricei)*Amti
+        cur_token_balance = cur_token_balance + vi*pricei*Amti
         mpcOutput(sfix cur_token_balance)
 
         writeDB(f'balanceBoard_{token_addr}_{Pi}',cur_token_balance,int)
@@ -206,11 +207,11 @@ contract colAuction{
         mpcInput(sfix cur_eth_balance,sfix cur_token_balance,sint pricei,sint vi,sint curPrice,sfix curAmt,sfix Amti,sfix app_token_amt)
         v1 = (curAmt >= Amti) 
         v2 = (curAmt < Amti)
-        realAmt = sfix(vi)*sfix(v1)*Amti + sfix(vi)*sfix(v2)*curAmt
+        realAmt = vi*v1*Amti + vi*v2*curAmt
         cur_eth_balance = cur_eth_balance + realAmt
-        cur_token_balance = cur_token_balance + sfix(pricei)*Amti - sfix(curPrice)*realAmt
+        cur_token_balance = cur_token_balance + pricei*Amti - curPrice*realAmt
         curAmt -= realAmt
-        app_token_amt = app_token_amt + sfix(vi)*Amti*sfix(pricei)
+        app_token_amt = app_token_amt + vi*Amti*pricei
 
         print('********v1',v1.reveal())
 
