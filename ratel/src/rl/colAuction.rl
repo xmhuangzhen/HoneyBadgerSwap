@@ -113,7 +113,7 @@ contract colAuction{
                     
                     mpcInput(sfix cur_token_creator_balance,sint curPrice,sfix totalAmt)
 
-                    cur_token_creator_balance = cur_token_creator_balance + curPrice*totalAmt
+                    cur_token_creator_balance = cur_token_creator_balance + sfix(curPrice)*totalAmt
                     
                     mpcOutput(sfix cur_token_creator_balance)
                     
@@ -155,8 +155,8 @@ contract colAuction{
         print('colAuctionId: ',colAuctionId)
 
         mpcInput(sint Xi, sint curPrice, sfix Amti, sfix amtSold, sfix totalAmt,sint vi)
-        valid = (curPrice <= (sfix(Xi)))
-        delta_amt = Amti*valid*vi
+        valid = (curPrice <= Xi)
+        delta_amt = Amti*sfix(valid)*sfix(vi)
         new_amtSold = amtSold + delta_amt
 
         print_ln('valid Amti vi delta_amt, new_amtSold: %s %s %s %s %s',valid.reveal(),Amti.reveal(),vi.reveal(),delta_amt.reveal(),new_amtSold.reveal())
@@ -181,7 +181,7 @@ contract colAuction{
         cur_token_balance = readDB(f'balanceBoard_{token_addr}_{Pi}',int)
 
         mpcInput(sfix cur_token_balance,sint pricei,sfix Amti,sint vi)
-        cur_token_balance = cur_token_balance + vi*pricei*Amti
+        cur_token_balance = cur_token_balance + sfix(vi)*sfix(pricei)*Amti
         mpcOutput(sfix cur_token_balance)
 
         writeDB(f'balanceBoard_{token_addr}_{Pi}',cur_token_balance,int)
@@ -205,11 +205,12 @@ contract colAuction{
 
         mpcInput(sfix cur_eth_balance,sfix cur_token_balance,sint pricei,sint vi,sint curPrice,sfix curAmt,sfix Amti,sfix app_token_amt)
         v1 = (curAmt >= Amti) 
-        realAmt = vi*v1*Amti + vi*(1-v1)*curAmt
+        v2 = (curAmt < Amti)
+        realAmt = sfix(vi)*sfix(v1)*Amti + sfix(vi)*sfix(v2)*curAmt
         cur_eth_balance = cur_eth_balance + realAmt
-        cur_token_balance = cur_token_balance + pricei*Amti - curPrice*realAmt
+        cur_token_balance = cur_token_balance + sfix(pricei)*Amti - sfix(curPrice)*realAmt
         curAmt -= realAmt
-        app_token_amt = app_token_amt + vi*Amti*pricei
+        app_token_amt = app_token_amt + sfix(vi)*Amti*sfix(pricei)
 
         print('********v1',v1.reveal())
 
@@ -244,8 +245,8 @@ contract colAuction{
             mpcInput(sfix cur_token_balance,sfix cur_app_balance,sint price,sfix Amt)
             tmp_cur_balance = (sfix(price))*Amt
             valid = (cur_token_balance >= tmp_cur_balance)
-            cur_token_balance = cur_token_balance - valid*tmp_cur_balance
-            cur_app_balance = cur_app_balance + valid*tmp_cur_balance
+            cur_token_balance = cur_token_balance - sfix(valid)*tmp_cur_balance
+            cur_app_balance = cur_app_balance + sfix(valid)*tmp_cur_balance
 
             print_ln('******valid cur_token_balance price Amt product %s %s %s %s %s',valid.reveal(),cur_token_balance.reveal(),price.reveal(),Amt.reveal(),tmp_cur_balance.reveal())
 
