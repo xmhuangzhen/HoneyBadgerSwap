@@ -68,12 +68,17 @@ contract colAuction{
             cur_token_app_balance = readDB(f'balanceBoard_{token_addr}_{appAddr}',int)
             cur_eth_creator_balance = readDB(f'balanceBoard_{ETH_addr}_{creatorAddr}',int)
 
+            import time
+            add_benchmark_res_info = ''
+
             if curPrice < FloorPrice:
                 for i in range(n):
                     vi,pricei,Pi,Amti = await runCheckFail(server, token_addr, i, colAuctionId)
                     await runCheckFailUpdate(server, token_addr, i, colAuctionId,vi,pricei,Pi,Amti)
 
                 print(colAuctionId,'Auction failed!!!!!!!!!')
+
+                add_benchmark_res_info = 'auctionFailed\t colAuctionId\t{colAuctionId}\t'
 
                 curStatus = 1
                 set(status, uint curStatus, uint colAuctionId)
@@ -116,6 +121,8 @@ contract colAuction{
                     
                     mpcOutput(sint cur_token_app_balance)
 
+                    add_benchmark_res_info = 'auctionSuccess\t colAuctionId\t{colAuctionId}\t'
+
                     print(colAuctionId,'Auction success!!!!!!!!!')
                     curStatus = 1
                     set(status, uint curStatus, uint colAuctionId)
@@ -123,6 +130,12 @@ contract colAuction{
             writeDB(f'balanceBoard_{ETH_addr}_{creatorAddr}',cur_eth_creator_balance,int)
             writeDB(f'balanceBoard_{token_addr}_{creatorAddr}',cur_token_creator_balance,int)
             writeDB(f'balanceBoard_{token_addr}_{appAddr}',cur_token_app_balance,int)
+
+            if add_benchmark_res_info != '':
+                cur_time = time.strftime("%D %H:%M:%S",time.localtime())
+                with open(f'ratel/benchmark/data/latency.csv', 'a') as f:
+                    f.write(f'{add_benchmark_res_info}\t'
+                            f'cur_time\t{cur_time}\n')
 
         }
     }
@@ -248,6 +261,7 @@ contract colAuction{
             cur_time = time.strftime("%D %H:%M:%S",time.localtime())
             with open(f'ratel/benchmark/data/latency.csv', 'a') as f:
                 f.write(f'submit_bid\t'
+                        f'colAuctionId\t{colAuctionId}\t'
                         f'bidders_id\t{bidders_id}\t'
                         f'cur_time\t{cur_time}\n')
         
