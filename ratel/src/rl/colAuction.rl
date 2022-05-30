@@ -9,6 +9,8 @@ contract colAuction{
     using SafeERC20 for IERC20;
 
     address constant public ETH_addr = 0x0000000000000000000000000000000000000000;
+    uint constant public Fp = 2**16;
+
     uint public colAuctionCnt;
 
     mapping (uint => uint) public biddersCnt;
@@ -28,7 +30,7 @@ contract colAuction{
 
     constructor() public {}
 
-    function createAuction(uint StartPrice, uint FloorPrice, uint totalAmt, address token, address appAddr) public{
+    function createAuction(uint StartPrice, uint FloorPrice, uint totalAmt, address token, address appAddr, address creator_addr) public{
         uint colAuctionId = ++colAuctionCnt;
         curPriceList[colAuctionId] = StartPrice;
         floorPriceList[colAuctionId] = FloorPrice;
@@ -41,7 +43,7 @@ contract colAuction{
 
         tokenAddrList[colAuctionId] = token;
         appAddrList[colAuctionId] = appAddr;
-        creatorAddrList[colAuctionId] = msg.sender;
+        creatorAddrList[colAuctionId] = creator_addr;
     }
 
     function scheduleCheck(uint colAuctionId) public {
@@ -89,7 +91,7 @@ contract colAuction{
                 for i in range(n):
                     amtSold = await runCheckAuction(server, i, colAuctionId,amtSold,totalAmt,curPrice)
 
-                mpcInput(sint amtSold, sint totalAmt,sint cur_eth_creator_balance,sint curPrice,sint totalAmt)
+                mpcInput(sfix amtSold, sfix totalAmt,sfix cur_eth_creator_balance,sint curPrice)
                 
                 v1 = amtSold.greater_equal(totalAmt,bit_length = bit_length)
                 v2 = cur_eth_creator_balance.greater_equal(curPrice*totalAmt,bit_length=bit_length)
@@ -108,18 +110,18 @@ contract colAuction{
                     for i in range(n):
                         vi, pricei, Pi, Amti = await runCheckSuccess(server, i, colAuctionId)
                         curAmt, app_token_amt = await runCheckSuccessUpdate(server, i, colAuctionId, token_addr, ETH_addr, curPrice, curAmt, app_token_amt,vi,pricei,Pi,Amti)
-                    mpcInput(sint cur_token_creator_balance,sint curPrice,sint totalAmt)
+                    mpcInput(sfix cur_token_creator_balance,sint curPrice,sfix totalAmt)
 
                     cur_token_creator_balance = cur_token_creator_balance + curPrice*totalAmt
                     
-                    mpcOutput(sint cur_token_creator_balance)
+                    mpcOutput(sfix cur_token_creator_balance)
                     
 
-                    mpcInput(sint cur_token_app_balance,sint app_token_amt)
+                    mpcInput(sfix cur_token_app_balance,sfix app_token_amt)
                     
                     cur_token_app_balance = cur_token_app_balance - app_token_amt
                     
-                    mpcOutput(sint cur_token_app_balance)
+                    mpcOutput(sfix cur_token_app_balance)
 
                     add_benchmark_res_info = 'auctionSuccess\t colAuctionId\t' + str(colAuctionId) +'\t'
 
@@ -151,14 +153,14 @@ contract colAuction{
 
         print('colAuctionId: ',colAuctionId)
 
-        mpcInput(sint Xi, sint curPrice, sint Amti, sint amtSold, sint totalAmt,sint vi)
+        mpcInput(sint Xi, sint curPrice, sfix Amti, sfix amtSold, sfix totalAmt,sint vi)
         valid = (curPrice.less_equal(Xi,bit_length = bit_length))
         delta_amt = Amti*valid*vi
         new_amtSold = amtSold + delta_amt
 
         print_ln('valid Amti vi delta_amt, new_amtSold: %s %s %s %s %s',valid.reveal(),Amti.reveal(),vi.reveal(),delta_amt.reveal(),new_amtSold.reveal())
 
-        mpcOutput(sint new_amtSold)
+        mpcOutput(sfix new_amtSold)
 
         return new_amtSold
     }
@@ -177,9 +179,9 @@ contract colAuction{
     pureMpc checkFailUpdate(server, token_addr, i, colAuctionId,vi,pricei,Pi,Amti) {
         cur_token_balance = readDB(f'balanceBoard_{token_addr}_{Pi}',int)
 
-        mpcInput(sint cur_token_balance,sint pricei,sint Amti,sint vi)
+        mpcInput(sfix cur_token_balance,sint pricei,sfix Amti,sint vi)
         cur_token_balance = cur_token_balance + vi*pricei*Amti
-        mpcOutput(sint cur_token_balance)
+        mpcOutput(sfix cur_token_balance)
 
         writeDB(f'balanceBoard_{token_addr}_{Pi}',cur_token_balance,int)
     }
@@ -200,14 +202,14 @@ contract colAuction{
         cur_eth_balance = readDB(f'balanceBoard_{ETH_addr}_{Pi}',int)
         cur_token_balance = readDB(f'balanceBoard_{token_addr}_{Pi}',int)
 
-        mpcInput(sint cur_eth_balance,sint cur_token_balance,sint pricei,sint vi,sint curPrice,sint curAmt,sint Amti,sint app_token_amt)
+        mpcInput(sfix cur_eth_balance,sfix cur_token_balance,sint pricei,sint vi,sint curPrice,sfix curAmt,sfix Amti,sfix app_token_amt)
         v1 = (curAmt.greater_equal(Amti,bit_length=bit_length)) 
         realAmt = vi*v1*Amti + vi*(1-v1)*curAmt
         cur_eth_balance = cur_eth_balance + realAmt
         cur_token_balance = cur_token_balance + pricei*Amti - curPrice*realAmt
         curAmt -= realAmt
         app_token_amt = app_token_amt + vi*Amti*pricei
-        mpcOutput(sint curAmt,sint cur_eth_balance,sint cur_token_balance,sint app_token_amt)
+        mpcOutput(sfix curAmt,sfix cur_eth_balance,sfix cur_token_balance,sfix app_token_amt)
 
         writeDB(f'balanceBoard_{ETH_addr}_{Pi}',cur_eth_balance,int)
         writeDB(f'balanceBoard_{token_addr}_{Pi}',cur_token_balance,int)
@@ -215,16 +217,15 @@ contract colAuction{
         return curAmt, app_token_amt
     }
 
-    function initClient(address token_addr) public{
-        address user_addr = msg.sender;
+    function initClient(address token_addr, address user_addr) public{
         mpc(address user_addr,address token_addr){
-            init_balance = 100000
+            init_balance = 100000*fp
             writeDB(f'balanceBoard_{token_addr}_{user_addr}',init_balance,int)
         }
     }
 
-    function submitBids(uint colAuctionId, $uint price, $uint Amt) public {
-        address P = msg.sender;
+    function submitBids(uint colAuctionId, $uint price, $uint Amt, address bidders_addr) public {
+        address P = bidders_addr;
 
         uint bidders_id = biddersCnt[colAuctionId]+1;
         biddersCnt[colAuctionId] = bidders_id;
@@ -238,11 +239,11 @@ contract colAuction{
             cur_token_balance = readDB(f'balanceBoard_{token_addr}_{P}',int)
             cur_app_balance = readDB(f'balanceBoard_{token_addr}_{appAddr}',int)
 
-            mpcInput(sint cur_token_balance,sint cur_app_balance,sint price,sint Amt)
+            mpcInput(sfix cur_token_balance,sfix cur_app_balance,sint price,sfix Amt)
             valid = cur_token_balance.greater_equal(price*Amt,bit_length=bit_length)
             cur_token_balance = cur_token_balance - valid*price*Amt
             cur_app_balance = cur_app_balance + valid*price*Amt
-            mpcOutput(sint valid,sint cur_token_balance,sint cur_app_balance)
+            mpcOutput(sint valid,sfix cur_token_balance,sfix cur_app_balance)
 
             bid = {
                 'price': price,
@@ -263,7 +264,7 @@ contract colAuction{
             with open(f'ratel/benchmark/data/latency.csv', 'a') as f:
                 f.write(f'submit_bid\t'
                         f'colAuctionId\t{colAuctionId}\t'
-                        f'bidders_id\t{bidders_id}\t'
+                        f'bidders_addr\t{P}\t'
                         f'cur_time\t{cur_time}\n')
         
         }
