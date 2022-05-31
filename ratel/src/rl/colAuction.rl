@@ -50,7 +50,7 @@ contract colAuction{
         require(lastTime + 10 < curTime);
         checkTime[colAuctionId] = block.number;
 
-        uint curPrice = curPriceList[colAuctionId]*(50-curTime+lastTime)/50;
+        uint curPrice = curPriceList[colAuctionId]*(100-curTime+lastTime)/100;
         curPriceList[colAuctionId] = curPrice;
 
         uint FloorPrice = floorPriceList[colAuctionId];
@@ -71,7 +71,7 @@ contract colAuction{
             import time
             add_benchmark_res_info = ''
 
-            if curPrice < FloorPrice:
+            if curPrice <= FloorPrice:
                 for i in range(n):
                     vi,pricei,Pi,Amti = await runCheckFail(server, token_addr, i, colAuctionId)
                     await runCheckFailUpdate(server, token_addr, i, colAuctionId,vi,pricei,Pi,Amti)
