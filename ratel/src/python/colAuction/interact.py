@@ -17,7 +17,7 @@ def initClient(appContract,account,token_addr,user_addr):
     initAmt = int(100000*fp)
 
     idx = reserveInput(web3, appContract, 1, account)[0]
-    mask = asyncio.run(get_inputmasks(players(appContract), f'{idx}', threshold(appContract)))
+    mask = asyncio.run(get_inputmasks(players(appContract), f'{idx}', threshold(appContract)))[0]
     maskedAmt = (initAmt + mask) % prime
 
     web3.eth.defaultAccount = account.address
