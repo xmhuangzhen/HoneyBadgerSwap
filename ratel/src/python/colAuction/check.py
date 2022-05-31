@@ -73,7 +73,7 @@ if __name__=='__main__':
         for aucId in liveAuct:
             scheduleCheck(appContract,aucId,clients[cur_cli])
 
-        time.sleep(20)
+        time.sleep(60)
         ccnt = ccnt+1
         cur_cli = (cur_cli + 1) % n_cli
 
