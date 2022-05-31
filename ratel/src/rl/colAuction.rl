@@ -157,7 +157,7 @@ contract colAuction{
         delta_amt = Amti*valid*vi
         new_amtSold = amtSold + delta_amt
 
-        print_ln('valid curPrice Xi %s %s %s',valid,curPrice,Xi)
+        print_ln('valid curPrice Xi %s %s %s',valid.reveal(),curPrice.reveal(),Xi.reveal())
 
         print_ln('valid Amti vi delta_amt, new_amtSold: %s %s %s %s %s',valid.reveal(),Amti.reveal(),vi.reveal(),delta_amt.reveal(),new_amtSold.reveal())
 
