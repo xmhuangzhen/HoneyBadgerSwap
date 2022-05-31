@@ -246,7 +246,13 @@ contract colAuction{
             mpcInput(sfix cur_token_balance,sfix cur_app_balance,sint price,sfix Amt)
             tmp_cur_balance = price*Amt
             valid = (cur_token_balance >= tmp_cur_balance)
-            v2 = ((cur_token_balance/fp) >= (tmp_cur_balance/fp))
+
+            tmpa = cur_token_balance/100000
+            tmpb = tmp_cur_balance/100000
+
+            v2 = (tmpa >= tmpb)
+            print_ln('***v2 tmpa tmpb %s %s %s',v2.reveal(),tmpa.reveal(),tmpb.reveal())
+
             cur_token_balance = cur_token_balance - valid*tmp_cur_balance
             cur_app_balance = cur_app_balance + valid*tmp_cur_balance
 
