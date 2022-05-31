@@ -228,12 +228,10 @@ contract colAuction{
         uint bidders_id = biddersCnt[colAuctionId]+1;
         biddersCnt[colAuctionId] = bidders_id;
 
-        uint FloorPrice = floorPriceList[colAuctionId];
-
         address token_addr = tokenAddrList[colAuctionId];
         address appAddr = appAddrList[colAuctionId];
 
-        mpc(uint colAuctionId, uint bidders_id, uint FloorPrice, $uint price, address P, $uint Amt, address token_addr, address appAddr){
+        mpc(uint colAuctionId, uint bidders_id, $uint price, address P, $uint Amt, address token_addr, address appAddr){
             cur_token_balance = readDB(f'balanceBoard_{token_addr}_{P}',int)
             cur_app_balance = readDB(f'balanceBoard_{token_addr}_{appAddr}',int)
 
