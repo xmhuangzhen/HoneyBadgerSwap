@@ -223,9 +223,8 @@ contract colAuction{
         return curAmt, app_token_amt
     }
 
-    function initClient(address token_addr, address user_addr) public{
-        mpc(address user_addr,address token_addr){
-            init_balance = 100000*fp
+    function initClient(address token_addr, address user_addr, $uint init_balance) public{
+        mpc(address user_addr,address token_addr, $uint init_balance){
             writeDB(f'balanceBoard_{token_addr}_{user_addr}',init_balance,int)
         }
     }
