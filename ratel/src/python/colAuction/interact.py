@@ -96,9 +96,22 @@ if __name__=='__main__':
     client_3 = getAccount(web3,f'/opt/poa/keystore/client_6/')
     client_4 = getAccount(web3,f'/opt/poa/keystore/client_7/')
     client_5 = getAccount(web3,f'/opt/poa/keystore/client_8/')
+    client_6 = getAccount(web3,f'/opt/poa/keystore/client_9/')
+    client_7 = getAccount(web3,f'/opt/poa/keystore/client_10/')
+    client_8 = getAccount(web3,f'/opt/poa/keystore/client_11/')
+    client_9 = getAccount(web3,f'/opt/poa/keystore/client_12/')
+    client_10 = getAccount(web3,f'/opt/poa/keystore/client_13/')
+    client_11 = getAccount(web3,f'/opt/poa/keystore/client_14/')
+    client_12 = getAccount(web3,f'/opt/poa/keystore/client_15/')
+    client_13 = getAccount(web3,f'/opt/poa/keystore/client_16/')
+    client_14 = getAccount(web3,f'/opt/poa/keystore/client_17/')
+    client_15 = getAccount(web3,f'/opt/poa/keystore/client_18/')
+    client_16 = getAccount(web3,f'/opt/poa/keystore/client_19/')
+    client_17 = getAccount(web3,f'/opt/poa/keystore/client_20/')
 
 
-    clients=[client_0,client_1,client_2,client_3,client_4,client_5]
+    clients=[client_0,client_1,client_2,client_3,client_4,client_5,client_6,client_7,client_8,
+    client_9,client_10,client_11,client_12,client_13,client_14,client_15,client_16,client_17]
     n_cli = len(clients)
 
     initClient(appContract,clients[0],token_addrs[0],creator_addr)
