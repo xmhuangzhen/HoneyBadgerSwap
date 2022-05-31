@@ -39,7 +39,12 @@ if __name__=='__main__':
 
 
     client_1 = getAccount(web3,f'/opt/poa/keystore/client_1/')
+    client_2 = getAccount(web3,f'/opt/poa/keystore/client_2/')
+    client_3 = getAccount(web3,f'/opt/poa/keystore/client_3/')
+    clients = [client_1,client_2,client_3]
+    n_cli = len(clients)
 
+    cur_cli = 0
     cur_n = 0
 
     ccnt = 0
@@ -66,10 +71,11 @@ if __name__=='__main__':
             print("curLiveAuctionId:",liveAuct)
 
         for aucId in liveAuct:
-            scheduleCheck(appContract,aucId,client_1)
+            scheduleCheck(appContract,aucId,clients[cur_cli])
 
         time.sleep(5)
         ccnt = ccnt+1
+        cur_cli = (cur_cli + 1) % n_cli
 
     
 
