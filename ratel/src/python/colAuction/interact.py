@@ -7,24 +7,27 @@ from web3.middleware import geth_poa_middleware
 
 from ratel.src.python.Client import get_inputmasks, reserveInput
 from ratel.src.python.deploy import url, app_addr, token_addrs
-from ratel.src.python.utils import fp, parse_contract, getAccount, players, prime, sign_and_send, threshold
+from ratel.src.python.utils import fp,parse_contract, getAccount, players, prime, sign_and_send, threshold
 
 contract_name = 'colAuction'
 
 bids_cnt = []
 
+def initClient(appContract,account,token_addr,user_addr):
+    web3.eth.defaultAccount = account.address
+    tx = appContract.functions.initClient(token_addr,user_addr).buildTransaction({
+        'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
+    })
+    sign_and_send(tx, web3, account)
 
-def createAuction(appContract, StartPrice, FloorPrice, totalAmt, token, aucapp_addr, account):
+
+def createAuction(appContract,StartPrice,FloorPrice,totalAmt,token,aucapp_addr,creator_addr,account):
     colAuctionlast = appContract.functions.colAuctionCnt().call()
 
     bids_cnt.append(0)
 
-    #    idx1 = reserveInput(web3, appContract, 1, account)[0]
-    #    mask1 = asyncio.run(get_inputmasks(players(appContract), f'{idx1}', threshold(appContract)))[0]
-    #    maskedTM = (totalAmt + mask1) % prime
-
     web3.eth.defaultAccount = account.address
-    tx = appContract.functions.createAuction(StartPrice, FloorPrice, totalAmt, token, aucapp_addr).buildTransaction({
+    tx = appContract.functions.createAuction(StartPrice,FloorPrice,totalAmt,token,aucapp_addr,creator_addr).buildTransaction({
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
     })
     sign_and_send(tx, web3, account)
@@ -37,21 +40,23 @@ def createAuction(appContract, StartPrice, FloorPrice, totalAmt, token, aucapp_a
             return colAuctionId
 
 
+
 # means I'll buy up to $amt if the prices reaches $price or below
-def submitBids(appContract, colAuctionId, price, amt, account):
+def submitBids(appContract,colAuctionId,price,amt,bidder_addr,account):
     status = appContract.functions.status(colAuctionId).call()
     if status == 1:
         return
 
-    cur_bidcnt = bids_cnt[colAuctionId - 1]
-    #    print("curbid cnt",colAuctionId,cur_bidcnt)
+    cur_bidcnt = bids_cnt[colAuctionId-1]
+    print("curbid cnt",colAuctionId,cur_bidcnt)
+
 
     idx1, idx2 = reserveInput(web3, appContract, 2, account)
     mask1, mask2 = asyncio.run(get_inputmasks(players(appContract), f'{idx1},{idx2}', threshold(appContract)))
     maskedP, maskedAmt = (price + mask1) % prime, (amt + mask2) % prime
 
     web3.eth.defaultAccount = account.address
-    tx = appContract.functions.submitBids(colAuctionId, idx1, maskedP, idx2, maskedAmt).buildTransaction({
+    tx = appContract.functions.submitBids(colAuctionId, idx1, maskedP, idx2, maskedAmt,bidder_addr).buildTransaction({
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
     })
     sign_and_send(tx, web3, account)
@@ -59,123 +64,69 @@ def submitBids(appContract, colAuctionId, price, amt, account):
     while True:
         time.sleep(1)
         status = appContract.functions.status(colAuctionId).call()
-        if status - 2 > cur_bidcnt:
-            bids_cnt[colAuctionId - 1] = status - 2
+        if status-2 > cur_bidcnt:
+            bids_cnt[colAuctionId-1] = status-2
             return
         if status == 1:
             return
 
 
-def initClient(appContract, account, token_addr):
-    web3.eth.defaultAccount = account.address
-    tx = appContract.functions.initClient(token_addr).buildTransaction({
-        'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
-    })
-    sign_and_send(tx, web3, account)
 
-
-if __name__ == '__main__':
+if __name__=='__main__':
     web3 = Web3(Web3.WebsocketProvider(url))
     web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
     abi, bytecode = parse_contract(contract_name)
     appContract = web3.eth.contract(address=app_addr, abi=abi)
 
-    client_1 = getAccount(web3, f'/opt/poa/keystore/client_3/')
-    client_2 = getAccount(web3, f'/opt/poa/keystore/client_4/')
-    client_3 = getAccount(web3, f'/opt/poa/keystore/client_5/')
-    client_4 = getAccount(web3, f'/opt/poa/keystore/client_6/')
-    client_5 = getAccount(web3, f'/opt/poa/keystore/client_7/')
-    client_6 = getAccount(web3, f'/opt/poa/keystore/client_8/')
 
-    clients = [client_1, client_2, client_3, client_4, client_5, client_6]
+    file = open('ratel/src/python/colAuction/aucdata.txt', 'r')
+    tmp_list = file.readline().strip('\n').split(',')
+
+    start_time = int(tmp_list[0]); StartPrice = int(tmp_list[1])
+    FloorPrice = 1; totalAmt = int(float(tmp_list[3])*100)
+    creator_addr = Web3.toChecksumAddress(tmp_list[4])
+    aucapp_addr = Web3.toChecksumAddress(tmp_list[5])
+    print(start_time,StartPrice,totalAmt,app_addr)
+
+
+    client_8 = getAccount(web3,f'/opt/poa/keystore/client_8/')
+    client_9 = getAccount(web3,f'/opt/poa/keystore/client_9/')
+    client_10 = getAccount(web3,f'/opt/poa/keystore/client_10/')
+    client_11 = getAccount(web3,f'/opt/poa/keystore/client_11/')
+    client_12 = getAccount(web3,f'/opt/poa/keystore/client_12/')
+    client_13 = getAccount(web3,f'/opt/poa/keystore/client_13/')
+    client_14 = getAccount(web3,f'/opt/poa/keystore/client_14/')
+    client_15 = getAccount(web3,f'/opt/poa/keystore/client_15/')
+    client_16 = getAccount(web3,f'/opt/poa/keystore/client_16/')
+    client_17 = getAccount(web3,f'/opt/poa/keystore/client_17/')
+    client_18 = getAccount(web3,f'/opt/poa/keystore/client_18/')
+    client_19 = getAccount(web3,f'/opt/poa/keystore/client_19/')
+    client_20 = getAccount(web3,f'/opt/poa/keystore/client_20/')
+
+
+    clients=[client_8,client_9,client_10,client_11,client_12,client_13,client_14,client_15,client_16,client_17,client_18,client_19,client_20]
     n_cli = len(clients)
-    n_token = 4
-    for i in range(n_cli):
-        for token_id in range(n_token):
-            print(i, token_id)
-            initClient(appContract, clients[i], token_addrs[token_id])
 
-    aucapp_addr = getAccount(web3, f'/opt/poa/keystore/client_2/').address
+    initClient(appContract,clients[0],token_addrs[0],creator_addr)
+    initClient(appContract,clients[0],token_addrs[1],creator_addr)
 
-    # auction1 success
+    colAuctionId1 = createAuction(appContract,StartPrice,FloorPrice,totalAmt,token_addrs[1],aucapp_addr,creator_addr,clients[0])
+    print('new Auction id:',colAuctionId1)
 
-    totalAmt1 = 20
-    StartPrice1 = 100
-    FloorPrice1 = 10
-    colAuctionId1 = createAuction(appContract, StartPrice1, FloorPrice1, totalAmt1, token_addrs[1], aucapp_addr,
-                                  client_1)
-    print('new Auction id:', colAuctionId1)
+    cur_cli = 1
+    cnt = 0 
 
-    # auction2 faild due to total amt > sum of all bidder's amt
+    while True:
+        cnt = cnt + 1
+        tmp_list = file.readline().strip('\n').split(',')
+        pricei = int(tmp_list[1])
+        amti = int(float(tmp_list[2])*100)
+        addri = Web3.toChecksumAddress(tmp_list[4])
 
-    totalAmt2 = 40
-    StartPrice2 = 100
-    FloorPrice2 = 10
-    colAuctionId2 = createAuction(appContract, StartPrice2, FloorPrice2, totalAmt2, token_addrs[2], aucapp_addr,
-                                  client_1)
-    print('new Auction id:', colAuctionId2)
+        initClient(appContract,clients[cur_cli],token_addrs[0],addri)
+        initClient(appContract,clients[cur_cli],token_addrs[1],addri)
 
-    price11 = 60
-    Amt11 = 2
-    submitBids(appContract, colAuctionId1, price11, Amt11, client_1)
-    print('finished input client_1 AuctionId:', colAuctionId1)
-
-    submitBids(appContract, colAuctionId2, price11, Amt11, client_1)
-    print('finished input client_1 AuctionId:', colAuctionId2)
-
-    price12 = 50
-    Amt12 = 10
-    submitBids(appContract, colAuctionId1, price12, Amt12, client_2)
-    print('finished input client_2 AuctionId:', colAuctionId1)
-
-    submitBids(appContract, colAuctionId2, price12, Amt12, client_2)
-    print('finished input client_2 AuctionId:', colAuctionId2)
-
-    # auction3 failed due to the FloorPrice is too high
-
-    totalAmt3 = 20
-    StartPrice3 = 100
-    FloorPrice3 = 50
-    colAuctionId3 = createAuction(appContract, StartPrice3, FloorPrice3, totalAmt3, token_addrs[3], aucapp_addr,
-                                  client_1)
-    print('new Auction id:', colAuctionId3)
-
-    submitBids(appContract, colAuctionId3, price11, Amt11, client_1)
-    print('finished input client_1 AuctionId:', colAuctionId3)
-
-    submitBids(appContract, colAuctionId3, price12, Amt12, client_2)
-    print('finished input client_2 AuctionId:', colAuctionId3)
-
-    price13 = 30
-    Amt13 = 6
-    submitBids(appContract, colAuctionId1, price13, Amt13, client_3)
-    print('finished input client_3 AuctionId:', colAuctionId1)
-
-    submitBids(appContract, colAuctionId2, price13, Amt13, client_3)
-    print('finished input client_3 AuctionId:', colAuctionId2)
-
-    submitBids(appContract, colAuctionId3, price13, Amt13, client_3)
-    print('finished input client_3 AuctionId:', colAuctionId3)
-
-    price14 = 70
-    Amt14 = 7
-    submitBids(appContract, colAuctionId1, price14, Amt14, client_4)
-    print('finished input client_4 AuctionId:', colAuctionId1)
-
-    submitBids(appContract, colAuctionId2, price14, Amt14, client_4)
-    print('finished input client_4 AuctionId:', colAuctionId2)
-
-    submitBids(appContract, colAuctionId3, price14, Amt14, client_4)
-    print('finished input client_4 AuctionId:', colAuctionId3)
-
-    price15 = 20
-    Amt15 = 9
-    submitBids(appContract, colAuctionId1, price15, Amt15, client_5)
-    print('finished input client_5 AuctionId:', colAuctionId1)
-
-    submitBids(appContract, colAuctionId2, price15, Amt15, client_5)
-    print('finished input client_5 AuctionId:', colAuctionId2)
-
-    submitBids(appContract, colAuctionId3, price15, Amt15, client_5)
-    print('finished input client_5 AuctionId:', colAuctionId3)
+        submitBids(appContract,colAuctionId1,pricei,amti,addri,clients[cur_cli])
+        cur_cli = (cur_cli + 1) % n_cli
+        print('finished input bidders ',cnt)
