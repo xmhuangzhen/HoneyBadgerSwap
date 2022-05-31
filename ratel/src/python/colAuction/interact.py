@@ -108,7 +108,7 @@ if __name__=='__main__':
     initClient(appContract,clients[0],token_addrs[0],creator_addr)
     initClient(appContract,clients[0],token_addrs[1],creator_addr)
 
-    colAuctionId1 = createAuction(appContract,StartPrice,FloorPrice,totalAmt,token_addrs[1],aucapp_addr,creator_addr,client_1)
+    colAuctionId1 = createAuction(appContract,StartPrice,FloorPrice,totalAmt,token_addrs[1],aucapp_addr,creator_addr,clients[0])
     print('new Auction id:',colAuctionId1)
 
     cur_cli = 1
