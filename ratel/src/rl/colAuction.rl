@@ -152,9 +152,12 @@ contract colAuction{
         print('colAuctionId: ',colAuctionId)
 
         mpcInput(sint Xi, sint curPrice, sint Amti, sint amtSold, sint totalAmt,sint vi)
+
         valid = (curPrice.less_equal(Xi,bit_length = bit_length))
         delta_amt = Amti*valid*vi
         new_amtSold = amtSold + delta_amt
+
+        print_ln('valid curPrice Xi %s %s %s',valid,curPrice,Xi)
 
         print_ln('valid Amti vi delta_amt, new_amtSold: %s %s %s %s %s',valid.reveal(),Amti.reveal(),vi.reveal(),delta_amt.reveal(),new_amtSold.reveal())
 
