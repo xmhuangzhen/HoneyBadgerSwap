@@ -50,7 +50,7 @@ contract colAuction{
         require(lastTime + 10 < curTime);
         checkTime[colAuctionId] = block.number;
 
-        uint curPrice = curPriceList[colAuctionId]*(50000-curTime+lastTime)/50000;
+        uint curPrice = curPriceList[colAuctionId]*(10000-curTime+lastTime)/10000;
         curPriceList[colAuctionId] = curPrice;
 
         uint FloorPrice = floorPriceList[colAuctionId];
