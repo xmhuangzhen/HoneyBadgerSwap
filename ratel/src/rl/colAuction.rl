@@ -217,7 +217,7 @@ contract colAuction{
 
     function initClient(address token_addr,address user_addr) public{
         mpc(address user_addr,address token_addr){
-            init_balance = 10000000
+            init_balance = 10000000000
             writeDB(f'balanceBoard_{token_addr}_{user_addr}',init_balance,int)
         }
     }
