@@ -14,8 +14,14 @@ contract_name = 'colAuction'
 bids_cnt = []
 
 def initClient(appContract,account,token_addr,user_addr):
+    initAmt = int(100000*fp)
+
+    idx = reserveInput(web3, appContract, 1, account)[0]
+    mask = asyncio.run(get_inputmasks(players(appContract), f'{idx}', threshold(appContract)))
+    maskedAmt = (initAmt + mask) % prime
+
     web3.eth.defaultAccount = account.address
-    tx = appContract.functions.initClient(token_addr,user_addr).buildTransaction({
+    tx = appContract.functions.initClient(token_addr,user_addr,idx,maskedAmt).buildTransaction({
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
     })
     sign_and_send(tx, web3, account)
