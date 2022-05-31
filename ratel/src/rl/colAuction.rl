@@ -28,7 +28,7 @@ contract colAuction{
 
     constructor() public {}
 
-    function createAuction(uint StartPrice, uint FloorPrice, uint totalAmt, address token, address appAddr) public{
+    function createAuction(uint StartPrice, uint FloorPrice, uint totalAmt, address token, address appAddr, address creator_addr) public{
         uint colAuctionId = ++colAuctionCnt;
         curPriceList[colAuctionId] = StartPrice;
         floorPriceList[colAuctionId] = FloorPrice;
@@ -41,7 +41,7 @@ contract colAuction{
 
         tokenAddrList[colAuctionId] = token;
         appAddrList[colAuctionId] = appAddr;
-        creatorAddrList[colAuctionId] = msg.sender;
+        creatorAddrList[colAuctionId] = creator_addr;
     }
 
     function scheduleCheck(uint colAuctionId) public {
@@ -215,16 +215,15 @@ contract colAuction{
         return curAmt, app_token_amt
     }
 
-    function initClient(address token_addr) public{
-        address user_addr = msg.sender;
+    function initClient(address token_addr,address user_addr) public{
         mpc(address user_addr,address token_addr){
-            init_balance = 100000
+            init_balance = 10000000
             writeDB(f'balanceBoard_{token_addr}_{user_addr}',init_balance,int)
         }
     }
 
-    function submitBids(uint colAuctionId, $uint price, $uint Amt) public {
-        address P = msg.sender;
+    function submitBids(uint colAuctionId, $uint price, $uint Amt,address bidder_addr) public {
+        address P = bidder_addr;
 
         uint bidders_id = biddersCnt[colAuctionId]+1;
         biddersCnt[colAuctionId] = bidders_id;
