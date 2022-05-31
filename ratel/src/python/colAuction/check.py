@@ -45,10 +45,7 @@ if __name__=='__main__':
     client_5 = getAccount(web3,f'/opt/poa/keystore/client_5/')
     client_6 = getAccount(web3,f'/opt/poa/keystore/client_6/')
     client_7 = getAccount(web3,f'/opt/poa/keystore/client_7/')
-    client_8 = getAccount(web3,f'/opt/poa/keystore/client_8/')
-    client_9 = getAccount(web3,f'/opt/poa/keystore/client_9/')
-    client_10 = getAccount(web3,f'/opt/poa/keystore/client_10/')
-    clients = [client_1,client_2,client_3,client_4,client_5,client_6,client_7,client_8,client_9,client_10]
+    clients = [client_1,client_2,client_3,client_4,client_5,client_6,client_7]
     n_cli = len(clients)
 
     cur_cli = 0
@@ -80,7 +77,7 @@ if __name__=='__main__':
         for aucId in liveAuct:
             scheduleCheck(appContract,aucId,clients[cur_cli])
 
-        time.sleep(60)
+        time.sleep(120)
         ccnt = ccnt+1
         cur_cli = (cur_cli + 1) % n_cli
 

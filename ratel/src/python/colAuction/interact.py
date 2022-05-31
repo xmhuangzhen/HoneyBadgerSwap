@@ -90,6 +90,9 @@ if __name__=='__main__':
     print(start_time,StartPrice,totalAmt,app_addr)
 
 
+    client_8 = getAccount(web3,f'/opt/poa/keystore/client_8/')
+    client_9 = getAccount(web3,f'/opt/poa/keystore/client_9/')
+    client_10 = getAccount(web3,f'/opt/poa/keystore/client_10/')
     client_11 = getAccount(web3,f'/opt/poa/keystore/client_11/')
     client_12 = getAccount(web3,f'/opt/poa/keystore/client_12/')
     client_13 = getAccount(web3,f'/opt/poa/keystore/client_13/')
@@ -102,7 +105,7 @@ if __name__=='__main__':
     client_20 = getAccount(web3,f'/opt/poa/keystore/client_20/')
 
 
-    clients=[client_11,client_12,client_13,client_14,client_15,client_16,client_17,client_18,client_19,client_20]
+    clients=[client_8,client_9,client_10,client_11,client_12,client_13,client_14,client_15,client_16,client_17,client_18,client_19,client_20]
     n_cli = len(clients)
 
     initClient(appContract,clients[0],token_addrs[0],creator_addr)
