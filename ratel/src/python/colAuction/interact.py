@@ -131,6 +131,7 @@ if __name__=='__main__':
         initClient(appContract,clients[cur_cli],token_addrs[1],addri)
 
         cur_time = time.time()
+        print(cur_time,start_time,ti)
         while cur_time - start_time < ti:
             time.sleep(1)
 
