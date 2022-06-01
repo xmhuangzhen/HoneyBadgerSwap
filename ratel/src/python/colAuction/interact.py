@@ -83,11 +83,13 @@ if __name__=='__main__':
     file = open('ratel/src/python/colAuction/aucdata.txt', 'r')
     tmp_list = file.readline().strip('\n').split(',')
 
-    start_time = int(tmp_list[0]); StartPrice = int(tmp_list[1])
+    start_t = int(tmp_list[0]); StartPrice = int(tmp_list[1])
     FloorPrice = 1900; totalAmt = int(float(tmp_list[3])*100)
     creator_addr = Web3.toChecksumAddress(tmp_list[4])
     aucapp_addr = Web3.toChecksumAddress(tmp_list[5])
-    print(start_time,StartPrice,totalAmt,app_addr)
+    # print(start_t,StartPrice,totalAmt,app_addr)
+
+    start_time = time.time()
 
 
     client_8 = getAccount(web3,f'/opt/poa/keystore/client_8/')
@@ -120,12 +122,17 @@ if __name__=='__main__':
     while True:
         cnt = cnt + 1
         tmp_list = file.readline().strip('\n').split(',')
+        ti = int(tmp_list[0])
         pricei = int(tmp_list[1])
         amti = int(float(tmp_list[2])*100)
         addri = Web3.toChecksumAddress(tmp_list[4])
 
         initClient(appContract,clients[cur_cli],token_addrs[0],addri)
         initClient(appContract,clients[cur_cli],token_addrs[1],addri)
+
+        cur_time = time.time()
+        while cur_time - start_time < ti:
+            time.sleep(1)
 
         submitBids(appContract,colAuctionId1,pricei,amti,addri,clients[cur_cli])
         cur_cli = (cur_cli + 1) % n_cli
