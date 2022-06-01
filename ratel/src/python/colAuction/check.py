@@ -55,6 +55,7 @@ if __name__=='__main__':
 
     while True:
         #refresh liveAuct[]
+        print('checking!')
         while True:
             status = appContract.functions.status(cur_n+1).call()
             if status >= 1:
