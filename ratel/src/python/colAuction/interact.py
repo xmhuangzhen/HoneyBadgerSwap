@@ -97,11 +97,6 @@ if __name__=='__main__':
 
 
 
-    client_8 = getAccount(web3,f'/opt/poa/keystore/client_8/')
-    client_9 = getAccount(web3,f'/opt/poa/keystore/client_9/')
-    client_10 = getAccount(web3,f'/opt/poa/keystore/client_10/')
-    client_11 = getAccount(web3,f'/opt/poa/keystore/client_11/')
-    client_12 = getAccount(web3,f'/opt/poa/keystore/client_12/')
     client_13 = getAccount(web3,f'/opt/poa/keystore/client_13/')
     client_14 = getAccount(web3,f'/opt/poa/keystore/client_14/')
     client_15 = getAccount(web3,f'/opt/poa/keystore/client_15/')
@@ -112,16 +107,16 @@ if __name__=='__main__':
     client_20 = getAccount(web3,f'/opt/poa/keystore/client_20/')
 
 
-    clients=[client_8,client_9,client_10,client_11,client_12,client_13,client_14,client_15,client_16,client_17,client_18,client_19,client_20]
+    clients=[client_13,client_14,client_15,client_16,client_17,client_18,client_19,client_20]
     n_cli = len(clients)
 
     initClient(appContract,clients[0],token_addrs[0],creator_addr)
     initClient(appContract,clients[0],token_addrs[1],creator_addr)
 
-    cur_time = time.strftime("%D %H:%M:%S",time.localtime())
+    cur_print_time = time.strftime("%D %H:%M:%S",time.localtime())
     with open(f'ratel/benchmark/data/latency.csv', 'a') as f:
         f.write(f'create_auction\t'
-                f'cur_time\t{cur_time}\n')
+                f'cur_time\t{cur_print_time}\n')
 
 
     colAuctionId1 = createAuction(appContract,StartPrice,FloorPrice,totalAmt,token_addrs[1],aucapp_addr,creator_addr,clients[0])
@@ -152,9 +147,10 @@ if __name__=='__main__':
             time.sleep(1)
             cur_time = time.time()
         
+        cur_print_time = time.strftime("%D %H:%M:%S",time.localtime())
         with open(f'ratel/benchmark/data/latency.csv', 'a') as f:
             f.write(f'start_submit_bids\t'
-                    f'cur_time\t{cur_time}\n')
+                    f'cur_time\t{cur_print_time}\n')
 
 
         submitBids(appContract,colAuctionId1,pricei,amti,addri,clients[cur_cli])

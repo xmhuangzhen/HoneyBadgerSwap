@@ -45,7 +45,12 @@ if __name__=='__main__':
     client_5 = getAccount(web3,f'/opt/poa/keystore/client_5/')
     client_6 = getAccount(web3,f'/opt/poa/keystore/client_6/')
     client_7 = getAccount(web3,f'/opt/poa/keystore/client_7/')
-    clients = [client_1,client_2,client_3,client_4,client_5,client_6,client_7]
+    client_8 = getAccount(web3,f'/opt/poa/keystore/client_8/')
+    client_9 = getAccount(web3,f'/opt/poa/keystore/client_9/')
+    client_10 = getAccount(web3,f'/opt/poa/keystore/client_10/')
+    client_11 = getAccount(web3,f'/opt/poa/keystore/client_11/')
+    client_12 = getAccount(web3,f'/opt/poa/keystore/client_12/')
+    clients = [client_1,client_2,client_3,client_4,client_5,client_6,client_7,client_8,client_9,client_10,client_11,client_12]
     n_cli = len(clients)
 
     cur_cli = 0
