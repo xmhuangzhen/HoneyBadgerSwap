@@ -80,7 +80,7 @@ if __name__=='__main__':
     appContract = web3.eth.contract(address=app_addr, abi=abi)
 
 
-    file = open('ratel/src/python/colAuction/aucdata1.txt', 'r')
+    file = open('ratel/src/python/colAuction/aucdata.txt', 'r')
     tmp_list = file.readline().strip('\n').split(',')
 
     start_t = int(tmp_list[0]); StartPrice = int(tmp_list[1])
@@ -124,7 +124,7 @@ if __name__=='__main__':
         
         tmp_list = file.readline().strip('\n').split(',')
 
-        if tmp_list == []:
+        if len(tmp_list) == 0:
             break
 
         ti = int(tmp_list[0])
