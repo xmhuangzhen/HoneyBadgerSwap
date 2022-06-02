@@ -84,7 +84,7 @@ if __name__=='__main__':
     tmp_list = file.readline().strip('\n').split(',')
 
     start_t = int(tmp_list[0]); StartPrice = int(tmp_list[1])
-    FloorPrice = 1900; totalAmt = int(float(tmp_list[3])*100)
+    FloorPrice = 2700; totalAmt = int(float(tmp_list[3])*100)
     creator_addr = Web3.toChecksumAddress(tmp_list[4])
     aucapp_addr = Web3.toChecksumAddress(tmp_list[5])
     # print(start_t,StartPrice,totalAmt,app_addr)
@@ -121,7 +121,12 @@ if __name__=='__main__':
 
     while True:
         cnt = cnt + 1
+        
         tmp_list = file.readline().strip('\n').split(',')
+
+        if tmp_list == []:
+            break
+
         ti = int(tmp_list[0])
         pricei = int(tmp_list[1])
         amti = int(float(tmp_list[2])*100)
@@ -131,7 +136,7 @@ if __name__=='__main__':
         initClient(appContract,clients[cur_cli],token_addrs[1],addri)
 
         cur_time = time.time()
-        print(cur_time,start_time,ti)
+        # print(cur_time,start_time,ti)
         while cur_time - start_time < ti:
             time.sleep(5)
             cur_time = time.time()
