@@ -113,6 +113,12 @@ if __name__=='__main__':
     initClient(appContract,clients[0],token_addrs[0],creator_addr)
     initClient(appContract,clients[0],token_addrs[1],creator_addr)
 
+    cur_time = time.strftime("%D %H:%M:%S",time.localtime())
+    with open(f'ratel/benchmark/data/latency.csv', 'a') as f:
+        f.write(f'create_auction\t'
+                f'cur_time\t{cur_time}\n')
+
+
     colAuctionId1 = createAuction(appContract,StartPrice,FloorPrice,totalAmt,token_addrs[1],aucapp_addr,creator_addr,clients[0])
     print('new Auction id:',colAuctionId1)
 
@@ -138,8 +144,13 @@ if __name__=='__main__':
         cur_time = time.time()
         # print(cur_time,start_time,ti)
         while cur_time - start_time < ti:
-            time.sleep(5)
+            time.sleep(1)
             cur_time = time.time()
+        
+        with open(f'ratel/benchmark/data/latency.csv', 'a') as f:
+            f.write(f'start_submit_bids\t'
+                    f'cur_time\t{cur_time}\n')
+
 
         submitBids(appContract,colAuctionId1,pricei,amti,addri,clients[cur_cli])
         cur_cli = (cur_cli + 1) % n_cli
