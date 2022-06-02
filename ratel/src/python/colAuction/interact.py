@@ -89,6 +89,7 @@ if __name__=='__main__':
     aucapp_addr = Web3.toChecksumAddress(tmp_list[5])
     # print(start_t,StartPrice,totalAmt,app_addr)
 
+    start_time = time.time()
     cur_time = time.strftime("%D %H:%M:%S",time.localtime())
     with open(f'ratel/benchmark/data/latency.csv', 'a') as f:
         f.write(f'start!\t'
