@@ -68,6 +68,10 @@ contract colAuction{
 
         mpc(uint colAuctionId, uint n, uint curPrice, uint FloorPrice, uint totalAmt, uint debt, address token_addr, address appAddr, address creatorAddr, address ETH_addr){
 
+            import time
+            times = []
+            times.append(time.perf_counter())
+
             cur_token_creator_balance = readDB(f'balanceBoard_{token_addr}_{creatorAddr}',int)
             cur_token_app_balance = readDB(f'balanceBoard_{token_addr}_{appAddr}',int)
             cur_eth_creator_balance = readDB(f'balanceBoard_{ETH_addr}_{creatorAddr}',int)
@@ -76,9 +80,14 @@ contract colAuction{
             add_benchmark_res_info = ''
 
             if curPrice < FloorPrice:
+    
+                times.append(time.perf_counter())
+
                 for i in range(n):
                     vi,pricei,Pi,Amti = await runCheckFail(server, token_addr, i, colAuctionId)
                     await runCheckFailUpdate(server, token_addr, i, colAuctionId,vi,pricei,Pi,Amti)
+
+                times.append(time.perf_counter())
 
                 print(colAuctionId,'Auction failed!!!!!!!!!')
 
@@ -87,11 +96,20 @@ contract colAuction{
                 curStatus = 1
                 set(status, uint curStatus, uint colAuctionId)
             
+                times.append(time.perf_counter())
+
+
             else:
+
+                times.append(time.perf_counter())
+
                 remain_debt = debt
 
                 for i in range(n):
                     remain_debt = await runCheckAuction(server, i, colAuctionId,remain_debt,curPrice)
+
+    
+                times.append(time.perf_counter())
 
                 mpcInput(sint remain_debt,sint cur_eth_creator_balance,sint curPrice,sint totalAmt)
                 
@@ -105,28 +123,42 @@ contract colAuction{
 
                 mpcOutput(cint aucDone)
 
+
+                times.append(time.perf_counter())
+
                 if aucDone == 1:
                     curAmt = 0
                     app_token_amt = 0
+
+                    times.append(time.perf_counter())
 
                     for i in range(n):
                         vi, pricei, Pi, Amti = await runCheckSuccess(server, i, colAuctionId)
                         curAmt, app_token_amt = await runCheckSuccessUpdate(server, i, colAuctionId, token_addr, ETH_addr, curPrice, curAmt, app_token_amt,vi,pricei,Pi,Amti)
 
+
+                    times.append(time.perf_counter())
+
                     mpcInput(sint cur_token_creator_balance,sint curPrice,sint totalAmt)
                     cur_token_creator_balance = cur_token_creator_balance + curPrice*totalAmt
                     mpcOutput(sint cur_token_creator_balance)
                     
+                    times.append(time.perf_counter())
 
                     mpcInput(sint cur_token_app_balance,sint app_token_amt)
                     cur_token_app_balance = cur_token_app_balance - app_token_amt                
                     mpcOutput(sint cur_token_app_balance)
+
+                    times.append(time.perf_counter())
 
                     add_benchmark_res_info = 'auctionSuccess\t colAuctionId\t' + str(colAuctionId) +'\t'
 
                     print(colAuctionId,'Auction success!!!!!!!!!')
                     curStatus = 1
                     set(status, uint curStatus, uint colAuctionId)
+
+                    times.append(time.perf_counter())
+
 
             writeDB(f'balanceBoard_{ETH_addr}_{creatorAddr}',cur_eth_creator_balance,int)
             writeDB(f'balanceBoard_{token_addr}_{creatorAddr}',cur_token_creator_balance,int)
@@ -137,6 +169,13 @@ contract colAuction{
                 with open(f'ratel/benchmark/data/latency.csv', 'a') as f:
                     f.write(f'{add_benchmark_res_info}\t'
                             f'cur_time\t{cur_time}\n')
+
+                with open(f'ratel/benchmark/data/latency_{server.serverID}.csv', 'a') as f:
+                    for op, t in enumerate(times):
+                        f.write(f'auction end\t'
+                                f'op\t{op + 1}\t'
+                                f'cur_time\t{t}\n')
+
 
         }
     }
