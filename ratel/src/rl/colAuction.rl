@@ -152,7 +152,7 @@ contract colAuction{
         mpcInput(sint Xi, sint curPrice, sint Amti, sint remain_debt,sint vi)
 
         valid = (curPrice.less_equal(Xi,bit_length = bit_length))
-        recover_debt = Amti*valid*vi
+        recover_debt = Amti*valid*vi*curPrice
         new_remain_debt = remain_debt - recover_debt
 
         print_ln(" curPrice Amti recover_debt new_remain_debt :%s %s %s %s",curPrice.reveal(),Amti.reveal(),recover_debt.reveal(),new_remain_debt.reveal())
