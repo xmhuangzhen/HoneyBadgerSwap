@@ -245,7 +245,7 @@ contract colAuction{
 
             mpcInput(sint cur_token_balance,sint cur_app_balance,sint price,sint Amt)
             recover_debt = price*Amt
-            valid = cur_token_balance.greater_equal(p,bit_length=bit_length)
+            valid = cur_token_balance.greater_equal(recover_debt,bit_length=bit_length)
             actual_debt = valid*recover_debt
             cur_token_balance = cur_token_balance - actual_debt
             cur_app_balance = cur_app_balance + actual_debt
