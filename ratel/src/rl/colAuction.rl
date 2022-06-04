@@ -111,10 +111,12 @@ contract colAuction{
     
                 times.append(time.perf_counter())
 
-                mpcInput(sint remain_debt,sint cur_eth_creator_balance,sint curPrice,sint totalAmt)
+                cur_recover_debt = curPrice*totalAmt
+
+                mpcInput(sint remain_debt,sint cur_eth_creator_balance,sint cur_recover_debt)
                 
                 v1 = (remain_debt <= 0)
-                v2 = cur_eth_creator_balance.greater_equal(curPrice*totalAmt,bit_length=bit_length)
+                v2 = (cur_eth_creator_balance >= cur_recover_debt)
 
                 print_ln('**** remain_debt, v1, v2: %s %s %s',remain_debt.reveal(),v1.reveal(),v2.reveal())
 
@@ -139,8 +141,8 @@ contract colAuction{
 
                     times.append(time.perf_counter())
 
-                    mpcInput(sint cur_token_creator_balance,sint curPrice,sint totalAmt)
-                    cur_token_creator_balance = cur_token_creator_balance + curPrice*totalAmt
+                    mpcInput(sint cur_token_creator_balance,sint cur_recover_debt)
+                    cur_token_creator_balance = cur_token_creator_balance + cur_recover_debt
                     mpcOutput(sint cur_token_creator_balance)
                     
                     times.append(time.perf_counter())
@@ -190,9 +192,11 @@ contract colAuction{
 
         mpcInput(sint Xi, sint curPrice, sint Amti, sint remain_debt,sint vi)
 
-        valid = (curPrice.less_equal(Xi,bit_length = bit_length))
-        recover_debt = Amti*valid*vi*curPrice
-        new_remain_debt = remain_debt - recover_debt
+        v1 = (curPrice <= Xi)
+        recover_debt = Amti*curPrice
+        v2 = v1 * valid
+        actual_recover_debt = recover_debt*v2
+        new_remain_debt = remain_debt - actual_recover_debt
 
         print_ln(" curPrice Amti recover_debt new_remain_debt :%s %s %s %s",curPrice.reveal(),Amti.reveal(),recover_debt.reveal(),new_remain_debt.reveal())
 
@@ -216,7 +220,11 @@ contract colAuction{
         cur_token_balance = readDB(f'balanceBoard_{token_addr}_{Pi}',int)
 
         mpcInput(sint cur_token_balance,sint pricei,sint Amti,sint vi)
-        cur_token_balance = cur_token_balance + vi*pricei*Amti
+
+        recover_debt = pricei*Amti
+        actual_debt = recover_debt * vi
+
+        cur_token_balance = cur_token_balance + actual_debt
         mpcOutput(sint cur_token_balance)
 
         writeDB(f'balanceBoard_{token_addr}_{Pi}',cur_token_balance,int)
@@ -239,15 +247,25 @@ contract colAuction{
         cur_token_balance = readDB(f'balanceBoard_{token_addr}_{Pi}',int)
 
         mpcInput(sint cur_eth_balance,sint cur_token_balance,sint pricei,sint vi,sint curPrice,sint curAmt,sint Amti,sint app_token_amt)
-        v1 = (curAmt.greater_equal(Amti,bit_length=bit_length)) 
-        realAmt = vi*v1*Amti + vi*(1-v1)*curAmt
+        
+        v1 = (curAmt >= Amti)
+
+        actAmt = vi*Amti
+        realAmt1 = v1*actAmt
+        realAmt2 = (1-v1)*actAmt
+        realAmt = realAmt1 + realAmt2
+        
         cur_eth_balance = cur_eth_balance + realAmt
 
-        recover_debt = pricei*Amti
+        origin_recover_debt = pricei*Amti
+        actual_recover_debt = curPrice*realAmt
 
-        cur_token_balance = cur_token_balance + recover_debt - curPrice*realAmt
+        cur_token_balance = cur_token_balance + origin_recover_debt - actual_recover_debt
+
         curAmt -= realAmt
-        app_token_amt = app_token_amt + vi*recover_debt
+        
+        app_token_amt = app_token_amt + vi*actual_recover_debt
+        
         mpcOutput(sint curAmt,sint cur_eth_balance,sint cur_token_balance,sint app_token_amt)
 
         writeDB(f'balanceBoard_{ETH_addr}_{Pi}',cur_eth_balance,int)
@@ -285,11 +303,13 @@ contract colAuction{
             times.append(time.perf_counter())
 
             mpcInput(sint cur_token_balance,sint cur_app_balance,sint price,sint Amt)
+
             recover_debt = price*Amt
-            valid = cur_token_balance.greater_equal(recover_debt,bit_length=bit_length)
+            valid = (cur_token_balance >= recover_debt)
             actual_debt = valid*recover_debt
             cur_token_balance = cur_token_balance - actual_debt
             cur_app_balance = cur_app_balance + actual_debt
+
             mpcOutput(sint valid,sint cur_token_balance,sint cur_app_balance)
 
             times.append(time.perf_counter())
