@@ -279,8 +279,7 @@ contract colAuction{
         
             with open(f'ratel/benchmark/data/latency_{server.serverID}.csv', 'a') as f:
                 for op, t in enumerate(times):
-                    f.write(f'trade\t'
-                            f'seq\t{seqTrade}\t'
+                    f.write(f'submit_bid\t'
                             f'op\t{op + 1}\t'
                             f'cur_time\t{t}\n')
         }
