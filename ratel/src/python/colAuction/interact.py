@@ -128,9 +128,10 @@ if __name__=='__main__':
     while True:
         cnt = cnt + 1
         
-        tmp_list = file.readline().strip('\n').split(',')
+        tmp_str = file.readline()
+        tmp_list = tmp_str.strip('\n').split(',')
 
-        if len(tmp_list) == 0:
+        if len(tmp_list) == 0 or tmp_str == '':
             break
 
         ti = int(tmp_list[0])

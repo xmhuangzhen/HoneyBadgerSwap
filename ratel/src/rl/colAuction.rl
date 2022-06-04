@@ -155,6 +155,8 @@ contract colAuction{
         recover_debt = Amti*valid*vi
         new_remain_debt = remain_debt - recover_debt
 
+        print_ln(" curPrice recover_debt new_remain_debt :%s %s %s",curPrice.reveal(),recover_debt.reveal(),new_remain_debt.reveal())
+
         mpcOutput(sint new_remain_debt)
 
         return new_remain_debt
