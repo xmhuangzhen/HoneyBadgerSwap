@@ -194,7 +194,7 @@ contract colAuction{
 
         v1 = (curPrice <= Xi)
         recover_debt = Amti*curPrice
-        v2 = v1 * valid
+        v2 = v1 * vi
         actual_recover_debt = recover_debt*v2
         new_remain_debt = remain_debt - actual_recover_debt
 
