@@ -98,7 +98,7 @@ contract colAuction{
                 v1 = (remain_debt <= 0)
                 v2 = cur_eth_creator_balance.greater_equal(curPrice*totalAmt,bit_length=bit_length)
 
-                print_ln('**** remain_debt, v1, v2: %s %s %s %s',remain_debt.reveal(),v1.reveal(),v2.reveal())
+                print_ln('**** remain_debt, v1, v2: %s %s %s',remain_debt.reveal(),v1.reveal(),v2.reveal())
 
                 aucDone = v1*v2
                 aucDone = aucDone.reveal()
