@@ -21,13 +21,13 @@ def initClient(appContract,account,token_addr,user_addr):
     sign_and_send(tx, web3, account)
 
 
-def createAuction(appContract,StartPrice,FloorPrice,totalAmt,token,aucapp_addr,creator_addr,account):
+def createAuction(appContract,StartPrice,FloorPrice,totalAmt,debt,token,aucapp_addr,creator_addr,account):
     colAuctionlast = appContract.functions.colAuctionCnt().call()
 
     bids_cnt.append(0)
 
     web3.eth.defaultAccount = account.address
-    tx = appContract.functions.createAuction(StartPrice,FloorPrice,totalAmt,token,aucapp_addr,creator_addr).buildTransaction({
+    tx = appContract.functions.createAuction(StartPrice,FloorPrice,totalAmt,debt,token,aucapp_addr,creator_addr).buildTransaction({
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
     })
     sign_and_send(tx, web3, account)
@@ -83,7 +83,7 @@ if __name__=='__main__':
     file = open('ratel/src/python/colAuction/aucdata.txt', 'r')
     tmp_list = file.readline().strip('\n').split(',')
 
-    start_t = int(tmp_list[0]); StartPrice = int(tmp_list[1])
+    start_t = int(tmp_list[0]); debt = int(tmp_list[1]); StartPrice = int(tmp_list[2])
     FloorPrice = 2000; totalAmt = int(float(tmp_list[3])*100)
     creator_addr = Web3.toChecksumAddress(tmp_list[4])
     aucapp_addr = Web3.toChecksumAddress(tmp_list[5])
@@ -119,7 +119,7 @@ if __name__=='__main__':
                 f'cur_time\t{cur_print_time}\n')
 
 
-    colAuctionId1 = createAuction(appContract,StartPrice,FloorPrice,totalAmt,token_addrs[1],aucapp_addr,creator_addr,clients[0])
+    colAuctionId1 = createAuction(appContract,StartPrice,FloorPrice,totalAmt,debt,token_addrs[1],aucapp_addr,creator_addr,clients[0])
     print('new Auction id:',colAuctionId1)
 
     cur_cli = 1
