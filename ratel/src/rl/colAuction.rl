@@ -44,6 +44,10 @@ contract colAuction{
         appAddrList[colAuctionId] = appAddr;
         creatorAddrList[colAuctionId] = creator_addr;
         debtList[colAuctionId] = debt;
+
+        mpc(uint colAuctionId,uint debt){
+            writeDB(f'debtBoard_{colAuctionId}',debt,int)
+        }
     }
 
     function scheduleCheck(uint colAuctionId) public {
@@ -116,12 +120,10 @@ contract colAuction{
                 mpcInput(sint remain_debt,sint cur_eth_creator_balance,sint cur_recover_debt)
                 
                 v1 = (remain_debt <= 0)
-                v2 = (cur_eth_creator_balance >= cur_recover_debt)
 
-                print_ln('**** remain_debt, v1, v2: %s %s %s',remain_debt.reveal(),v1.reveal(),v2.reveal())
+                print_ln('**** remain_debt, v1: %s %s',remain_debt.reveal(),v1.reveal())
 
-                aucDone = v1*v2
-                aucDone = aucDone.reveal()
+                aucDone = v1.reveal()
 
                 mpcOutput(cint aucDone)
 
@@ -193,7 +195,7 @@ contract colAuction{
         mpcInput(sint Xi, sint curPrice, sint Amti, sint remain_debt,sint vi)
 
         v1 = (curPrice <= Xi)
-        recover_debt = Amti*curPrice
+        recover_debt = Amti*Xi
         v2 = v1 * vi
         actual_recover_debt = recover_debt*v2
         new_remain_debt = remain_debt - actual_recover_debt
@@ -299,18 +301,21 @@ contract colAuction{
 
             cur_token_balance = readDB(f'balanceBoard_{token_addr}_{P}',int)
             cur_app_balance = readDB(f'balanceBoard_{token_addr}_{appAddr}',int)
+            remain_debt = readDB(f'debtBoard_{colAuctionId}',int)
 
             times.append(time.perf_counter())
 
-            mpcInput(sint cur_token_balance,sint cur_app_balance,sint price,sint Amt)
+            mpcInput(sint cur_token_balance,sint cur_app_balance,sint price,sint Amt,sint remain_debt)
 
             recover_debt = price*Amt
             valid = (cur_token_balance >= recover_debt)
             actual_debt = valid*recover_debt
+
+            remain_debt = remain_debt - actual_debt
             cur_token_balance = cur_token_balance - actual_debt
             cur_app_balance = cur_app_balance + actual_debt
 
-            mpcOutput(sint valid,sint cur_token_balance,sint cur_app_balance)
+            mpcOutput(sint valid,sint cur_token_balance,sint cur_app_balance,sint remain_debt)
 
             times.append(time.perf_counter())
 
@@ -324,6 +329,7 @@ contract colAuction{
             writeDB(f'bidsBoard_{colAuctionId}_{bidders_id}',bid,dict)
             writeDB(f'balanceBoard_{token_addr}_{P}',cur_token_balance,int)
             writeDB(f'balanceBoard_{token_addr}_{appAddr}',cur_app_balance,int)
+            writeDB(f'bidsBoard_{colAuctionId}',remain_debt,int)
 
             times.append(time.perf_counter())
 
