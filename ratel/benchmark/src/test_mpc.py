@@ -96,7 +96,7 @@ if __name__ == '__main__':
     players = int(sys.argv[1])
     threshold = int(sys.argv[2])
     max_concurrency = int(sys.argv[3])
-    mpcProg = 'hbswapTrade1'
+    mpcProg = 'colAuctionSubmitBids1'
 
     set_up_share_files(players, max_concurrency)
     asyncio.run(main(players, threshold, max_concurrency))

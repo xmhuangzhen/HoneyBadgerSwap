@@ -80,7 +80,7 @@ if __name__=='__main__':
     appContract = web3.eth.contract(address=app_addr, abi=abi)
 
 
-    file = open('ratel/src/python/colAuction/aucdata.txt', 'r')
+    file = open('ratel/src/python/colAuction/aucdata1.txt', 'r')
     tmp_list = file.readline().strip('\n').split(',')
 
     start_t = int(tmp_list[0]); debt = int(tmp_list[1])*100; StartPrice = int(tmp_list[2])
@@ -144,7 +144,7 @@ if __name__=='__main__':
 
         cur_time = time.time()
         # print(cur_time,start_time,ti)
-        while cur_time - start_time < ti-1740:
+        while cur_time - start_time < ti:
             time.sleep(1)
             cur_time = time.time()
         
