@@ -144,7 +144,7 @@ if __name__=='__main__':
 
         cur_time = time.time()
         # print(cur_time,start_time,ti)
-        while cur_time - start_time < ti:
+        while cur_time - start_time < ti-1770:
             time.sleep(1)
             cur_time = time.time()
         
