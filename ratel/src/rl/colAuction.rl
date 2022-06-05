@@ -204,7 +204,7 @@ contract colAuction{
 
         address token_addr = tokenAddrList[colAuctionId];
         address appAddr = appAddrList[colAuctionId];
-        address creatorAddr = creatorAddrList[colAuctionId]
+        address creatorAddr = creatorAddrList[colAuctionId];
 
         uint debt = debtList[colAuctionId];
 
