@@ -204,10 +204,11 @@ contract colAuction{
 
         address token_addr = tokenAddrList[colAuctionId];
         address appAddr = appAddrList[colAuctionId];
+        address creatorAddr = creatorAddrList[colAuctionId]
 
         uint debt = debtList[colAuctionId];
 
-        mpc(uint colAuctionId, uint bidders_id, $uint price, address P, $uint Amt,uint debt, address token_addr, address appAddr,address ETH_addr){
+        mpc(uint colAuctionId, uint bidders_id, $uint price, address P, $uint Amt,uint debt, address token_addr, address appAddr,address ETH_addr,address creatorAddr){
             times = []
 
             import time
