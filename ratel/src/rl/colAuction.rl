@@ -327,11 +327,6 @@ contract colAuction{
 
             times.append(time.perf_counter())
 
-            curStatus = bidders_id+2
-            set(status, uint curStatus, uint colAuctionId)
-
-            times.append(time.perf_counter())
-
             with open(f'ratel/benchmark/data/latency.csv', 'a') as f:
                 f.write(f'submit_bid\t'
                         f'colAuctionId\t{colAuctionId}\t'

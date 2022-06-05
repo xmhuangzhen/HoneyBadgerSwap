@@ -43,9 +43,6 @@ def createAuction(appContract,StartPrice,FloorPrice,totalAmt,debt,token,aucapp_a
 
 # means I'll buy up to $amt if the prices reaches $price or below
 def submitBids(appContract,colAuctionId,price,amt,bidder_addr,account):
-    status = appContract.functions.status(colAuctionId).call()
-    if status == 1:
-        return
 
     cur_bidcnt = bids_cnt[colAuctionId-1]
     print("curbid cnt",colAuctionId,cur_bidcnt)
@@ -60,15 +57,6 @@ def submitBids(appContract,colAuctionId,price,amt,bidder_addr,account):
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
     })
     sign_and_send(tx, web3, account)
-
-    while True:
-        time.sleep(1)
-        status = appContract.functions.status(colAuctionId).call()
-        if status-2 > cur_bidcnt:
-            bids_cnt[colAuctionId-1] = status-2
-            return
-        if status == 1:
-            return
 
 
 
