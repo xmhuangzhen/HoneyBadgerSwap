@@ -84,7 +84,7 @@ if __name__=='__main__':
     tmp_list = file.readline().strip('\n').split(',')
 
     start_t = int(tmp_list[0]); debt = int(tmp_list[1])*100; StartPrice = int(tmp_list[2])
-    FloorPrice = 1800; totalAmt = int(float(tmp_list[3])*100)
+    FloorPrice = 2000; totalAmt = int(float(tmp_list[3])*100)
     creator_addr = Web3.toChecksumAddress(tmp_list[4])
     aucapp_addr = Web3.toChecksumAddress(tmp_list[5])
     # print(start_t,StartPrice,totalAmt,app_addr)
