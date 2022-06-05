@@ -89,12 +89,12 @@ if __name__=='__main__':
         time.sleep(60)
         print('checking!')
         time.sleep(60)
-        print('checking!')
-        time.sleep(60)
-        print('checking!')
-        time.sleep(60)
-        print('checking!')
-        time.sleep(60)
+        # print('checking!')
+        # time.sleep(60)
+        # print('checking!')
+        # time.sleep(60)
+        # print('checking!')
+        # time.sleep(60)
         
 
     
