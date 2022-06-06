@@ -116,6 +116,8 @@ if __name__=='__main__':
     cur_cli = 1
     cnt = 0 
 
+    ti_list = []
+
     while True:
         cnt = cnt + 1
         
@@ -129,6 +131,8 @@ if __name__=='__main__':
         pricei = int(tmp_list[1])
         amti = int(float(tmp_list[2])*100)
         addri = Web3.toChecksumAddress(tmp_list[4])
+
+        ti_list.append(ti)
 
         initClient(appContract,clients[cur_cli],token_addrs[0],addri)
         initClient(appContract,clients[cur_cli],token_addrs[1],addri)
@@ -144,12 +148,16 @@ if __name__=='__main__':
         # print('finished input bidders ',cnt)
 
 
+    cur_pos_t = 0
     for (tx,web3,account) in tsks:
         cur_time = time.time()
-        # print(cur_time,start_time,ti)
+        ti = ti_list[cur_pos_t]
+        cur_pos_t = cur_pos_t + 1
+        print(cur_time,start_time,ti)
         while cur_time - start_time < ti-1740:
             time.sleep(1)
             cur_time = time.time()
         
         signedTx = web3.eth.account.sign_transaction(tx, private_key=account.privateKey)
         tx_hash = web3.eth.send_raw_transaction(signedTx.rawTransaction)
+        print('finish',cur_pos_t)
