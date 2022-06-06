@@ -47,7 +47,7 @@ def createAuction(appContract,StartPrice,FloorPrice,totalAmt,debt,token,aucapp_a
 # means I'll buy up to $amt if the prices reaches $price or below
 def submitBids_pre(appContract,colAuctionId,price,amt,bidder_addr,account):
 
-    cur_bidcnt = bids_cnt[colAuctionId-1]
+    cur_bidcnt = bids_cnt[colAuctionId]
     print("curbid cnt",colAuctionId,cur_bidcnt)
 
 
