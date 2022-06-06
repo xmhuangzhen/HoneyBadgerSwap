@@ -84,8 +84,8 @@ contract colAuction{
                 times.append(time.perf_counter())
 
                 for i in range(n):
-                    vi,pricei,Pi,Amti = await runCheckFail(server, token_addr, i, colAuctionId)
-                    await runCheckFailUpdate(server, token_addr, i, colAuctionId,vi,pricei,Pi,Amti)
+                    pricei,Pi,Amti,recover_debti = await runCheckFail(server, token_addr, i, colAuctionId)
+                    await runCheckFailUpdate(server, token_addr, i, colAuctionId,pricei,Pi,Amti,recover_debti)
 
                 times.append(time.perf_counter())
 
@@ -93,40 +93,29 @@ contract colAuction{
 
                 add_benchmark_res_info = 'auctionFailed\t colAuctionId\t' + str(colAuctionId) +'\t'
 
-                curStatus = 1
-                set(status, uint curStatus, uint colAuctionId)
-            
-                times.append(time.perf_counter())
-
 
             else:
 
                 times.append(time.perf_counter())
 
-                remain_debt = debt
+                sum_amt = 0
 
                 for i in range(n):
-                    remain_debt = await runCheckAuction(server, i, colAuctionId,remain_debt,curPrice)
+                    sum_amt = await runCheckAuction(server, i, colAuctionId,sum_amt,curPrice)
 
     
                 times.append(time.perf_counter())
 
-                cur_recover_debt = curPrice*totalAmt
-
-                mpcInput(sint remain_debt,sint cur_eth_creator_balance,sint cur_recover_debt)
+                mpcInput(sint sum_amt,sint curPrice, sint debt)
                 
-                v1 = (remain_debt <= 0)
-                v2 = (cur_eth_creator_balance >= cur_recover_debt)
+                cur_debt = sum_amt*curPrice
+                v1 = (debt <= cur_debt)
+                aucDone = v1.reveal()
 
-                print_ln('**** remain_debt, v1, v2: %s %s %s',remain_debt.reveal(),v1.reveal(),v2.reveal())
-
-                aucDone = v1*v2
-                aucDone = aucDone.reveal()
+                print_ln('cur_debt curPrice debt %s %s %s',cur_debt.reveal(),curPrice.reveal(),debt.reveal())
 
                 mpcOutput(cint aucDone)
 
-
-                times.append(time.perf_counter())
 
                 if aucDone == 1:
                     curAmt = 0
@@ -135,31 +124,18 @@ contract colAuction{
                     times.append(time.perf_counter())
 
                     for i in range(n):
-                        vi, pricei, Pi, Amti = await runCheckSuccess(server, i, colAuctionId)
-                        curAmt, app_token_amt = await runCheckSuccessUpdate(server, i, colAuctionId, token_addr, ETH_addr, curPrice, curAmt, app_token_amt,vi,pricei,Pi,Amti)
+                        pricei, Pi, Amti,recover_debti = await runCheckSuccess(server, i, colAuctionId)
+                        curAmt, app_token_amt = await runCheckSuccessUpdate(server, i, colAuctionId, token_addr, ETH_addr, curPrice, curAmt, app_token_amt,pricei,Pi,Amti,recover_debti)
 
-
-                    times.append(time.perf_counter())
-
-                    mpcInput(sint cur_token_creator_balance,sint cur_recover_debt)
-                    cur_token_creator_balance = cur_token_creator_balance + cur_recover_debt
-                    mpcOutput(sint cur_token_creator_balance)
-                    
-                    times.append(time.perf_counter())
-
-                    mpcInput(sint cur_token_app_balance,sint app_token_amt)
-                    cur_token_app_balance = cur_token_app_balance - app_token_amt                
-                    mpcOutput(sint cur_token_app_balance)
+                    cur_token_creator_balance = (cur_token_creator_balance + cur_recover_debt)%prime
+                    cur_token_app_balance = (cur_token_app_balance - app_token_amt ) %prime
 
                     times.append(time.perf_counter())
 
                     add_benchmark_res_info = 'auctionSuccess\t colAuctionId\t' + str(colAuctionId) +'\t'
 
                     print(colAuctionId,'Auction success!!!!!!!!!')
-                    curStatus = 1
-                    set(status, uint curStatus, uint colAuctionId)
 
-                    times.append(time.perf_counter())
 
 
             writeDB(f'balanceBoard_{ETH_addr}_{creatorAddr}',cur_eth_creator_balance,int)
@@ -182,50 +158,38 @@ contract colAuction{
         }
     }
 
-    pureMpc checkAuction(server, i, colAuctionId,remain_debt,curPrice) {
+    pureMpc checkAuction(server, i, colAuctionId,sum_amt,curPrice) {
         bids = readDB(f'bidsBoard_{colAuctionId}_{i+1}', dict)
 
         Xi = bids['price']
         Pi = bids['address']
         Amti = bids['amt']
-        vi = bids['valid']
 
-        mpcInput(sint Xi, sint curPrice, sint Amti, sint remain_debt,sint vi)
+        mpcInput(sint Xi, sint curPrice, sint Amti)
 
         v1 = (curPrice <= Xi)
-        recover_debt = Amti*curPrice
-        v2 = v1 * vi
-        actual_recover_debt = recover_debt*v2
-        new_remain_debt = remain_debt - actual_recover_debt
+        sum_amt = sum_amt + v1*Amti
 
-        print_ln(" curPrice Amti recover_debt new_remain_debt :%s %s %s %s",curPrice.reveal(),Amti.reveal(),recover_debt.reveal(),new_remain_debt.reveal())
+        mpcOutput(sint new_sum_amt)
 
-        mpcOutput(sint new_remain_debt)
-
-        return new_remain_debt
+        return new_sum_amt
     }
 
     pureMpc checkFail(server, token_addr, i, colAuctionId) {
         bids = readDB(f'bidsBoard_{colAuctionId}_{i+1}', dict)
     
-        vi = bids['valid']
         pricei = bids['price']
         Pi = bids['address']
         Amti = bids['amt']
+        recover_debti = bids['recover_debt']
 
-        return vi,pricei,Pi,Amti
+        return pricei,Pi,Amti,recover_debti
     } 
 
-    pureMpc checkFailUpdate(server, token_addr, i, colAuctionId,vi,pricei,Pi,Amti) {
+    pureMpc checkFailUpdate(server, token_addr, i, colAuctionId,pricei,Pi,Amti,recover_debti) {
         cur_token_balance = readDB(f'balanceBoard_{token_addr}_{Pi}',int)
 
-        mpcInput(sint cur_token_balance,sint pricei,sint Amti,sint vi)
-
-        recover_debt = pricei*Amti
-        actual_debt = recover_debt * vi
-
-        cur_token_balance = cur_token_balance + actual_debt
-        mpcOutput(sint cur_token_balance)
+        cur_token_balance = cur_token_balance + recover_debti
 
         writeDB(f'balanceBoard_{token_addr}_{Pi}',cur_token_balance,int)
     }
@@ -233,33 +197,31 @@ contract colAuction{
     pureMpc checkSuccess(server, i, colAuctionId) {
         bids = readDB(f'bidsBoard_{colAuctionId}_{i+1}', dict)
 
-        vi = bids['valid']
         pricei = bids['price']
         Pi = bids['address']
         Amti = bids['amt']
+        recover_debti = bids['recover_debt']
 
-        return vi, pricei, Pi, Amti
+        return pricei, Pi, Amti,recover_debti
     }
 
-    pureMpc checkSuccessUpdate(server, i, colAuctionId, token_addr, ETH_addr, curPrice, curAmt, app_token_amt,vi,pricei,Pi,Amti){
+    pureMpc checkSuccessUpdate(server, i, colAuctionId, token_addr, ETH_addr, curPrice, curAmt, app_token_amt,pricei,Pi,Amti,recover_debti){
         
         cur_eth_balance = readDB(f'balanceBoard_{ETH_addr}_{Pi}',int)
         cur_token_balance = readDB(f'balanceBoard_{token_addr}_{Pi}',int)
 
-        mpcInput(sint cur_eth_balance,sint cur_token_balance,sint pricei,sint vi,sint curPrice,sint curAmt,sint Amti,sint app_token_amt)
+        mpcInput(sint cur_eth_balance,sint cur_token_balance,sint pricei,sint curPrice,sint curAmt,sint Amti,sint recover_debti,sint app_token_amt)
         
         v1 = (curAmt >= Amti)
 
-        actAmt1 = vi*Amti
-        actAmt2 = vi*curAmt
-        realAmt1 = v1*actAmt1
-        realAmt2 = (1-v1)*actAmt2
+        realAmt1 = v1*Amti
+        realAmt2 = (1-v1)*curAmt
         realAmt = realAmt1 + realAmt2
         
         cur_eth_balance = cur_eth_balance + realAmt
 
-        origin_recover_debt = pricei*Amti*vi
-        actual_recover_debt = curPrice*realAmt*vi
+        origin_recover_debt = recover_debti
+        actual_recover_debt = curPrice*realAmt
 
         cur_token_balance = cur_token_balance + origin_recover_debt - actual_recover_debt
 
@@ -306,12 +268,10 @@ contract colAuction{
             mpcInput(sint cur_token_balance,sint cur_app_balance,sint price,sint Amt)
 
             recover_debt = price*Amt
-            valid = (cur_token_balance >= recover_debt)
-            actual_debt = valid*recover_debt
             cur_token_balance = cur_token_balance - actual_debt
             cur_app_balance = cur_app_balance + actual_debt
 
-            mpcOutput(sint valid,sint cur_token_balance,sint cur_app_balance)
+            mpcOutput(sint cur_token_balance,sint cur_app_balance,sint Amt,sint recover_debt)
 
             times.append(time.perf_counter())
 
@@ -319,7 +279,7 @@ contract colAuction{
                 'price': price,
                 'amt': Amt,
                 'address': P,
-                'valid':valid,
+                'recover_debt':recover_debt,
             }
 
             writeDB(f'bidsBoard_{colAuctionId}_{bidders_id}',bid,dict)
