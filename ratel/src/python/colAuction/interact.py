@@ -168,3 +168,5 @@ if __name__=='__main__':
         submitBids_real(appContract,colAuctionId1,i)
 
         print('finish',i)
+
+        time.sleep(3)
