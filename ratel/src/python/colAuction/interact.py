@@ -12,7 +12,7 @@ from ratel.src.python.utils import fp,parse_contract, getAccount, players, prime
 contract_name = 'colAuction'
 
 bids_cnt = []
-tsks = []
+data_list = []
 
 
 def initClient(appContract,account,token_addr,user_addr):
@@ -45,7 +45,7 @@ def createAuction(appContract,StartPrice,FloorPrice,totalAmt,debt,token,aucapp_a
 
 
 # means I'll buy up to $amt if the prices reaches $price or below
-def submitBids(appContract,colAuctionId,price,amt,bidder_addr,account):
+def submitBids_pre(appContract,colAuctionId,price,amt,bidder_addr,account):
 
     cur_bidcnt = bids_cnt[colAuctionId-1]
     print("curbid cnt",colAuctionId,cur_bidcnt)
@@ -55,12 +55,20 @@ def submitBids(appContract,colAuctionId,price,amt,bidder_addr,account):
     mask1, mask2 = asyncio.run(get_inputmasks(players(appContract), f'{idx1},{idx2}', threshold(appContract)))
     maskedP, maskedAmt = (price + mask1) % prime, (amt + mask2) % prime
 
+    data_list.append((idx1,maskedP,idx2,maskedAmt,bidder_addr,account))
+
+
+def submitBids_real(appContract,colAuctionId,pos):
+    (idx1,maskedP,idx2,maskedAmt,bidder_addr,account) = data_list[pos]
+
     web3.eth.defaultAccount = account.address
     tx = appContract.functions.submitBids(colAuctionId, idx1, maskedP, idx2, maskedAmt,bidder_addr).buildTransaction({
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
     })
-    tsks.append((tx,web3,account))
+    signedTx = web3.eth.account.sign_transaction(tx, private_key=account.privateKey)
+    tx_hash = web3.eth.send_raw_transaction(signedTx.rawTransaction)
 
+    
 
 
 if __name__=='__main__':
@@ -143,21 +151,20 @@ if __name__=='__main__':
         #             f'cur_time\t{cur_print_time}\n')
 
 
-        submitBids(appContract,colAuctionId1,pricei,amti,addri,clients[cur_cli])
+        submitBids_pre(appContract,colAuctionId1,pricei,amti,addri,clients[cur_cli])
         cur_cli = (cur_cli + 1) % n_cli
         # print('finished input bidders ',cnt)
 
 
     cur_pos_t = 0
-    for (tx,web3,account) in tsks:
+    for i in range(cnt):
         cur_time = time.time()
-        ti = ti_list[cur_pos_t]
-        cur_pos_t = cur_pos_t + 1
+        ti = ti_list[i]
         print(cur_time,start_time,ti)
         while cur_time - start_time < ti-1740:
             time.sleep(1)
             cur_time = time.time()
         
-        signedTx = web3.eth.account.sign_transaction(tx, private_key=account.privateKey)
-        tx_hash = web3.eth.send_raw_transaction(signedTx.rawTransaction)
-        print('finish',cur_pos_t)
+        submitBids_real(appContract,colAuctionId1,i)
+
+        print('finish',i)
