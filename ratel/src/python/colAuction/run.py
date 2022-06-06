@@ -33,8 +33,7 @@ if __name__ == '__main__':
         init_threshold,
         concurrency,
         recover,
-        test,
+        # test,
     )
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(server.init(colAuction.monitor(server)))
+    server.loop.run_until_complete(server.init(colAuction.monitor(server)))
