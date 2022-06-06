@@ -118,7 +118,7 @@ contract colAuction{
 
 
                 if aucDone == 1:
-                    curAmt = 0
+                    curAmt = totalAmt
                     app_token_amt = 0
 
                     times.append(time.perf_counter())
