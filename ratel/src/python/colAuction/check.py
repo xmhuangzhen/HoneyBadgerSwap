@@ -86,9 +86,9 @@ if __name__=='__main__':
         ccnt = ccnt+1
         cur_cli = (cur_cli + 1) % n_cli
         print('checking!')
-        time.sleep(60)
-        print('checking!')
-        time.sleep(60)
+        time.sleep(10)
+        # print('checking!')
+        # time.sleep(60)
         # print('checking!')
         # time.sleep(60)
         # print('checking!')
