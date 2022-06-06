@@ -112,7 +112,7 @@ contract colAuction{
                 v1 = (debt <= cur_debt)
                 aucDone = v1.reveal()
 
-                print_ln('cur_debt curPrice debt %s %s %s',cur_debt.reveal(),curPrice.reveal(),debt.reveal())
+                print_ln('cur_debt curPrice debt v1 %s %s %s %s',cur_debt.reveal(),curPrice.reveal(),debt.reveal(),v1.reveal())
 
                 mpcOutput(cint aucDone)
 
