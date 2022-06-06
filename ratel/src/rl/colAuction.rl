@@ -218,17 +218,23 @@ contract colAuction{
         realAmt1 = v1*Amti
         realAmt2 = (1-v1)*curAmt
         realAmt = realAmt1 + realAmt2
-        
+
+        print_ln('v1,realAmt %s %s',v1.reveal(),realAmt.reveal())
+
         cur_eth_balance = cur_eth_balance + realAmt
 
         origin_recover_debt = recover_debti
         actual_recover_debt = curPrice*realAmt
 
+        print_ln('origin_recover_debt actual_recover_debt:%s %s',origin_recover_debt.reveal(),actual_recover_debt.reveal())
+
         cur_token_balance = cur_token_balance + origin_recover_debt - actual_recover_debt
 
-        curAmt -= realAmt
+        curAmt = curAmt - realAmt
         
         app_token_amt = app_token_amt + actual_recover_debt
+
+        print_ln('curAmt,cur_eth_balance,cur_token_balance,app_token_amt:%s %s %s %s',curAmt.reveal(),cur_eth_balance.reveal(),cur_token_balance.reveal(),app_token_amt.reveal())
         
         mpcOutput(sint curAmt,sint cur_eth_balance,sint cur_token_balance,sint app_token_amt)
 
