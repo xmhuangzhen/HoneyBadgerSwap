@@ -127,6 +127,7 @@ contract colAuction{
                         pricei, Pi, Amti,recover_debti = await runCheckSuccess(server, i, colAuctionId)
                         curAmt, app_token_amt = await runCheckSuccessUpdate(server, i, colAuctionId, token_addr, ETH_addr, curPrice, curAmt, app_token_amt,pricei,Pi,Amti,recover_debti)
 
+                    cur_recover_debt = curPrice * totalAmt
                     cur_token_creator_balance = (cur_token_creator_balance + cur_recover_debt)%prime
                     cur_token_app_balance = (cur_token_app_balance - app_token_amt ) %prime
 
