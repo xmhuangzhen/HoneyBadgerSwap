@@ -268,10 +268,10 @@ contract colAuction{
             mpcInput(sint cur_token_balance,sint cur_app_balance,sint price,sint Amt)
 
             recover_debt = price*Amt
-            cur_token_balance = cur_token_balance - actual_debt
-            cur_app_balance = cur_app_balance + actual_debt
+            cur_token_balance = cur_token_balance - recover_debt
+            cur_app_balance = cur_app_balance + recover_debt
 
-            mpcOutput(sint cur_token_balance,sint cur_app_balance,sint Amt,sint recover_debt)
+            mpcOutput(sint cur_token_balance,sint cur_app_balance,sint recover_debt)
 
             times.append(time.perf_counter())
 
