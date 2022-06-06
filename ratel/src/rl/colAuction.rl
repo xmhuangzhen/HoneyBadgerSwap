@@ -250,21 +250,22 @@ contract colAuction{
         
         v1 = (curAmt >= Amti)
 
-        actAmt = vi*Amti
-        realAmt1 = v1*actAmt
-        realAmt2 = (1-v1)*actAmt
+        actAmt1 = vi*Amti
+        actAmt2 = vi*curAmt
+        realAmt1 = v1*actAmt1
+        realAmt2 = (1-v1)*actAmt2
         realAmt = realAmt1 + realAmt2
         
         cur_eth_balance = cur_eth_balance + realAmt
 
-        origin_recover_debt = pricei*Amti
-        actual_recover_debt = curPrice*realAmt
+        origin_recover_debt = pricei*Amti*vi
+        actual_recover_debt = curPrice*realAmt*vi
 
         cur_token_balance = cur_token_balance + origin_recover_debt - actual_recover_debt
 
         curAmt -= realAmt
         
-        app_token_amt = app_token_amt + vi*actual_recover_debt
+        app_token_amt = app_token_amt + actual_recover_debt
         
         mpcOutput(sint curAmt,sint cur_eth_balance,sint cur_token_balance,sint app_token_amt)
 
