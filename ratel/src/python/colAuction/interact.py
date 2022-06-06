@@ -11,7 +11,9 @@ from ratel.src.python.utils import fp,parse_contract, getAccount, players, prime
 
 contract_name = 'colAuction'
 
-bids_cnt = []
+colAuctionCnt = 0
+
+bids_cnt = {}
 data_list = []
 
 
@@ -24,9 +26,6 @@ def initClient(appContract,account,token_addr,user_addr):
 
 
 def createAuction(appContract,StartPrice,FloorPrice,totalAmt,debt,token,aucapp_addr,creator_addr,account):
-    colAuctionlast = appContract.functions.colAuctionCnt().call()
-
-    bids_cnt.append(0)
 
     web3.eth.defaultAccount = account.address
     tx = appContract.functions.createAuction(StartPrice,FloorPrice,totalAmt,debt,token,aucapp_addr,creator_addr).buildTransaction({
@@ -38,7 +37,8 @@ def createAuction(appContract,StartPrice,FloorPrice,totalAmt,debt,token,aucapp_a
         colAuctionId = appContract.functions.colAuctionCnt().call()
         time.sleep(1)
         status = appContract.functions.status(colAuctionId).call()
-        if status == 2 and colAuctionId != colAuctionlast:
+        if status == 2:
+            bids_cnt[colAuctionId] = 0
             return colAuctionId
 
 
