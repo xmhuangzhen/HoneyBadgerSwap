@@ -68,7 +68,7 @@ def submitBids_real(appContract,colAuctionId,pos):
     signedTx = web3.eth.account.sign_transaction(tx, private_key=account.privateKey)
     tx_hash = web3.eth.send_raw_transaction(signedTx.rawTransaction)
 
-    
+
 
 
 if __name__=='__main__':
@@ -79,7 +79,7 @@ if __name__=='__main__':
     appContract = web3.eth.contract(address=app_addr, abi=abi)
 
 
-    filea = open('ratel/src/python/colAuction/aucdata.txt', 'r')
+    filea = open('ratel/src/python/colAuction/aucdata1.txt', 'r')
     tmp_list = filea.readline().strip('\n').split(',')
 
     start_t = int(tmp_list[0]); debt = int(tmp_list[1])*100; StartPrice = int(tmp_list[2])
@@ -161,9 +161,9 @@ if __name__=='__main__':
         cur_time = time.time()
         ti = ti_list[i]
         print(cur_time,start_time,ti)
-        while cur_time - start_time < ti-1740:
-            time.sleep(1)
-            cur_time = time.time()
+        # while cur_time - start_time < ti-1740:
+        #     time.sleep(1)
+        #     cur_time = time.time()
         
         submitBids_real(appContract,colAuctionId1,i)
 
