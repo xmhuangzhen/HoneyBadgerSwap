@@ -50,10 +50,9 @@ async def test(func, server_id, port, players, threshold, mpcProg):
 
     return duration
 
-
 async def run_test(func, players, threshold, concurrency, mpcProg):
     tasks = []
-    for i in range(concurrency):
+    for i in range(-1,concurrency):
         port = mpc_port + i * 100
         for server_id in range(players):
             tasks.append(test(func, server_id, port, players, threshold, mpcProg))
