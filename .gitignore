@@ -4,5 +4,4 @@ poa/data
 *build/
 *__pycache__
 ratel/genfiles
-ratel/benchmark/data/*
 *.DS_Store
