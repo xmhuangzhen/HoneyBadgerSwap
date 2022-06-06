@@ -165,10 +165,10 @@ contract colAuction{
         Pi = bids['address']
         Amti = bids['amt']
 
-        mpcInput(sint Xi, sint curPrice, sint Amti)
+        mpcInput(sint Xi, sint curPrice, sint Amti, sint sum_amt)
 
         v1 = (curPrice <= Xi)
-        sum_amt = sum_amt + v1*Amti
+        new_sum_amt = sum_amt + v1*Amti
 
         mpcOutput(sint new_sum_amt)
 
