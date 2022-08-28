@@ -151,23 +151,6 @@ SPACE [ \t\r]*
         //textPublic += "\n";
         //textPublic += "\n";
 
-        textPublic += "    event InputMask(uint[] inpusMaskIndexes);\n";
-        textPublic += "    uint public inputMaskCnt;\n";
-        textPublic += "    mapping (uint => address) public inputMaskOwner;\n";
-        textPublic += "    function reserveInput(uint num) public {\n";
-        //textPublic += "        require(isInputMaskReady > T);\n";
-        textPublic += "        address user = msg.sender;\n";
-        textPublic += "        uint[] memory inputMaskIndexes = new uint[](num);\n";
-        textPublic += "        for (uint i = 0; i < num; i++) {\n";
-        textPublic += "            uint inputMaskIdx = inputMaskCnt++;\n";
-        textPublic += "            inputMaskOwner[inputMaskIdx] = user;\n";
-        textPublic += "            inputMaskIndexes[i] = inputMaskIdx;\n";
-        textPublic += "        }\n";
-        textPublic += "        emit InputMask(inputMaskIndexes);\n";
-        textPublic += "    }\n";
-        textPublic += "\n";
-        textPublic += "\n";
-
         if (finalizeOnChain) {
             textPublic += "    event Finalization(uint seq);\n";
             textPublic += "    mapping (uint => uint) public voteFinalization;\n";
@@ -186,13 +169,45 @@ SPACE [ \t\r]*
             textPublic += "\n\n";
         }
 
-        textPublic += "    event GenInputMask(uint inputMaskCnt, uint inputMaskVersion);\n";
-        textPublic += "    uint public inputMaskVersion;\n";
-        textPublic += "    function genInputMask(uint _inputMaskCnt) public {\n";
-        textPublic += "        //TODO: agree on request\n";
-        textPublic += "        if (_inputMaskCnt == 0) _inputMaskCnt = inputMaskCnt;\n";
-        textPublic += "        emit GenInputMask(_inputMaskCnt, ++inputMaskVersion);\n";
+        textPublic += "    event ReserveInputMask(uint[] inputMaskIndexes);\n";
+        textPublic += "    mapping (uint => address) public inputMaskOwner;\n";
+        textPublic += "    function reserveInput(uint num) public {\n";
+        textPublic += "        require(numTotalInputMask - numUsedInputMask >= num, \"Shortage of available input masks. Retry later!\");\n";
+        textPublic += "        address user = msg.sender;\n";
+        textPublic += "        uint[] memory inputMaskIndexes = new uint[](num);\n";
+        textPublic += "        for (uint i = 0; i < num; i++) {\n";
+        textPublic += "            uint inputMaskIdx = numUsedInputMask++;\n";
+        textPublic += "            inputMaskOwner[inputMaskIdx] = user;\n";
+        textPublic += "            inputMaskIndexes[i] = inputMaskIdx;\n";
+        textPublic += "        }\n";
+        textPublic += "        emit ReserveInputMask(inputMaskIndexes);\n";
+        textPublic += "    }\n";
+        textPublic += "\n";
+        textPublic += "\n";
+
+        textPublic += "    event InitRefillInputMask(bool refill, uint version);\n";
+        textPublic += "    uint public versionInputMask;\n";
+        textPublic += "    uint public numUsedInputMask;\n";
+        textPublic += "    uint public numTotalInputMask;\n";
+        textPublic += "    bool generatingInputMask;\n";
+        textPublic += "    function initGenInputMask(bool refill) public onlyServer {\n";
+        textPublic += "        // TODO: provide & verify agreement proof of majority of servers\n";
+        textPublic += "        require(!generatingInputMask, \"just initiated an input mask generating process\");\n";
+        textPublic += "        generatingInputMask = true;\n";
+        textPublic += "        emit InitRefillInputMask(refill, ++versionInputMask);\n";
+        textPublic += "    }\n";
+        textPublic += "    \n";
+        textPublic += "    \n";
+        textPublic += "    function finalizeGenInputMask(bool refill, uint num) public onlyServer{\n";
+        textPublic += "        // TODO: provide & verify agreement proof of majority of servers\n";
+        textPublic += "        generatingInputMask = false;\n";
+        textPublic += "        if (refill) {\n";
+        textPublic += "            numTotalInputMask += num;\n";
+        textPublic += "        } else {\n";
+        textPublic += "            numTotalInputMask = numUsedInputMask + num;\n";
+        textPublic += "        }\n";
         textPublic += "    }";
+
 
     } else textPublic += string(yytext);
 }
@@ -212,7 +227,7 @@ SPACE [ \t\r]*
 
 int main(int argc, char **argv) {
 
-    finalizeOnChain = argv[1][0] - '0';
+    finalizeOnChain = argv[2][0] - '0';
 
 	yylex();
 

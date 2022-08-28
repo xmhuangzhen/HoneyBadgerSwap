@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -e
+set -x
 
 
 #### parameters
@@ -40,7 +41,7 @@ parse() {
   ./split_public_private $1 < ../src/rl/$1.rl
 
   # reorg sol code
-  ./split_public $1 $$finalize_on_chain < contracts/$1.sol
+  ./split_public $1 $finalize_on_chain < contracts/$1.sol
   mv contracts/tmp.sol contracts/$1.sol
 
   # split python and MP-SPDZ code
