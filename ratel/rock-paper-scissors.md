@@ -39,6 +39,9 @@ bash ratel/src/compile.sh rockPaperScissors
 ```
 Compile ratel programs (*.rl) in directory `ratel/src/rl` to python programs in `ratel/genfiles/python`, MP-SPDZ programs in `ratel/genfiles/mpc`, and Solidity contracts in `ratel/genfiles/contracts`.
 
+### Set up SSL keys for servers
+`bash setup-ssl.sh 4 /opt/ssl`
+
 ### Start local private blockchain and deploy application contract:
 ```shell
 bash ratel/src/deploy.sh [app_name] [token_num] [MPC_server_number] [threshold]

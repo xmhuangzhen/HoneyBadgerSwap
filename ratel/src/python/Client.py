@@ -8,8 +8,8 @@ from ratel.src.python.utils import http_port, http_host, get_inverse, prime, sig
 def reserveInput(web3, appContract, num, account):
     tx = appContract.functions.reserveInput(num).buildTransaction({'from': account.address, 'gas': 1000000, 'nonce': web3.eth.get_transaction_count(account.address)})
     receipt = sign_and_send(tx, web3, account)
-    log = appContract.events.InputMask().processReceipt(receipt)
-    return log[0]['args']['inpusMaskIndexes']
+    log = appContract.events.ReserveInputMask().processReceipt(receipt)
+    return log[0]['args']['inputMaskIndexes']
 
 
 def reconstruction(shares):

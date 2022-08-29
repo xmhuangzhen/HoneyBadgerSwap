@@ -185,27 +185,29 @@ SPACE [ \t\r]*
         textPublic += "\n";
         textPublic += "\n";
 
-        textPublic += "    event InitRefillInputMask(bool refill, uint version);\n";
+        textPublic += "    event InitGenInputMask(bool refill, uint version);\n";
+        textPublic += "    event FinalizeGenInputMask(uint numInputMask, uint lastInputMaskIndex);\n";
         textPublic += "    uint public versionInputMask;\n";
         textPublic += "    uint public numUsedInputMask;\n";
         textPublic += "    uint public numTotalInputMask;\n";
-        textPublic += "    bool generatingInputMask;\n";
+//        textPublic += "    bool generatingInputMask;\n";
         textPublic += "    function initGenInputMask(bool refill) public onlyServer {\n";
         textPublic += "        // TODO: provide & verify agreement proof of majority of servers\n";
-        textPublic += "        require(!generatingInputMask, \"just initiated an input mask generating process\");\n";
-        textPublic += "        generatingInputMask = true;\n";
-        textPublic += "        emit InitRefillInputMask(refill, ++versionInputMask);\n";
+//        textPublic += "        require(!generatingInputMask, \"just initiated an input mask generating process\");\n";
+//        textPublic += "        generatingInputMask = true;\n";
+        textPublic += "        emit InitGenInputMask(refill, ++versionInputMask);\n";
         textPublic += "    }\n";
         textPublic += "    \n";
         textPublic += "    \n";
         textPublic += "    function finalizeGenInputMask(bool refill, uint num) public onlyServer{\n";
         textPublic += "        // TODO: provide & verify agreement proof of majority of servers\n";
-        textPublic += "        generatingInputMask = false;\n";
+//        textPublic += "        generatingInputMask = false;\n";
         textPublic += "        if (refill) {\n";
         textPublic += "            numTotalInputMask += num;\n";
         textPublic += "        } else {\n";
         textPublic += "            numTotalInputMask = numUsedInputMask + num;\n";
         textPublic += "        }\n";
+        textPublic += "        emit FinalizeGenInputMask(num, numTotalInputMask);\n";
         textPublic += "    }";
 
 

@@ -306,8 +306,8 @@ http_port = 4000
 
 mpc_port = 5000
 
-spareShares = 1000
-shareBatchSize = 10000
+threshold_available_input_masks = 1000
+input_mask_gen_batch_size = 10000
 
 confirmation = 2
 

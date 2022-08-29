@@ -102,7 +102,7 @@ string getIndent(string text) {
 
 void initPython() {
     textPythonUpper += "import asyncio\n";
-    textPythonUpper += "from ratel.src.python.utils import location_sharefile, prog, mpcPort, prime, sz, int_to_hex, hex_to_int, recover_input, fp, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof\n";
+    textPythonUpper += "from ratel.src.python.utils import location_sharefile, prog, mpcPort, prime, sz, int_to_hex, hex_to_int, recover_input, fp, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof, key_inputmask_index, key_inputmask_version, input_mask_gen_batch_size\n";
     textPythonUpper += "from ratel.benchmark.src.test_mpc import run_online\n";
     textPythonUpper += "\n";
 
@@ -121,7 +121,8 @@ void finalizePython() {
     textPythonUpper += "            logs = []\n";
     textPythonUpper += "\n";
 
-    events.push_back("GenInputMask");
+    events.push_back("InitGenInputMask");
+    events.push_back("FinalizeGenInputMask");
 
     if (finalizeOnChain) {
         events.push_back("Finalization");
@@ -156,12 +157,31 @@ void finalizePython() {
         textPythonUpper += "\n\n";
     }
 
-    textPythonUpper += "async def runGenInputMask(server, log):\n";
-    textPythonUpper += "    input_mask_cnt = log['args']['inputMaskCnt']\n";
-    textPythonUpper += "    input_mask_version = log['args']['inputMaskVersion']\n";
-    textPythonUpper += "    await server.gen_input_mask(input_mask_cnt, input_mask_version)\n";
+    textPythonUpper += "async def runInitGenInputMask(server, log):\n";
+    textPythonUpper += "    refill = log['args']['refill']\n";
+    textPythonUpper += "    version = log['args']['version']\n";
+    textPythonUpper += "    assert len(server.input_mask_cache) == 0, \"input mask cache is not empty\"\n";
+    textPythonUpper += "    assert server.input_mask_version < version, \"input mask version is too old\"\n";
+    textPythonUpper += "    shares = await server.gen_random_field_elements(input_mask_gen_batch_size)\n";
+    textPythonUpper += "    server.input_mask_cache = shares\n";
+    textPythonUpper += "    # TODO: remove the following check & add gen agreement proof\n";
+    textPythonUpper += "    if server.serverID == 0:\n";
+    textPythonUpper += "        tx = server.contract.functions.finalizeGenInputMask(True, len(server.input_mask_cache)).buildTransaction(\n";
+    textPythonUpper += "            {'from': server.account.address, 'gas': 1000000,\n";
+    textPythonUpper += "            'nonce': server.web3.eth.get_transaction_count(server.account.address)})\n";
+    textPythonUpper += "        sign_and_send(tx, server.web3, server.account)\n";
     textPythonUpper += "\n";
 
+    textPythonUpper += "async def runFinalizeGenInputMask(server, log):\n";
+    textPythonUpper += "    num_input_mask = log['args']['numInputMask']\n";
+    textPythonUpper += "    last_input_mask_index = log['args']['lastInputMaskIndex']\n";
+    textPythonUpper += "    assert num_input_mask == len(server.input_mask_cache), \"inconsistent input masks\"\n";
+    textPythonUpper += "    for (index, share) in zip(range(last_input_mask_index - num_input_mask, last_input_mask_index), server.input_mask_cache):\n";
+    textPythonUpper += "        server.db.Put(key_inputmask_index(index), share.to_bytes((share.bit_length() + 7) // 8, 'big'))\n";
+    textPythonUpper += "        server.db.Put(key_inputmask_version(index), server.input_mask_version.to_bytes((server.input_mask_version.bit_length() + 7) // 8, 'big'))\n";
+    textPythonUpper += "    server.input_mask_cache = []\n";
+    textPythonUpper += "    server.input_mask_version = 0\n";
+    textPythonUpper += "\n";
 
     fprintf(pythonFp, "%s", textPythonUpper.c_str());
     fprintf(pythonFp, "%s", textPythonLower.c_str());

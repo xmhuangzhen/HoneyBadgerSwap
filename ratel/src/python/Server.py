@@ -11,9 +11,9 @@ from aiohttp import web, ClientSession
 from collections import defaultdict
 
 from ratel.src.python.Client import send_requests, batch_interpolate
-from ratel.src.python.utils import key_inputmask_index, spareShares, prime, \
+from ratel.src.python.utils import key_inputmask_index, threshold_available_input_masks, prime, \
     location_inputmask, http_host, http_port, mpc_port, location_db, openDB, getAccount, \
-    confirmation, shareBatchSize, list_to_str, trade_key_num, INPUTMASK_SHARES_DIR, execute_cmd, sign_and_send, \
+    confirmation, input_mask_gen_batch_size, list_to_str, trade_key_num, INPUTMASK_SHARES_DIR, execute_cmd, sign_and_send, \
     key_inputmask_version
 
 
@@ -37,8 +37,6 @@ class Server:
 
         self.concurrency = concurrency
 
-        self.recover = recover
-
         self.portLock = {}
         for i in range(-1, concurrency):
             self.portLock[mpc_port + i * 100] = asyncio.Lock()
@@ -48,7 +46,14 @@ class Server:
 
         self.loop = asyncio.get_event_loop()
 
-        self.local_input_mask_cnt = 0
+        self.zkrpShares = {}
+
+        self.input_mask_cache = []
+        self.input_mask_version = 0
+
+        # self.recover = recover
+
+        # self.local_input_mask_cnt = 0
 
         # self.test = test
         #
@@ -58,8 +63,6 @@ class Server:
         # except KeyError:
         #     pass
         # print('**** input_mask_queue_tail', self.input_mask_queue_tail)
-
-        self.zkrpShares = {}
 
 
     async def get_zkrp_shares(self, players, inputmask_idxes):
@@ -181,24 +184,41 @@ class Server:
         ]
         await asyncio.gather(*tasks)
 
-    async def gen_input_mask(self, input_mask_cnt, input_mask_version, share_batch_size=shareBatchSize):
+
+    async def gen_random_field_elements(self, batch_size = input_mask_gen_batch_size):
         print(f'Generating new inputmasks... s-{self.serverID}')
 
-        cmd = f'./random-shamir.x -i {self.serverID} -N {self.players} -T {self.threshold} --nshares {share_batch_size} --prep-dir {INPUTMASK_SHARES_DIR} -P {prime}'
+        cmd = f'./random-shamir.x -i {self.serverID} -N {self.players} -T {self.threshold} --nshares {batch_size} --prep-dir {INPUTMASK_SHARES_DIR} -P {prime}'
         await execute_cmd(cmd)
 
         file = location_inputmask(self.serverID, self.players)
+        shares = []
         with open(file, "r") as f:
             for line in f.readlines():
                 share = int(line) % prime
-                self.db.Put(key_inputmask_index(input_mask_cnt), share.to_bytes((share.bit_length() + 7) // 8, 'big'))
-                self.db.Put(key_inputmask_version(input_mask_cnt), input_mask_version.to_bytes((input_mask_version.bit_length() + 7) // 8, 'big'))
-                input_mask_cnt += 1
+                shares.append(share)
 
-        # self.db.Put(f'input_mask_queue_tail'.encode(), self.input_mask_queue_tail.to_bytes((self.input_mask_queue_tail.bit_length() + 7) // 8, 'big'))
+        return shares
 
-        self.local_input_mask_cnt = input_mask_cnt
-        print(f'Total inputmask number: {self.local_input_mask_cnt}\n')
+
+    # async def gen_input_mask(self, input_mask_cnt, input_mask_version, share_batch_size=shareBatchSize):
+    #     print(f'Generating new inputmasks... s-{self.serverID}')
+    #
+    #     cmd = f'./random-shamir.x -i {self.serverID} -N {self.players} -T {self.threshold} --nshares {share_batch_size} --prep-dir {INPUTMASK_SHARES_DIR} -P {prime}'
+    #     await execute_cmd(cmd)
+    #
+    #     file = location_inputmask(self.serverID, self.players)
+    #     with open(file, "r") as f:
+    #         for line in f.readlines():
+    #             share = int(line) % prime
+    #             self.db.Put(key_inputmask_index(input_mask_cnt), share.to_bytes((share.bit_length() + 7) // 8, 'big'))
+    #             self.db.Put(key_inputmask_version(input_mask_cnt), input_mask_version.to_bytes((input_mask_version.bit_length() + 7) // 8, 'big'))
+    #             input_mask_cnt += 1
+    #
+    #     # self.db.Put(f'input_mask_queue_tail'.encode(), self.input_mask_queue_tail.to_bytes((self.input_mask_queue_tail.bit_length() + 7) // 8, 'big'))
+    #
+    #     self.local_input_mask_cnt = input_mask_cnt
+    #     print(f'Total inputmask number: {self.local_input_mask_cnt}\n')
 
     # async def check_input_mask_availability(self):
     #     input_mask_queue_head = self.contract.functions.inputMaskCnt().call()
@@ -207,19 +227,30 @@ class Server:
 
 
     async def preprocessing(self):
-        ### TODO: remove the following
-        if (self.serverID != 0):
+        ### TODO: remove the following & add generating agreement proof
+        if self.serverID != 0:
             return
 
         while True:
-            input_mask_cnt = self.contract.functions.inputMaskCnt().call()
-            if input_mask_cnt + spareShares >= self.local_input_mask_cnt:
-                print(f'Request to generate input masks....')
-                tx = self.contract.functions.genInputMask(self.local_input_mask_cnt).buildTransaction(
+            num_used_input_mask = self.contract.functions.numUsedInputMask().call()
+            num_total_input_mask = self.contract.functions.numTotalInputMask().call()
+            if num_used_input_mask - num_used_input_mask < threshold_available_input_masks:
+                print(f'Initialize input mask generation process....')
+                tx = self.contract.functions.initGenInputMask(True).buildTransaction(
                     {'from': self.account.address, 'gas': 1000000,
                      'nonce': self.web3.eth.get_transaction_count(self.account.address)})
                 sign_and_send(tx, self.web3, self.account)
             await asyncio.sleep(600)
+
+        # while True:
+        #     input_mask_cnt = self.contract.functions.inputMaskCnt().call()
+        #     if input_mask_cnt + spareShares >= self.local_input_mask_cnt:
+        #         print(f'Request to generate input masks....')
+        #         tx = self.contract.functions.genInputMask(self.local_input_mask_cnt).buildTransaction(
+        #             {'from': self.account.address, 'gas': 1000000,
+        #              'nonce': self.web3.eth.get_transaction_count(self.account.address)})
+        #         sign_and_send(tx, self.web3, self.account)
+        #     await asyncio.sleep(600)
 
         # while True:
         #     if self.contract.functions.isInputMaskReady().call() > self.contract.functions.T().call() and self.contract.functions.isServer(self.account.address).call():
