@@ -190,18 +190,14 @@ SPACE [ \t\r]*
         textPublic += "    uint public versionInputMask;\n";
         textPublic += "    uint public numUsedInputMask;\n";
         textPublic += "    uint public numTotalInputMask;\n";
-//        textPublic += "    bool generatingInputMask;\n";
         textPublic += "    function initGenInputMask(bool refill) public onlyServer {\n";
         textPublic += "        // TODO: provide & verify agreement proof of majority of servers\n";
-//        textPublic += "        require(!generatingInputMask, \"just initiated an input mask generating process\");\n";
-//        textPublic += "        generatingInputMask = true;\n";
         textPublic += "        emit InitGenInputMask(refill, ++versionInputMask);\n";
         textPublic += "    }\n";
         textPublic += "    \n";
         textPublic += "    \n";
         textPublic += "    function finalizeGenInputMask(bool refill, uint num) public onlyServer{\n";
         textPublic += "        // TODO: provide & verify agreement proof of majority of servers\n";
-//        textPublic += "        generatingInputMask = false;\n";
         textPublic += "        if (refill) {\n";
         textPublic += "            numTotalInputMask += num;\n";
         textPublic += "        } else {\n";
