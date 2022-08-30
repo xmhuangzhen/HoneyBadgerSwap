@@ -204,8 +204,26 @@ SPACE [ \t\r]*
         textPublic += "            numTotalInputMask = numUsedInputMask + num;\n";
         textPublic += "        }\n";
         textPublic += "        emit FinalizeGenInputMask(num, numTotalInputMask);\n";
-        textPublic += "    }";
+        textPublic += "    }\n";
+        textPublic += "\n";
+        textPublic += "\n";
 
+        textPublic += "    event GenStateMask(address server, uint num);\n";
+        textPublic += "    event RecoverState(address server, uint seqRecoverState, uint initStateMaskIndex, uint num);\n";
+        textPublic += "    mapping (address => uint) public numTotalStateMask;\n";
+        textPublic += "    mapping (address => uint) public numUsedStateMask;\n";
+        textPublic += "    mapping (address => uint) public cntRecoverState;\n";
+        textPublic += "    function genStateMask(uint num) public onlyServer {\n";
+        textPublic += "        emit GenStateMask(msg.sender, num);\n";
+        textPublic += "    }\n";
+        textPublic += "\n";
+        textPublic += "\n";
+        textPublic += "    function consumeStateMask(uint num) public onlyServer {\n";
+        textPublic += "        address server = msg.sender;\n";
+        textPublic += "        require(numTotalStateMask[server] - numUsedStateMask[server] >= num, \"not enough state mask to consume\");\n";
+        textPublic += "        emit RecoverState(server, cntRecoverState[server]++, numUsedStateMask[server], num);\n";
+        textPublic += "        numUsedStateMask[server] += num;\n";
+        textPublic += "    }";
 
     } else textPublic += string(yytext);
 }
