@@ -208,13 +208,15 @@ SPACE [ \t\r]*
         textPublic += "\n";
         textPublic += "\n";
 
-        textPublic += "    event GenStateMask(address server, uint num);\n";
+        textPublic += "    event GenStateMask(address server, uint initStateMaskIndex, uint num);\n";
         textPublic += "    event RecoverState(address server, uint seqRecoverState, uint initStateMaskIndex, uint num);\n";
         textPublic += "    mapping (address => uint) public numTotalStateMask;\n";
         textPublic += "    mapping (address => uint) public numUsedStateMask;\n";
         textPublic += "    mapping (address => uint) public cntRecoverState;\n";
         textPublic += "    function genStateMask(uint num) public onlyServer {\n";
-        textPublic += "        emit GenStateMask(msg.sender, num);\n";
+        textPublic += "        address server = msg.sender;\n";
+        textPublic += "        emit GenStateMask(server, numTotalStateMask[server], num);\n";
+        textPublic += "        numTotalStateMask[server] += num;\n";
         textPublic += "    }\n";
         textPublic += "\n";
         textPublic += "\n";

@@ -83,6 +83,10 @@ def key_inputmask_version(idx):
     return f'inputmask_version_{idx}'.encode()
 
 
+def key_state_mask(server_addr, idx):
+    return f'state_mask_{server_addr}_{idx}'.encode()
+
+
 def location_sharefile(server_id, base_port):
     return f'Persistence/Transactions-P{server_id}-{base_port}.data'
 

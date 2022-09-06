@@ -102,7 +102,7 @@ string getIndent(string text) {
 
 void initPython() {
     textPythonUpper += "import asyncio\n";
-    textPythonUpper += "from ratel.src.python.utils import location_sharefile, prog, mpcPort, prime, sz, int_to_hex, hex_to_int, recover_input, fp, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof, key_inputmask_index, key_inputmask_version, input_mask_gen_batch_size\n";
+    textPythonUpper += "from ratel.src.python.utils import location_sharefile, prog, mpcPort, prime, sz, int_to_hex, hex_to_int, recover_input, fp, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof, key_inputmask_index, key_inputmask_version, input_mask_gen_batch_size, key_state_mask\n";
     textPythonUpper += "from ratel.benchmark.src.test_mpc import run_online\n";
     textPythonUpper += "\n";
 
@@ -122,6 +122,7 @@ void finalizePython() {
     textPythonUpper += "\n";
 
     events.push_back("InitGenInputMask");
+    events.push_back("genStateMask");
     events.push_back("FinalizeGenInputMask");
 
     if (finalizeOnChain) {
@@ -166,10 +167,21 @@ void finalizePython() {
     textPythonUpper += "    server.input_mask_cache = shares\n";
     textPythonUpper += "    # TODO: remove the following check & add gen agreement proof\n";
     textPythonUpper += "    if server.serverID == 0:\n";
-    textPythonUpper += "        tx = server.contract.functions.finalizeGenInputMask(True, len(server.input_mask_cache)).buildTransaction(\n";
+    textPythonUpper += "        tx = server.contract.functions.finalizeGenInputMask(refill, len(server.input_mask_cache)).buildTransaction(\n";
     textPythonUpper += "            {'from': server.account.address, 'gas': 1000000,\n";
     textPythonUpper += "            'nonce': server.web3.eth.get_transaction_count(server.account.address)})\n";
     textPythonUpper += "        sign_and_send(tx, server.web3, server.account)\n";
+    textPythonUpper += "\n";
+    textPythonUpper += "\n";
+
+    textPythonUpper += "async def runGenStateMask(server, log):\n";
+    textPythonUpper += "    server_addr = log['args']['server']\n";
+    textPythonUpper += "    init_state_mask_index = log['args']['initStateMaskIndex']\n";
+    textPythonUpper += "    num = log['args']['num']\n";
+    textPythonUpper += "    shares = await server.gen_random_field_elements(num)\n";
+    textPythonUpper += "    for (index, share) in zip(range(init_state_mask_index, num), shares):\n";
+    textPythonUpper += "        server.db.Put(key_state_mask(server_addr, index), share.to_bytes((share.bit_length() + 7) // 8, 'big'))\n";
+    textPythonUpper += "\n";
     textPythonUpper += "\n";
 
     textPythonUpper += "async def runFinalizeGenInputMask(server, log):\n";
