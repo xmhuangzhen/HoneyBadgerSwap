@@ -173,7 +173,7 @@ SPACE [ \t\r]*
             textPublic += "        votedFinalization[seq][server] = true;\n";
             textPublic += "        voteFinalization[seq] += 1;\n";
             textPublic += "        if (voteFinalization[seq] > T) {\n";
-            textPublic += "            uint finalizationSeq = finalizedTaskCnt++;\n";
+            textPublic += "            uint finalizationSeq = ++finalizedTaskCnt;\n";
             textPublic += "            finalized[seq] = finalizationSeq;\n";
             textPublic += "            emit Finalization(seq, finalizationSeq);\n";
             textPublic += "        }\n";
@@ -188,7 +188,7 @@ SPACE [ \t\r]*
         textPublic += "        address user = msg.sender;\n";
         textPublic += "        uint[] memory inputMaskIndexes = new uint[](num);\n";
         textPublic += "        for (uint i = 0; i < num; i++) {\n";
-        textPublic += "            uint inputMaskIdx = numUsedInputMask++;\n";
+        textPublic += "            uint inputMaskIdx = ++numUsedInputMask;\n";
         textPublic += "            inputMaskOwner[inputMaskIdx] = user;\n";
         textPublic += "            inputMaskIndexes[i] = inputMaskIdx;\n";
         textPublic += "        }\n";
@@ -235,7 +235,7 @@ SPACE [ \t\r]*
         textPublic += "    function consumeStateMask(uint num) public onlyServer {\n";
         textPublic += "        address server = msg.sender;\n";
         textPublic += "        require(numTotalStateMask[server] - numUsedStateMask[server] >= num, \"not enough state mask to consume\");\n";
-        textPublic += "        emit RecoverState(server, cntRecoverState[server]++, numUsedStateMask[server], num);\n";
+        textPublic += "        emit RecoverState(server, ++cntRecoverState[server], numUsedStateMask[server], num);\n";
         textPublic += "        numUsedStateMask[server] += num;\n";
         textPublic += "    }";
 

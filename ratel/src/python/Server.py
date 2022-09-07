@@ -347,10 +347,12 @@ class Server:
 
         finalized_task_cnt = self.contract.functions.finalizedTaskCnt().call()
         print(f'finalized_task_cnt {finalized_task_cnt}')
-        for finalized_seq in range(finalized_task_cnt):
+        for finalized_seq in range(1, 1 + finalized_task_cnt):
             if not finalized_seq in exec_history:
                 init_seq = self.contract.functions.finalized(finalized_seq).call()
                 print(f'missing task with initSeq {init_seq} finalizedSeq {finalized_seq}')
+
+        # TODO: recover states of on-going MPC tasks
 
         # opCnt = self.contract.functions.opCnt().call()
         # seq_num_list = []
