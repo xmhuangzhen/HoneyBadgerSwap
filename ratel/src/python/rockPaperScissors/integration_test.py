@@ -23,7 +23,7 @@ from pybulletproofs import zkrp_prove
 contract_name = "rockPaperScissors"
 
 
-def createGame(appContract, value1, account):
+def createGame(appContract, value1, account, web3):
     print(f'**** CreateGame {value1}')
     bits = 32
     proof, commitment, blinding_bytes = zkrp_prove(value1, bits)
@@ -39,12 +39,12 @@ def createGame(appContract, value1, account):
 
     web3.eth.defaultAccount = account.address
     tx = appContract.functions.createGame(idx, maskedValue, bidx, maskedBlinding, proof, commitment).buildTransaction({
-        'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
+        'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount),
     })
     receipt = sign_and_send(tx, web3, account)
 
-    log = appContract.events.CreateGame().processReceipt(receipt)
-    gameId = log[0]["args"]["gameId"]
+    logs = appContract.events.CreateGame().processReceipt(receipt)
+    gameId = logs[0]["args"]["gameId"]
     while True:
         time.sleep(1)
         status = appContract.functions.status(gameId).call()
@@ -98,38 +98,38 @@ if __name__ == "__main__":
     client_1 = getAccount(web3, f"/opt/poa/keystore/client_1/")
     client_2 = getAccount(web3, f"/opt/poa/keystore/client_2/")
 
-    gameId = createGame(appContract, 1, client_1)
+    gameId = createGame(appContract, 1, client_1, web3)
     joinGame(appContract, gameId, 1, client_2)
     startRecon(appContract, gameId, client_1)
 
-    gameId = createGame(appContract, 1, client_1)
+    gameId = createGame(appContract, 1, client_1, web3)
     joinGame(appContract, gameId, 2, client_2)
     startRecon(appContract, gameId, client_2)
 
-    gameId = createGame(appContract, 1, client_1)
+    gameId = createGame(appContract, 1, client_1, web3)
     joinGame(appContract, gameId, 3, client_2)
     startRecon(appContract, gameId, client_1)
 
-    gameId = createGame(appContract, 2, client_1)
+    gameId = createGame(appContract, 2, client_1, web3)
     joinGame(appContract, gameId, 1, client_2)
     startRecon(appContract, gameId, client_1)
 
-    gameId = createGame(appContract, 2, client_1)
+    gameId = createGame(appContract, 2, client_1, web3)
     joinGame(appContract, gameId, 2, client_2)
     startRecon(appContract, gameId, client_1)
 
-    gameId = createGame(appContract, 2, client_1)
+    gameId = createGame(appContract, 2, client_1, web3)
     joinGame(appContract, gameId, 3, client_2)
     startRecon(appContract, gameId, client_1)
 
-    gameId = createGame(appContract, 3, client_1)
+    gameId = createGame(appContract, 3, client_1, web3)
     joinGame(appContract, gameId, 1, client_2)
     startRecon(appContract, gameId, client_1)
 
-    gameId = createGame(appContract, 3, client_1)
+    gameId = createGame(appContract, 3, client_1, web3)
     joinGame(appContract, gameId, 2, client_2)
     startRecon(appContract, gameId, client_1)
 
-    gameId = createGame(appContract, 3, client_1)
+    gameId = createGame(appContract, 3, client_1, web3)
     joinGame(appContract, gameId, 3, client_2)
     startRecon(appContract, gameId, client_1)

@@ -87,10 +87,10 @@ string argWithType(string arg, bool isEvent=false) {
         string postVarName = removeType(arg);
         postVarName[0] = toupper(postVarName[0]);
         string tmp = "";
-        string mem = isEvent ? "" : "memory" ;
+        string mem = isEvent ? "" : "memory " ;
         if (varType[0] == '#') {
             varType = varType.substr(1);
-            tmp = ", uint idx" + postVarName + "Blinding, uint masked" + postVarName + "Blinding, uint8[] " + mem + " proof" + postVarName + ", uint8[] " + mem + " commitment" + postVarName;
+            tmp = ", uint idx" + postVarName + "Blinding, uint masked" + postVarName + "Blinding, uint8[] " + mem + "proof" + postVarName + ", uint8[] " + mem + "commitment" + postVarName;
         }
         ret = "uint idx" + postVarName + ", uint masked" + postVarName + tmp;
     } else {
@@ -111,6 +111,22 @@ string argWithoutType(string arg) {
         }
     } else {
         ret = removeType(arg);
+    }
+    return ret;
+}
+
+string argWithONLYType(string arg) {
+    string ret;
+    if (arg[0] == '$') {
+        string varType = getType(arg).substr(1);
+        string tmp = "";
+        if (varType[0] == '#') {
+            varType = varType.substr(1);
+            tmp = ",uint,uint,uint8[],uint8[]";
+        }
+        ret = "uint,uint" + tmp;
+    } else {
+        ret = getType(arg);
     }
     return ret;
 }
@@ -138,7 +154,7 @@ void addEventEmit() {
         textRecover += " = decode_single(\'(";
         for (int i = 0; i < args.size(); i++) {
             if (i > 0) textRecover += ",";
-            textRecover += argWithType(args[i], true);
+            textRecover += argWithONLYType(args[i]);
         }
         textRecover += ")\', opContent)\n";
         textRecover += "        return eval(f'\{op\}" + funcName + "')(opSeq";
@@ -149,7 +165,7 @@ void addEventEmit() {
         textRecover += "\n";
     }
 
-    textPublic += "        uint seq" + funcName + " = opCnt++;\n";
+    textPublic += "        uint seq" + funcName + " = taskCnt++;\n";
     textPublic += "        opEvent[seq" + funcName + "] = \"" + funcName + "\";\n";
     textPublic += "        opContent[seq" + funcName + "] = abi.encode(";
     for (int i = 0; i < args.size(); i++) {

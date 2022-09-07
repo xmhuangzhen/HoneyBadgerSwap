@@ -30,7 +30,7 @@ SPACE [ \t\r]*
     //textPublic += "    mapping (address => mapping (address => bool)) voted;\n";
     textPublic += "\n";
 
-    textPublic += "    uint public opCnt;\n";
+    textPublic += "    uint public taskCnt;\n";
     textPublic += "    mapping (uint => string) public opEvent;\n";
     textPublic += "    mapping (uint => bytes) public opContent;\n";
     textPublic += "\n";
@@ -96,7 +96,17 @@ SPACE [ \t\r]*
         textPublic += "\n";
         textPublic += "\n";
 
-        //textPublic += "    function registerServer() public {\n";
+        textPublic += "    event AddServer();\n";
+        textPublic += "    function addServer(address server) public onlyServer {\n";
+        textPublic += "        // TODO: provide & verify agreement proof of majority of servers\n";
+        textPublic += "        isServer[server] = true;\n";
+        textPublic += "        N++;\n";
+        textPublic += "        emit AddServer();\n";
+        textPublic += "    }\n";
+        textPublic += "\n";
+        textPublic += "\n";
+
+//        textPublic += "    function registerServer() public {\n";
         //textPublic += "        address server = msg.sender;\n";
         //textPublic += "        require(!isServer[server]);\n";
         //textPublic += "        emit NewServer(server);\n";
@@ -152,18 +162,20 @@ SPACE [ \t\r]*
         //textPublic += "\n";
 
         if (finalizeOnChain) {
-            textPublic += "    event Finalization(uint seq);\n";
+            textPublic += "    event Finalization(uint seq, uint finalizationSeq);\n";
             textPublic += "    mapping (uint => uint) public voteFinalization;\n";
             textPublic += "    mapping (uint => mapping (address => bool)) public votedFinalization;\n";
-            textPublic += "    mapping (uint => bool) public finalized;\n";
+            textPublic += "    uint public finalizedTaskCnt;\n";
+            textPublic += "    mapping (uint => uint) public finalized;\n";
             textPublic += "    function finalize(uint seq) public onlyServer {\n";
             textPublic += "        address server = msg.sender;\n";
-            textPublic += "        require(!votedFinalization[seq][server] && !finalized[seq]);\n";
+            textPublic += "        require(!votedFinalization[seq][server] && finalized[seq] == 0);\n";
             textPublic += "        votedFinalization[seq][server] = true;\n";
             textPublic += "        voteFinalization[seq] += 1;\n";
             textPublic += "        if (voteFinalization[seq] > T) {\n";
-            textPublic += "            finalized[seq] = true;\n";
-            textPublic += "            emit Finalization(seq);\n";
+            textPublic += "            uint finalizationSeq = finalizedTaskCnt++;\n";
+            textPublic += "            finalized[seq] = finalizationSeq;\n";
+            textPublic += "            emit Finalization(seq, finalizationSeq);\n";
             textPublic += "        }\n";
             textPublic += "    }\n";
             textPublic += "\n\n";

@@ -122,8 +122,9 @@ void finalizePython() {
     textPythonUpper += "\n";
 
     events.push_back("InitGenInputMask");
-    events.push_back("genStateMask");
+    events.push_back("GenStateMask");
     events.push_back("FinalizeGenInputMask");
+    events.push_back("AddServer");
 
     if (finalizeOnChain) {
         events.push_back("Finalization");
@@ -150,11 +151,12 @@ void finalizePython() {
     if (finalizeOnChain) {
         textPythonUpper += "async def runFinalization(server, log):\n";
         textPythonUpper += "    seq = log['args']['seq']\n";
+        textPythonUpper += "    finalization_seq = log['args']['finalizationSeq']\n";
         textPythonUpper += "    from ratel.genfiles.python." + fileName + "Recover import recover\n";
         textPythonUpper += "    keys = recover(server.contract, seq, 'allSet')\n";
         textPythonUpper += "    for key in keys:\n";
         textPythonUpper += "        server.dbLock[key.lower()].release()\n";
-        textPythonUpper += "    mark_finish(server, seq)\n";
+        textPythonUpper += "    mark_finish(server, finalization_seq)\n";
         textPythonUpper += "\n\n";
     }
 
@@ -193,6 +195,11 @@ void finalizePython() {
     textPythonUpper += "        server.db.Put(key_inputmask_version(index), server.input_mask_version.to_bytes((server.input_mask_version.bit_length() + 7) // 8, 'big'))\n";
     textPythonUpper += "    server.input_mask_cache = []\n";
     textPythonUpper += "    server.input_mask_version = 0\n";
+    textPythonUpper += "\n";
+    textPythonUpper += "\n";
+
+    textPythonUpper += "async def runAddServer(server, log):\n";
+    textPythonUpper += "    server.players += 1\n";
     textPythonUpper += "\n";
 
     fprintf(pythonFp, "%s", textPythonUpper.c_str());
@@ -456,6 +463,10 @@ void setRecover() {
 
                 string maskedVarName = "masked" + varName;
                 parameter += ", " + maskedVarName;
+
+                if (type[1] == '#') {
+                     parameter += ", idx" + varName + "Blinding, masked" + varName + "Blinding, proof" + varName + ", commitment" + varName;
+                }
 
             } else {
                 parameter += ", " + varName;

@@ -52,7 +52,7 @@ class Server:
         self.input_mask_cache = []
         self.input_mask_version = 0
 
-        self.recover = recover
+        # self.recover = recover
 
         # self.test = test
         #
@@ -174,6 +174,9 @@ class Server:
     #     await asyncio.gather(*tasks)
 
     async def init(self, monitor):
+        # TODO: consider where the recover_history function should be invoked
+        await self.recover_history()
+
         tasks = [
             monitor,
             self.http_server(),
@@ -301,7 +304,9 @@ class Server:
     #     sign_and_send(tx, self.web3, self.account)
     #
     #
-    # async def recoverHistory(self):
+    async def recover_history(self):
+        self.check_missing_tasks()
+
     #     while True:
     #         isServer = self.contract.functions.isServer(self.account.address).call()
     #         print('isServer', isServer)
@@ -328,25 +333,32 @@ class Server:
     #     self.restore_db(seq_num_list, keys, state_shares)
     #
     #
-    # def check_missing_tasks(self):
-    #     try:
-    #         execHistory = self.db.Get(f'execHistory'.encode())
-    #     except KeyError:
-    #         execHistory = bytes(0)
-    #
-    #     try:
-    #         execHistory = execHistory.decode(encoding='utf-8')
-    #         execHistory = dict(ast.literal_eval(execHistory))
-    #     except:
-    #         execHistory = {}
-    #
-    #     opCnt = self.contract.functions.opCnt().call()
-    #     seq_num_list = []
-    #     for seq in range(opCnt):
-    #         if not seq in execHistory:
-    #             print('missing opSeq', seq)
-    #             seq_num_list.append(seq)
-    #     return seq_num_list
+    def check_missing_tasks(self):
+        try:
+            exec_history = self.db.Get(f'execHistory'.encode())
+        except KeyError:
+            exec_history = bytes(0)
+
+        try:
+            exec_history = exec_history.decode(encoding='utf-8')
+            exec_history = dict(ast.literal_eval(exec_history))
+        except:
+            exec_history = {}
+
+        finalized_task_cnt = self.contract.functions.finalizedTaskCnt().call()
+        print(f'finalized_task_cnt {finalized_task_cnt}')
+        for finalized_seq in range(finalized_task_cnt):
+            if not finalized_seq in exec_history:
+                init_seq = self.contract.functions.finalized(finalized_seq).call()
+                print(f'missing task with initSeq {init_seq} finalizedSeq {finalized_seq}')
+
+        # opCnt = self.contract.functions.opCnt().call()
+        # seq_num_list = []
+        # for seq in range(opCnt):
+        #     if not seq in exec_history:
+        #         print('missing opSeq', seq)
+        #         seq_num_list.append(seq)
+        # return seq_num_list
     #
     #
     # def collect_keys(self, seq_num_list):

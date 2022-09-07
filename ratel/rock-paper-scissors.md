@@ -40,7 +40,9 @@ bash ratel/src/compile.sh rockPaperScissors
 Compile ratel programs (*.rl) in directory `ratel/src/rl` to python programs in `ratel/genfiles/python`, MP-SPDZ programs in `ratel/genfiles/mpc`, and Solidity contracts in `ratel/genfiles/contracts`.
 
 ### Set up SSL keys for servers
-`bash setup-ssl.sh 4 /opt/ssl`
+```shell
+bash setup-ssl.sh 4 /opt/ssl
+```
 
 ### Start local private blockchain and deploy application contract:
 ```shell
@@ -67,7 +69,7 @@ python3 -m ratel.src.python.refill client_1 0 \
 & python3 -m ratel.src.python.refill client_2 0
 ```
 
-### Start MPC servers to monitor events emitted by application contract and take MPC  tasks:
+### Start MPC servers to monitor events emitted by application contract and take MPC tasks:
 ```shell
 bash ratel/src/run.sh [app_name] [MPC_server_IDs] [MPC_server_number] [threshold] [concurrency] [test_flag]
 ```
@@ -81,7 +83,7 @@ A suggestion is to compare the difference of `ratel/src/python/rockPaperScissors
 
 ### Interact with app contract
 ```shell
-python3 -m ratel.src.python.rockPaperScissors.interact 
+python3 -m ratel.src.python.rockPaperScissors.integration_test 
 ```
 `ratel/src/python/rockPaperScissors/interact.py` shows how clients would interact with the rock-paper-scissors application.
 In this Python program, we show all 9 possible scenarios of the RockPaperScissors game.
