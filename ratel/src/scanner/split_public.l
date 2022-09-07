@@ -97,7 +97,7 @@ SPACE [ \t\r]*
         textPublic += "\n";
 
         textPublic += "    event AddServer();\n";
-        textPublic += "    function addServer(address server) public onlyServer {\n";
+        textPublic += "    function addServer(address server) public {\n";
         textPublic += "        // TODO: provide & verify agreement proof of majority of servers\n";
         textPublic += "        isServer[server] = true;\n";
         textPublic += "        N++;\n";
@@ -221,10 +221,12 @@ SPACE [ \t\r]*
         textPublic += "\n";
 
         textPublic += "    event GenStateMask(address server, uint initStateMaskIndex, uint num);\n";
-        textPublic += "    event RecoverState(address server, uint seqRecoverState, uint initStateMaskIndex, uint num);\n";
+        textPublic += "    event RecoverState(uint seqRecoverState);\n";
         textPublic += "    mapping (address => uint) public numTotalStateMask;\n";
         textPublic += "    mapping (address => uint) public numUsedStateMask;\n";
         textPublic += "    mapping (address => uint) public cntRecoverState;\n";
+        textPublic += "    mapping (address => mapping (uint => uint)) public initIndexRecoverState;\n";
+        textPublic += "    mapping (address => mapping (uint => uint)) public numRecoverState;\n";
         textPublic += "    function genStateMask(uint num) public onlyServer {\n";
         textPublic += "        address server = msg.sender;\n";
         textPublic += "        emit GenStateMask(server, numTotalStateMask[server], num);\n";
@@ -235,7 +237,9 @@ SPACE [ \t\r]*
         textPublic += "    function consumeStateMask(uint num) public onlyServer {\n";
         textPublic += "        address server = msg.sender;\n";
         textPublic += "        require(numTotalStateMask[server] - numUsedStateMask[server] >= num, \"not enough state mask to consume\");\n";
-        textPublic += "        emit RecoverState(server, ++cntRecoverState[server], numUsedStateMask[server], num);\n";
+        textPublic += "        emit RecoverState(++cntRecoverState[server]);\n";
+        textPublic += "        initIndexRecoverState[server][cntRecoverState[server]] = numUsedStateMask[server];\n";
+        textPublic += "        numRecoverState[server][cntRecoverState[server]] = num;\n";
         textPublic += "        numUsedStateMask[server] += num;\n";
         textPublic += "    }";
 

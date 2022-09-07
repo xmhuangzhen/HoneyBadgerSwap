@@ -200,6 +200,7 @@ void finalizePython() {
 
     textPythonUpper += "async def runAddServer(server, log):\n";
     textPythonUpper += "    server.players += 1\n";
+    textPythonUpper += "    print(f'players {server.players}')\n";
     textPythonUpper += "\n";
 
     fprintf(pythonFp, "%s", textPythonUpper.c_str());
