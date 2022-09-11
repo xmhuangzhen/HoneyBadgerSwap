@@ -16,4 +16,5 @@ services:
       - ./poa:/opt/poa
       - ./ratel/genfiles/mpc:/usr/src/hbswap/Programs/Source
     working_dir: /usr/src/hbswap
+    platform: "linux/amd64"
     command: tail -F anything

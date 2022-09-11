@@ -8,7 +8,10 @@ bash ratel/src/compile.sh rockPaperScissors 1
 
 ### Set up SSL keys for 4 servers
 ```shell
-bash setup-ssl.sh 4 /opt/ssl
+bash setup-ssl.sh 4 [directory] 
+```
+```shell
+bash setup-ssl.sh 4 
 ```
 
 ### Start local private blockchain and deploy application contract with ONLY 3 servers:

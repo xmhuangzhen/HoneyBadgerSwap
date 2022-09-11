@@ -245,7 +245,7 @@ class Server:
         masked_states = await send_requests(self.players, request, self.serverID)
         for i in range(len(masked_states)):
             masked_states[i] = re.split(",", masked_states[i]["values"])
-        masked_states = batch_interpolate(masked_states, self.threshold)
+        masked_states = batch_interpolate(self.serverID + 1, masked_states, self.threshold)
         state_shares = self.unmask_states(masked_states, seq_recover_state)
         self.restore_db(seq_num_list, keys, state_shares)
 

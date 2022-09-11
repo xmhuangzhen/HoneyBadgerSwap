@@ -1,8 +1,8 @@
-ARG mpspdz_commit=a6cc504
-FROM initc3/malicious-shamir-party.x:${mpspdz_commit} as malshamirparty
-FROM initc3/mal-shamir-offline.x:${mpspdz_commit} as malshamiroffline
-FROM initc3/random-shamir.x:${mpspdz_commit} as randomshamir
-FROM initc3/mpspdz:${mpspdz_commit} as mpspdzbase
+ARG mpspdz_commit=latest
+FROM lilione/mp-spdz:${mpspdz_commit} as mpspdzbase
+FROM lilione/malicious-shamir-party.x:${mpspdz_commit} as malshamirparty
+FROM lilione/mal-shamir-offline.x:${mpspdz_commit} as malshamiroffline
+FROM lilione/random-shamir.x:${mpspdz_commit} as randomshamir
 
 FROM python:3.9.12-bullseye
 
@@ -81,6 +81,7 @@ COPY --from=mpspdzbase /usr/src/MP-SPDZ/Scripts/setup-ssl.sh /usr/src/hbswap/
 COPY --from=initc3/geth:97745ba /usr/local/bin/geth /usr/local/bin/geth
 COPY poa/keystore /opt/poa/keystore
 
+RUN npm install -g npm@7
 RUN npm install -g truffle@5.4.29
 
 RUN pip3 install \
@@ -102,5 +103,18 @@ RUN pip3 install \
 WORKDIR $HBSWAP_HOME
 
 RUN ./setup-ssl.sh 4 /opt/ssl
+
+RUN apt-get update && \
+    apt-get install -y curl
+
+WORKDIR /tmp
+
+RUN curl https://sh.rustup.rs -sSf > rustup.sh
+RUN chmod 755 rustup.sh
+RUN ./rustup.sh -y
+RUN rm /tmp/rustup.sh
+
+RUN ~/.cargo/bin/cargo install mdbook
+ENV PATH /root/.cargo/bin:$PATH
 
 RUN pip install pybulletproofs

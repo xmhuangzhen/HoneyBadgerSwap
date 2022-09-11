@@ -12,7 +12,7 @@ def reserveInput(web3, appContract, num, account):
     return log[0]['args']['inputMaskIndexes']
 
 
-def reconstruction(shares):
+def evaluate(x, shares):
     value = 0
     n = len(shares)
     for i in range(n):
@@ -20,23 +20,23 @@ def reconstruction(shares):
         for j in range(n):
             if i == j:
                 continue
-            tot = tot * shares[j][0] * get_inverse(shares[j][0] - shares[i][0]) % prime
+            tot = tot * (x - shares[j][0]) * get_inverse(shares[i][0] - shares[j][0]) % prime
         value = (value + shares[i][1] * tot) % prime
     return value
 
 
-def interpolate(shares, t):
-    value = reconstruction(shares[:t + 1])
+def interpolate(x, shares, t):
+    value = evaluate(x, shares[:t + 1])
     n = len(shares)
-    for i in range(t + 2, n):
-        check = reconstruction(shares[:i])
+    for i in range(t + 2, n + 1):
+        check = evaluate(x, shares[:i])
         if check != value:
             print('mac_fail')
             return 0
     return value % prime
 
 
-def batch_interpolate(results, threshold):
+def batch_interpolate(x, results, threshold):
     res = []
     num = len(results[0])
     players = len(results)
@@ -46,7 +46,7 @@ def batch_interpolate(results, threshold):
             result = int(results[j][i])
             if result != 0:
                 shares.append((j + 1, result))
-        res.append(interpolate(shares, threshold))
+        res.append(interpolate(x, shares, threshold))
     return res
 
 
@@ -75,6 +75,6 @@ async def get_inputmasks(players, inputmask_idxes, threshold):
     for i in range(len(results)):
         results[i] = re.split(",", results[i]["inputmask_shares"])
 
-    inputmasks = batch_interpolate(results, threshold)
+    inputmasks = batch_interpolate(0, results, threshold)
 
     return inputmasks

@@ -7,6 +7,7 @@ kill_python() {
 kill_mpc() {
   pkill -f ./malicious-shamir-party.x || true
   pkill -f ./random-shamir.x || true
+  pkill -f ./mal-shamir-offline.x || true
 }
 
 clear_db() {
