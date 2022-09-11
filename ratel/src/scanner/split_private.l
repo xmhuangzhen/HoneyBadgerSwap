@@ -167,6 +167,7 @@ void finalizePython() {
     textPythonUpper += "    assert server.input_mask_version < version, \"input mask version is too old\"\n";
     textPythonUpper += "    shares = await server.gen_random_field_elements(input_mask_gen_batch_size)\n";
     textPythonUpper += "    server.input_mask_cache = shares\n";
+    textPythonUpper += "    server.input_mask_version = version\n";
     textPythonUpper += "    # TODO: remove the following check & add gen agreement proof\n";
     textPythonUpper += "    if server.serverID == 0:\n";
     textPythonUpper += "        tx = server.contract.functions.finalizeGenInputMask(refill, len(server.input_mask_cache)).buildTransaction(\n";
@@ -181,7 +182,7 @@ void finalizePython() {
     textPythonUpper += "    init_state_mask_index = log['args']['initStateMaskIndex']\n";
     textPythonUpper += "    num = log['args']['num']\n";
     textPythonUpper += "    shares = await server.gen_random_field_elements(num)\n";
-    textPythonUpper += "    for (index, share) in zip(range(init_state_mask_index, num), shares):\n";
+    textPythonUpper += "    for (index, share) in zip(range(init_state_mask_index, init_state_mask_index + num), shares):\n";
     textPythonUpper += "        server.db.Put(key_state_mask(server_addr, index), share.to_bytes((share.bit_length() + 7) // 8, 'big'))\n";
     textPythonUpper += "\n";
     textPythonUpper += "\n";

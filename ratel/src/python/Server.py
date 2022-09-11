@@ -15,7 +15,7 @@ from ratel.src.python.utils import key_inputmask_index, threshold_available_inpu
     location_inputmask, http_host, http_port, mpc_port, location_db, openDB, getAccount, \
     confirmation, input_mask_gen_batch_size, list_to_str, trade_key_num, INPUTMASK_SHARES_DIR, execute_cmd, \
     sign_and_send, \
-    key_inputmask_version
+    key_inputmask_version, key_state_mask
 
 
 class Server:
@@ -55,13 +55,6 @@ class Server:
         self.recover = recover
 
         # self.test = test
-        #
-        # self.input_mask_queue_tail = 0
-        # try:
-        #     self.input_mask_queue_tail = int.from_bytes(bytes(self.db.Get(f'input_mask_queue_tail'.encode())), 'big')
-        # except KeyError:
-        #     pass
-        # print('**** input_mask_queue_tail', self.input_mask_queue_tail)
 
     async def get_zkrp_shares(self, players, inputmask_idxes):
         request = f"zkrp_share_idxes/{inputmask_idxes}"
@@ -85,32 +78,25 @@ class Server:
             print(f"s{self.serverID} response: {res}")
             return web.json_response(data)
 
-        # async def handler_recover_db(request):
-        #     print(f"s{self.serverID} request: {request}")
-        #     seq_num_list = re.split(',', request.match_info.get("list"))
-        #
-        #     with open(f'ratel/benchmark/data/recover_states.csv', 'a') as f:
-        #         f.write(f'state\t{len(seq_num_list * trade_key_num)}\t'
-        #                 f'stage\t3\t'
-        #                 f'{time.perf_counter()}\t'
-        #                 f's-{self.serverID}\n')
-        #
-        #     keys = self.collect_keys(seq_num_list)
-        #     masked_shares = await self.mask_shares(keys)
-        #
-        #     with open(f'ratel/benchmark/data/recover_states.csv', 'a') as f:
-        #         f.write(f'state\t{len(seq_num_list * trade_key_num)}\t'
-        #                 f'stage\t6\t'
-        #                 f'{time.perf_counter()}\t'
-        #                 f's-{self.serverID}\n')
-        #
-        #     res = list_to_str(masked_shares)
-        #
-        #     data = {
-        #         "values": res,
-        #     }
-        #     print(f"s{self.serverID} response: {res}")
-        #     return web.json_response(data)
+        async def handler_recover_db(request):
+            print(f"s{self.serverID} request: {request}")
+            server_addr = request.match_info.get("server_addr")
+            seq_recover_state = int(request.match_info.get("seq_recover_state"))
+            seq_num_list = re.split(',', request.match_info.get("list"))
+            print(server_addr)
+            print(seq_recover_state)
+            print(seq_num_list)
+
+            keys = self.collect_keys(seq_num_list)
+            masked_states = await self.mask_states(server_addr, seq_recover_state, keys)
+
+            res = list_to_str(masked_states)
+
+            data = {
+                "values": res,
+            }
+            print(f"s{self.serverID} response: {res}")
+            return web.json_response(data)
 
         async def handler_mpc_verify(request):
             print(f"s{self.serverID} request: s{request} request from {request.remote}")
@@ -139,8 +125,8 @@ class Server:
 
         resource = cors.add(app.router.add_resource("/inputmasks/{mask_idxes}"))
         cors.add(resource.add_route("GET", handler_inputmask))
-        # resource = cors.add(app.router.add_resource("/recoverdb/{list}"))
-        # cors.add(resource.add_route("GET", handler_recover_db))
+        resource = cors.add(app.router.add_resource("/recoverdb/{server_addr}-{seq_recover_state}-{list}"))
+        cors.add(resource.add_route("GET", handler_recover_db))
         resource = cors.add(app.router.add_resource("/zkrp_share_idxes/{mask_idxes}"))
         cors.add(resource.add_route("GET", handler_mpc_verify))
 
@@ -151,43 +137,9 @@ class Server:
         await site.start()
         await asyncio.sleep(100 * 3600)
 
-    # TODO: modify the following
-    # async def init(self, apptask):
-    #     async def prepare(apptask):
-    #         # isServer = self.contract.functions.isServer(self.account.address).call()
-    #         # if not isServer:
-    #         #     self.registerServer()
-    #         #     await self.recoverHistory()
-    #
-    #         tasks = [
-    #             self.preprocessing(),
-    #             # self.monitorNewServer(),
-    #             self.http_server(),
-    #             apptask,
-    #         ]
-    #         await asyncio.gather(*tasks)
-    #
-    #     tasks = [
-    #         prepare(apptask),
-    #         self.monitorGenInputMask(shareBatchSize),
-    #     ]
-    #     await asyncio.gather(*tasks)
-
     async def init(self, monitor):
-        is_server = self.contract.functions.isServer(self.account.address).call()
-        if not is_server:
-            # TODO: acquire approval from other servers
-            tx = self.contract.functions.addServer(self.account.address).buildTransaction({
-                'from': self.account.address,
-                'gas': 1000000,
-                'nonce': self.web3.eth.get_transaction_count(self.account.address)
-            })
-            sign_and_send(tx, self.web3, self.account)
-
-        # TODO: consider where the recover_history function should be invoked
-        await self.recover_history()
-
         tasks = [
+            self.prepare(),
             monitor,
             self.http_server(),
             self.preprocessing()
@@ -212,11 +164,10 @@ class Server:
             for line in f.readlines():
                 share = int(line) % prime
                 shares.append(share)
-
         return shares
 
     async def preprocessing(self):
-        ### TODO: remove the following & add generating agreement proof
+        # TODO: remove the following & add generating agreement proof
         if self.serverID != 0:
             return
 
@@ -231,96 +182,75 @@ class Server:
                 sign_and_send(tx, self.web3, self.account)
             await asyncio.sleep(600)
 
-        # while True:
-        #     input_mask_cnt = self.contract.functions.inputMaskCnt().call()
-        #     if input_mask_cnt + spareShares >= self.local_input_mask_cnt:
-        #         print(f'Request to generate input masks....')
-        #         tx = self.contract.functions.genInputMask(self.local_input_mask_cnt).buildTransaction(
-        #             {'from': self.account.address, 'gas': 1000000,
-        #              'nonce': self.web3.eth.get_transaction_count(self.account.address)})
-        #         sign_and_send(tx, self.web3, self.account)
-        #     await asyncio.sleep(600)
+    async def prepare(self):
+        is_server = self.contract.functions.isServer(self.account.address).call()
+        print(f's-{self.serverID} {is_server}')
+        if not is_server:
+            # TODO: acquire approval from other servers
+            tx = self.contract.functions.addServer(self.account.address).buildTransaction({
+                'from': self.account.address,
+                'gas': 1000000,
+                'nonce': self.web3.eth.get_transaction_count(self.account.address)
+            })
+            sign_and_send(tx, self.web3, self.account)
 
-        # while True:
-        #     if self.contract.functions.isInputMaskReady().call() > self.contract.functions.T().call() and self.contract.functions.isServer(self.account.address).call():
-        #         await self.check_input_mask_availability()
-        #     await asyncio.sleep(60)
-
-    # async def monitorGenInputMask(self, shareBatchSize):
-    #     blkNum = self.web3.eth.get_block_number()
-    #     while True:
-    #         await asyncio.sleep(5)
-    #         curBlkNum = self.web3.eth.get_block_number()
-    #         if curBlkNum - blkNum > self.confirmation:
-    #             eventFilter = self.contract.events.GenInputMask.createFilter(fromBlock=blkNum, toBlock=curBlkNum - self.confirmation)
-    #             logs = eventFilter.get_all_entries()
-    #             blkNum = curBlkNum - self.confirmation + 1
-    #             for log in logs:
-    #                 input_mask_queue_head = log['args']['inputMaskCnt']
-    #                 committeeChangeCnt = log['args']['committeeChangeCnt']
-    #
-    #                 self.input_mask_queue_tail = input_mask_queue_head
-    #                 await self.genInputMask(shareBatchSize)
-    #
-    #                 tx = self.contract.functions.setReady(committeeChangeCnt).buildTransaction({'from': self.account.address, 'gas': 1000000, 'nonce': self.web3.eth.get_transaction_count(self.account.address)})
-    #                 sign_and_send(tx, self.web3, self.account)
-    #                 print('!!!! isInputMaskReady', self.contract.functions.isInputMaskReady().call())
-    #
-    #
-    # async def monitorNewServer(self):
-    #     blkNum = self.web3.eth.get_block_number()
-    #     while True:
-    #         await asyncio.sleep(5)
-    #         curBlkNum = self.web3.eth.get_block_number()
-    #         if curBlkNum - blkNum > self.confirmation:
-    #             eventFilter = self.contract.events.NewServer.createFilter(fromBlock=blkNum, toBlock=curBlkNum - self.confirmation)
-    #             logs = eventFilter.get_all_entries()
-    #             blkNum = curBlkNum - self.confirmation + 1
-    #             for log in logs:
-    #                 newServer = log['args']['server']
-    #
-    #                 self.players += 1
-    #
-    #                 tx = self.contract.functions.addServer(newServer).buildTransaction({'from': self.account.address, 'gas': 1000000, 'nonce': self.web3.eth.get_transaction_count(self.account.address)})
-    #                 sign_and_send(tx, self.web3, self.account)
-    #                 print('!!!! votes', self.contract.functions.votes(newServer).call())
-    #
-    # def registerServer(self):
-    #     tx = self.contract.functions.registerServer().buildTransaction({'from': self.account.address, 'gas': 1000000, 'nonce': self.web3.eth.get_transaction_count(self.account.address)})
-    #     sign_and_send(tx, self.web3, self.account)
-    #
-    #
-    async def recover_history(self):
+        # TODO: consider the ordering of crash recovery related functions
         seq_num_list = self.check_missing_tasks()
+        print(f'seq_num_list {seq_num_list}')
+        if len(seq_num_list) == 0:
+            return
+
+        await self.check_input_mask()
+        await self.recover_history(seq_num_list)
+
+    async def check_input_mask(self):
+        version_input_mask = self.contract.functions.versionInputMask().call()
+        num_total_input_mask = self.contract.functions.numTotalInputMask().call()
+        print(f'version_input_mask {version_input_mask}')
+        print(f'num_total_input_mask {num_total_input_mask}')
+
+        out_of_date = False
+        try:
+            local_version = int.from_bytes(bytes(self.db.Get(key_inputmask_version(num_total_input_mask - 1))), 'big')
+            if local_version < version_input_mask:
+                out_of_date = True
+        except KeyError:
+            out_of_date = True
+
+        if out_of_date:
+            tx = self.contract.functions.initGenInputMask(True).buildTransaction({
+                'from': self.account.address,
+                'gas': 1000000,
+                'nonce': self.web3.eth.get_transaction_count(self.account.address)
+            })
+            sign_and_send(tx, self.web3, self.account)
+
+            while True:
+                try:
+                    print(f'idx {num_total_input_mask - 1}')
+                    local_version = int.from_bytes(bytes(self.db.Get(key_inputmask_version(num_total_input_mask - 1))), 'big')
+                    print(f'local_version {local_version}')
+                    if local_version > version_input_mask:
+                        break
+                except:
+                    pass
+                await asyncio.sleep(1)
+
+    async def recover_history(self, seq_num_list):
         keys = self.collect_keys(seq_num_list)
-        seq_recover_state = self.reserve_state_mask(len(keys))
+        print(f'keys {keys}')
+        seq_recover_state = await self.reserve_state_mask(len(keys))
+        request = f'recoverdb/{self.account.address}-{seq_recover_state}-{list_to_str(seq_num_list)}'
+        print(f'request {request}')
+        masked_states = await send_requests(self.players, request, self.serverID)
+        for i in range(len(masked_states)):
+            masked_states[i] = re.split(",", masked_states[i]["values"])
+        masked_states = batch_interpolate(masked_states, self.threshold)
+        state_shares = self.unmask_states(masked_states, seq_recover_state)
+        self.restore_db(seq_num_list, keys, state_shares)
 
         # TODO: recover states of on-going MPC tasks
 
-    #     while True:
-    #         isServer = self.contract.functions.isServer(self.account.address).call()
-    #         print('isServer', isServer)
-    #         if isServer:
-    #             break
-    #         await asyncio.sleep(1)
-    #     while True:
-    #         committeeChangeCnt = self.contract.functions.committeeChangeCnt().call()
-    #         numCommittee = self.contract.functions.numCommittee(self.account.address).call()
-    #         print('committeeChangeCnt', committeeChangeCnt, 'numCommittee', numCommittee)
-    #         if numCommittee == committeeChangeCnt:
-    #             break
-    #         await asyncio.sleep(1)
-    #
-    #     #TODO: test below
-    #     request = f'recoverdb/{list_to_str(seq_num_list)}'
-    #     masked_shares = await send_requests(self.players, request)
-    #     for i in range(len(masked_shares)):
-    #         masked_shares[i] = re.split(",", masked_shares[i]["values"])
-    #     masked_states = batch_interpolate(masked_shares)
-    #     state_shares = self.recover_states(masked_states)
-    #     self.restore_db(seq_num_list, keys, state_shares)
-    #
-    #
     def check_missing_tasks(self):
         try:
             exec_history = self.db.Get(f'execHistory'.encode())
@@ -345,15 +275,6 @@ class Server:
 
         return seq_list
 
-        # opCnt = self.contract.functions.opCnt().call()
-        # seq_num_list = []
-        # for seq in range(opCnt):
-        #     if not seq in exec_history:
-        #         print('missing opSeq', seq)
-        #         seq_num_list.append(seq)
-        # return seq_num_list
-    #
-    #
     def collect_keys(self, seq_num_list):
         # if not self.test:
         #     seq_num_list = list(set(seq_num_list))
@@ -367,10 +288,12 @@ class Server:
 
         return keys
 
-    def reserve_state_mask(self, num):
+    async def reserve_state_mask(self, num):
+        print('reserve_state_mask')
         num_total_state_mask = self.contract.functions.numTotalStateMask(self.account.address).call()
         num_used_state_mask = self.contract.functions.numUsedStateMask(self.account.address).call()
         num_to_gen = max(0, num - num_total_state_mask + num_used_state_mask)
+        print(f'num_to_gen {num_to_gen}')
 
         if num_to_gen > 0:
             print(f'generating {num_to_gen} state masks...')
@@ -379,7 +302,21 @@ class Server:
                 'gas': 1000000,
                 'nonce': self.web3.eth.get_transaction_count(self.account.address)
             })
-            sign_and_send(tx, self.web3, self.account)
+            receipt = sign_and_send(tx, self.web3, self.account)
+            logs = self.contract.events.GenStateMask().processReceipt(receipt)
+            init_state_mask_index = logs[0]['args']['initStateMaskIndex']
+            num = logs[0]['args']['num']
+
+            print(f'init_state_mask_index {init_state_mask_index}')
+            print(f'num {num}')
+
+            while True:
+                try:
+                    self.db.Get(key_state_mask(self.account.address, init_state_mask_index + num - 1))
+                    break
+                except KeyError:
+                    print(f'state mask generation not ready')
+                    await asyncio.sleep(1)
 
         tx = self.contract.functions.consumeStateMask(num).buildTransaction({
             'from': self.account.address,
@@ -389,79 +326,64 @@ class Server:
         receipt = sign_and_send(tx, self.web3, self.account)
         logs = self.contract.events.RecoverState().processReceipt(receipt)
         seq_recover_state = logs[0]['args']['seqRecoverState']
+
         return seq_recover_state
-    #
-    #
-    # async def mask_shares(self, keys):
-    #     masked_shares = []
-    #
-    #     with open(f'ratel/benchmark/data/recover_states.csv', 'a') as f:
-    #         f.write(f'state\t{len(keys)}\t'
-    #                 f'stage\t4\t'
-    #                 f'{time.perf_counter()}\t'
-    #                 f's-{self.serverID}\n')
-    #
-    #     await self.genInputMask(len(keys))
-    #
-    #     with open(f'ratel/benchmark/data/recover_states.csv', 'a') as f:
-    #         f.write(f'state\t{len(keys)}\t'
-    #                 f'stage\t5\t'
-    #                 f'{time.perf_counter()}\t'
-    #                 f's-{self.serverID}\n')
-    #
-    #     for key in keys:
-    #         masked_state_share = 0
-    #         try:
-    #             secret = int.from_bytes(bytes(self.db.Get(key.lower().encode())), 'big')
-    #
-    #             input_mask_share = int.from_bytes(bytes(self.db.Get(key_inputmask_index(self.input_mask_queue_tail - 1))), 'big')
-    #             self.input_mask_queue_tail -= 1
-    #             masked_state_share = (secret + input_mask_share) % prime
-    #
-    #         except KeyError:
-    #             print(f'Do not have the state {key}')
-    #
-    #         masked_shares.append(masked_state_share)
-    #
-    #     self.db.Put(f'input_mask_queue_tail'.encode(), self.input_mask_queue_tail.to_bytes((self.input_mask_queue_tail.bit_length() + 7) // 8, 'big'))
-    #
-    #     return masked_shares
-    #
-    #
-    # def recover_states(self, masked_states):
-    #     state_shares = []
-    #
-    #     for masked_state in masked_states:
-    #         input_mask = int.from_bytes(bytes(self.db.Get(key_inputmask_index(self.input_mask_queue_tail - 1))), 'big')
-    #         self.input_mask_queue_tail -= 1
-    #         state_share = (masked_state - input_mask) % prime
-    #         state_shares.append(state_share)
-    #
-    #     self.db.Put(f'input_mask_queue_tail'.encode(), self.input_mask_queue_tail.to_bytes((self.input_mask_queue_tail.bit_length() + 7) // 8, 'big'))
-    #
-    #     return state_shares
-    #
-    #
-    # def restore_db(self, seq_num_list, keys, values):
-    #     assert len(keys) == len(values)
-    #
-    #     for key, value in zip(keys, values):
-    #         self.db.Put(key.encode(), value.to_bytes((value.bit_length() + 7) // 8, 'big'))
-    #
-    #     try:
-    #         execHistory = self.db.Get(f'execHistory'.encode())
-    #     except KeyError:
-    #         execHistory = bytes(0)
-    #
-    #     try:
-    #         execHistory = execHistory.decode(encoding='utf-8')
-    #         execHistory = dict(ast.literal_eval(execHistory))
-    #     except:
-    #         execHistory = {}
-    #
-    #     for seq in seq_num_list:
-    #             execHistory[seq] = True
-    #
-    #     execHistory = str(execHistory)
-    #     execHistory = bytes(execHistory, encoding='utf-8')
-    #     self.db.Put(f'execHistory'.encode(), execHistory)
+
+    async def mask_states(self, server_addr, seq_recover_state, keys):
+        # TODO: deal with the case that malicious MPC server reuse the same seq_num
+        # TODO: handle the case when the server does not have the share of some state masks
+
+        masked_states = []
+
+        init_index_recover_state = self.contract.functions.initIndexRecoverState(server_addr, seq_recover_state).call()
+        num_recover_state = self.contract.functions.numRecoverState(server_addr, seq_recover_state).call()
+
+        if num_recover_state != len(keys):
+            print(f'invalid recover state request')
+            return masked_states
+
+        for idx, key in zip(range(init_index_recover_state, init_index_recover_state + num_recover_state), keys):
+            state = int.from_bytes(bytes(self.db.Get(key.lower().encode())), 'big')
+            state_mask_share = int.from_bytes(bytes(self.db.Get(key_state_mask(server_addr, idx))), 'big')
+            masked_state_share = (state + state_mask_share) % prime
+            masked_states.append(masked_state_share)
+
+        return masked_states
+
+    def unmask_states(self, masked_states, seq_recover_state):
+        state_shares = []
+
+        init_index_recover_state = self.contract.functions.initIndexRecoverState(self.account.address, seq_recover_state).call()
+        num_recover_state = self.contract.functions.numRecoverState(self.account.address, seq_recover_state).call()
+
+        for idx, masked_state in zip(range(init_index_recover_state, init_index_recover_state + num_recover_state), masked_states):
+            state_mask_share = int.from_bytes(bytes(self.db.Get(key_state_mask(self.account.address, idx))), 'big')
+            state_share = (masked_state - state_mask_share) % prime
+            state_shares.append(state_share)
+
+        return state_shares
+
+    def restore_db(self, seq_num_list, keys, values):
+        assert len(keys) == len(values)
+
+        for key, value in zip(keys, values):
+            print(f'key {key} value {value}')
+            self.db.Put(key.encode(), value.to_bytes((value.bit_length() + 7) // 8, 'big'))
+
+        try:
+            execHistory = self.db.Get(f'execHistory'.encode())
+        except KeyError:
+            execHistory = bytes(0)
+
+        try:
+            execHistory = execHistory.decode(encoding='utf-8')
+            execHistory = dict(ast.literal_eval(execHistory))
+        except:
+            execHistory = {}
+
+        for seq in seq_num_list:
+                execHistory[seq] = True
+
+        execHistory = str(execHistory)
+        execHistory = bytes(execHistory, encoding='utf-8')
+        self.db.Put(f'execHistory'.encode(), execHistory)

@@ -52,7 +52,7 @@ def createGame(appContract, value1, account, web3):
             return gameId
 
 
-def joinGame(appContract, gameId, value2, account):
+def joinGame(appContract, gameId, value2, account, web3):
     print(f'**** JoinGame {value2}')
     idx = reserveInput(web3, appContract, 1, account)[0]
     mask = asyncio.run(
@@ -73,7 +73,7 @@ def joinGame(appContract, gameId, value2, account):
             return
 
 
-def startRecon(appContract, gameId, account):
+def startRecon(appContract, gameId, account, web3):
     web3.eth.defaultAccount = account.address
     tx = appContract.functions.startRecon(gameId).buildTransaction(
         {"nonce": web3.eth.get_transaction_count(web3.eth.defaultAccount)}
@@ -99,37 +99,37 @@ if __name__ == "__main__":
     client_2 = getAccount(web3, f"/opt/poa/keystore/client_2/")
 
     gameId = createGame(appContract, 1, client_1, web3)
-    joinGame(appContract, gameId, 1, client_2)
-    startRecon(appContract, gameId, client_1)
+    joinGame(appContract, gameId, 1, client_2, web3)
+    startRecon(appContract, gameId, client_1, web3)
 
     gameId = createGame(appContract, 1, client_1, web3)
-    joinGame(appContract, gameId, 2, client_2)
-    startRecon(appContract, gameId, client_2)
+    joinGame(appContract, gameId, 2, client_2, web3)
+    startRecon(appContract, gameId, client_2, web3)
 
     gameId = createGame(appContract, 1, client_1, web3)
-    joinGame(appContract, gameId, 3, client_2)
-    startRecon(appContract, gameId, client_1)
+    joinGame(appContract, gameId, 3, client_2, web3)
+    startRecon(appContract, gameId, client_1, web3)
 
     gameId = createGame(appContract, 2, client_1, web3)
-    joinGame(appContract, gameId, 1, client_2)
-    startRecon(appContract, gameId, client_1)
+    joinGame(appContract, gameId, 1, client_2, web3)
+    startRecon(appContract, gameId, client_1, web3)
 
     gameId = createGame(appContract, 2, client_1, web3)
-    joinGame(appContract, gameId, 2, client_2)
-    startRecon(appContract, gameId, client_1)
+    joinGame(appContract, gameId, 2, client_2, web3)
+    startRecon(appContract, gameId, client_1, web3)
 
     gameId = createGame(appContract, 2, client_1, web3)
-    joinGame(appContract, gameId, 3, client_2)
-    startRecon(appContract, gameId, client_1)
+    joinGame(appContract, gameId, 3, client_2, web3)
+    startRecon(appContract, gameId, client_1, web3)
 
     gameId = createGame(appContract, 3, client_1, web3)
-    joinGame(appContract, gameId, 1, client_2)
-    startRecon(appContract, gameId, client_1)
+    joinGame(appContract, gameId, 1, client_2, web3)
+    startRecon(appContract, gameId, client_1, web3)
 
     gameId = createGame(appContract, 3, client_1, web3)
-    joinGame(appContract, gameId, 2, client_2)
-    startRecon(appContract, gameId, client_1)
+    joinGame(appContract, gameId, 2, client_2, web3)
+    startRecon(appContract, gameId, client_1, web3)
 
     gameId = createGame(appContract, 3, client_1, web3)
-    joinGame(appContract, gameId, 3, client_2)
-    startRecon(appContract, gameId, client_1)
+    joinGame(appContract, gameId, 3, client_2, web3)
+    startRecon(appContract, gameId, client_1, web3)

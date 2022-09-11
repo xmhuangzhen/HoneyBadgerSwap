@@ -210,7 +210,7 @@ SPACE [ \t\r]*
         textPublic += "    \n";
         textPublic += "    function finalizeGenInputMask(bool refill, uint num) public onlyServer{\n";
         textPublic += "        // TODO: provide & verify agreement proof of majority of servers\n";
-        textPublic += "        if (refill) {\n";
+        textPublic += "        if (!refill) {\n";
         textPublic += "            numTotalInputMask += num;\n";
         textPublic += "        } else {\n";
         textPublic += "            numTotalInputMask = numUsedInputMask + num;\n";

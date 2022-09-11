@@ -57,9 +57,11 @@ async def send_request(url):
             return json_response
 
 
-async def send_requests(players, request):
+async def send_requests(players, request, self_id = -1):
     tasks = []
     for server_id in range(players):
+        if server_id == self_id:
+            continue
         task = send_request(f"http://{http_host}:{http_port + server_id}/{request}")
         tasks.append(task)
 

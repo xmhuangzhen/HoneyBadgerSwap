@@ -52,5 +52,10 @@ python3 -m ratel.src.python.rockPaperScissors.create_game 1 1
 python3 -m ratel.src.python.rockPaperScissors.run [MPC_server_ID] [MPC_server_number] [threshold] [concurrency] [test_flag]
 ```
 ```shell
-python3 -m ratel.src.python.rockPaperScissors.run 3 4 1 1 0
+python3 -m ratel.src.python.rockPaperScissors.run 3 4 1 1 0 > ratel/log/server_3.log 2>&1 &
+```
+
+### Join game by another client
+```shell
+python3 -m ratel.src.python.rockPaperScissors.end_game 2 2 1 
 ```

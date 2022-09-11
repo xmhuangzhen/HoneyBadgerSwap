@@ -9,6 +9,8 @@ contract rockPaperScissors {
     using SafeERC20 for IERC20;
 
     uint public gameCnt;
+    mapping (uint => address) public gamePlayer1;
+    mapping (uint => address) public gamePlayer2;
 
     mapping (uint => uint) public status; // active-1, ready-2, completed-3
 
@@ -21,6 +23,7 @@ contract rockPaperScissors {
     function createGame($#uint value1) public {
         address player1 = msg.sender;
         uint gameId = ++gameCnt;
+        gamePlayer1[gameId] = player1;
 
         mpc(uint gameId, address player1, $#uint value1) {
             mpcInput(sint value1)
@@ -31,12 +34,7 @@ contract rockPaperScissors {
 
             print('**** valid', valid)
             if valid == 1:
-                game = {
-                    'player1': player1,
-                    'value1': value1,
-                }
-                print('**** game', game)
-                writeDB(f'gameBoard_{gameId}', game, dict)
+                writeDB(f'game_value1_{gameId}', value1, int)
 
                 curStatus = 1
                 set(status, uint curStatus, uint gameId)
@@ -47,10 +45,9 @@ contract rockPaperScissors {
     function joinGame(uint gameId, $uint value2) public {
         require(status[gameId] == 1);
         address player2 = msg.sender;
+        gamePlayer2[gameId] = player2;
 
         mpc(uint gameId, address player2, $uint value2) {
-            game = readDB(f'gameBoard_{gameId}', dict)
-
             mpcInput(sint value2)
 
             valid = ((value2.greater_equal(1, bit_length=bit_length)) * (value2.less_equal(3, bit_length=bit_length))).reveal()
@@ -59,12 +56,7 @@ contract rockPaperScissors {
 
             print('**** valid', valid)
             if valid == 1:
-                game['player2'] = player2
-                game['value2'] = value2
-
-                print('**** game', game)
-
-                writeDB(f'gameBoard_{gameId}', game, dict)
+                writeDB(f'game_value2_{gameId}', value2, int)
 
                 curStatus = 2
                 set(status, uint curStatus, uint gameId)
@@ -77,10 +69,8 @@ contract rockPaperScissors {
         status[gameId]++;
 
         mpc(uint gameId) {
-            game = readDB(f'gameBoard_{gameId}', dict)
-
-            value1 = game['value1']
-            value2 = game['value2']
+            value1 = readDB(f'game_value1_{gameId}', int)
+            value2 = readDB(f'game_value2_{gameId}', int)
 
             mpcInput(sint value1, sint value2)
             print_ln('**** value1 %s', value1.reveal())
