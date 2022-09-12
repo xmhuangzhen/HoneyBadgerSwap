@@ -187,13 +187,13 @@ def mark_finish(server, seq):
     server.portLock[port].release()
 
     key = 'execHistory'
-    execHistory = read_db(server, key)
-    execHistory = bytes_to_dict(execHistory)
+    exec_history = read_db(server, key)
+    exec_history = bytes_to_dict(exec_history)
 
-    execHistory[seq] = True
+    exec_history[seq] = True
 
-    execHistory = dict_to_bytes(execHistory)
-    write_db(server, key, execHistory)
+    exec_history = dict_to_bytes(exec_history)
+    write_db(server, key, exec_history)
 
 
 def read_db(server, key, finalize_on_chain=False):

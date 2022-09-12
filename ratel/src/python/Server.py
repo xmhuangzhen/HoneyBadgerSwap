@@ -15,7 +15,7 @@ from ratel.src.python.utils import key_inputmask_index, threshold_available_inpu
     location_inputmask, http_host, http_port, mpc_port, location_db, openDB, getAccount, \
     confirmation, input_mask_gen_batch_size, list_to_str, trade_key_num, INPUTMASK_SHARES_DIR, execute_cmd, \
     sign_and_send, \
-    key_inputmask_version, key_state_mask
+    key_inputmask_version, key_state_mask, read_db, bytes_to_dict, dict_to_bytes, write_db
 
 
 class Server:
@@ -252,23 +252,16 @@ class Server:
         # TODO: recover states of on-going MPC tasks
 
     def check_missing_tasks(self):
-        try:
-            exec_history = self.db.Get(f'execHistory'.encode())
-        except KeyError:
-            exec_history = bytes(0)
-
-        try:
-            exec_history = exec_history.decode(encoding='utf-8')
-            exec_history = dict(ast.literal_eval(exec_history))
-        except:
-            exec_history = {}
+        key = 'execHistory'
+        exec_history = read_db(self, key)
+        exec_history = bytes_to_dict(exec_history)
 
         seq_list = []
 
         finalized_task_cnt = self.contract.functions.finalizedTaskCnt().call()
         print(f'finalized_task_cnt {finalized_task_cnt}')
         for finalized_seq in range(1, 1 + finalized_task_cnt):
-            if not finalized_seq in exec_history:
+            if finalized_seq not in exec_history or not exec_history[finalized_seq]:
                 init_seq = self.contract.functions.finalized(finalized_seq).call()
                 print(f'missing task with initSeq {init_seq} finalizedSeq {finalized_seq}')
                 seq_list.append(init_seq)
@@ -370,20 +363,12 @@ class Server:
             print(f'key {key} value {value}')
             self.db.Put(key.encode(), value.to_bytes((value.bit_length() + 7) // 8, 'big'))
 
-        try:
-            execHistory = self.db.Get(f'execHistory'.encode())
-        except KeyError:
-            execHistory = bytes(0)
-
-        try:
-            execHistory = execHistory.decode(encoding='utf-8')
-            execHistory = dict(ast.literal_eval(execHistory))
-        except:
-            execHistory = {}
+        key = 'execHistory'
+        exec_history = read_db(self, key)
+        exec_history = bytes_to_dict(exec_history)
 
         for seq in seq_num_list:
-                execHistory[seq] = True
+            exec_history[seq] = True
 
-        execHistory = str(execHistory)
-        execHistory = bytes(execHistory, encoding='utf-8')
-        self.db.Put(f'execHistory'.encode(), execHistory)
+        exec_history = dict_to_bytes(exec_history)
+        write_db(self, key, exec_history)
