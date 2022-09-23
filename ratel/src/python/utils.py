@@ -253,7 +253,7 @@ def dict_to_bytes(value):
     return bytes(str(value), encoding='utf-8')
 
 
-async def verify_proof(server, idxValue, maskedValue, idxValueBlinding, maskedValueBlinding, proof, commitment, bits=32):
+async def verify_proof(server, idxValue, maskedValue, idxValueBlinding, maskedValueBlinding, proof, commitment, bits=2):
     # TODO:
     # proof, commitment, blinding_ = zkrp_prove(2022, 32)
     if not zkrp_verify(proof, commitment, bits):
@@ -280,7 +280,7 @@ async def verify_proof(server, idxValue, maskedValue, idxValueBlinding, maskedVa
     # print("((((((((", agg_commitment, commitment)
     return agg_commitment == commitment
 
-def get_zkrp(secret_value, r, exp_str):
+def get_zkrp(secret_value, exp_str, r):
     value = secret_value
     if exp_str == '>=':
         value = value - r
@@ -292,7 +292,7 @@ def get_zkrp(secret_value, r, exp_str):
         value = r - value - 1
 
     #To prove value >= 0
-    bits = 32
+    bits = 2
     proof, commitment, blinding_bytes = zkrp_prove(value, bits)
     blinding = int.from_bytes(blinding_bytes, byteorder='little')
 
