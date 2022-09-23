@@ -27,14 +27,13 @@ def createGame(appContract, value1, account):
     print(f'**** CreateGame {value1}')
 
     zkp_value1, proof1, commitment1, blinding1 = get_zkrp(value1, '>=', 1)
-    zkp_value2, proof2, commitment2, blinding2 = get_zkrp(value1, '<=', 100)
 
-    idx1, idx2, idx3, idx4, idx5 = reserveInput(web3, appContract, 5, account)
-    mask1, mask2, mask3, mask4, mask5 = asyncio.run(get_inputmasks(players(appContract), f'{idx1},{idx2},{idx3},{idx4},{idx5}', threshold(appContract)))
-    maskedvalue1, maskedvalue2, maskedvalue3, maskedvalue4, maskedvalue5 = (value1 + mask1) % prime, (zkp_value1 + mask2) % prime, (blinding1 + mask3) % prime, (zkp_value2 + mask4) % prime, (blinding2 + mask5) % prime
-
+    idx1, idx2, idx3 = reserveInput(web3, appContract, 3, account)
+    mask1, mask2, mask3 = asyncio.run(get_inputmasks(players(appContract), f'{idx1},{idx2},{idx3}', threshold(appContract)))
+    maskedvalue1, maskedvalue2, maskedvalue3 = (value1 + mask1) % prime, (zkp_value1 + mask2) % prime, (blinding1 + mask3) % prime
+    
     web3.eth.defaultAccount = account.address
-    tx = appContract.functions.createGame(idx1, maskedvalue1, idx2, maskedvalue2, idx3, maskedvalue3, proof1, commitment1, idx4, maskedvalue4, idx5, maskedvalue5, proof2, commitment2).buildTransaction({
+    tx = appContract.functions.createGame(idx1, maskedvalue1, idx2, maskedvalue2, idx3, maskedvalue3, proof1, commitment1).buildTransaction({
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
     })
     receipt = sign_and_send(tx, web3, account)
