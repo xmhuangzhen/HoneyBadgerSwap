@@ -18,13 +18,12 @@ contract rockPaperScissors {
     constructor() public {}
 
 
-    function createGame($uint value1, $#uint pfvalue1, $#uint pfvalue2) public {
+    function createGame($uint value1, $#uint pfvalue1) public {
         address player1 = msg.sender;
         uint gameId = ++gameCnt;
 
-        mpc(uint gameId, address player1, $uint value1, $#uint pfvalue1, $#uint pfvalue2) {
+        mpc(uint gameId, address player1, $uint value1, $#uint pfvalue1) {
             verify_zkrp(pfvalue1)
-            verify_zkrp(pfvalue2)
 
             game = {
                 'player1': player1,
