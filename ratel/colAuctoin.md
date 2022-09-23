@@ -41,7 +41,7 @@ sudo docker exec -it honeybadgerswap_dev_1 bash
 
 #### setup ssl connection
 ```
-bash setup-ssl.sh 4
+bash setup-ssl.sh 4 /opt/ssl
 ```
 
 #### compile the ratel

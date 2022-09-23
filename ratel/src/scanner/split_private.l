@@ -12,7 +12,7 @@ using namespace std;
 
 bool finalizeOnChain;
 
-bool isPureMpc, isEvent, isReadDB, isWriteDB, isMpcInput, isMpcOutput; /* see keyword in the current line */
+bool isPureMpc, isEvent, isReadDB, isWriteDB, isMpcInput, isMpcOutput, isZkrp; /* see keyword in the current line */
 bool inPureMpc; /* in pureMpc block */
 bool inFunc; /* in function block */
 
@@ -291,7 +291,6 @@ void unmaskInput() {
             if (args[i][1] == '#') {
                 textFuncUpper += "    " + varName + "Blinding = recover_input(server.db, masked" + postVarName + "Blinding, idx" + postVarName + "Blinding)\n";
 
-                textFuncLower += "    assert(await verify_proof(server, idx" + postVarName + ", masked" + postVarName + ", idx" + postVarName + "Blinding, masked" + postVarName + "Blinding, proof" + postVarName + ", commitment" + postVarName + "))\n";
                 hasZKP = 1;
             }
         }
@@ -561,6 +560,13 @@ void mpcOutput() {
     }
 }
 
+void verify_zkrp(){
+    string varName = args[0];
+    string postVarName = varName;
+    postVarName[0] = toupper(postVarName[0]);
+    textFuncLower += "    assert(await verify_proof(server, idx" + postVarName + ", masked" + postVarName + ", idx" + postVarName + "Blinding, masked" + postVarName + "Blinding, proof" + postVarName + ", commitment" + postVarName + "))\n";
+}
+
 
 void addText(char *yytext) {
     string text = string(yytext);
@@ -651,6 +657,13 @@ SPACE [ \t\r]+
 ^.*mpcOutput\( {
     isMpcOutput = true;
     isArg = true;
+}
+
+^.*verify_zkrp\( {
+    isZkrp = true;
+    isArg = true;
+
+    indent = getIndent(string(yytext));
 }
 
 ^.*return {
@@ -767,7 +780,12 @@ SPACE [ \t\r]+
         isMPC = false;
 
         isMpcOutput = false;
-    } else if (isWriteDB) {
+    } else if(isZkrp){
+        verify_zkrp();
+        textFuncLower += textLine;
+
+        isZkrp = false;
+    }else if (isWriteDB) {
         textFuncLower += textLine;
 
         isWriteDB = false;

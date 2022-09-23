@@ -6,7 +6,7 @@ import os
 
 from gmpy import binary, mpz
 from gmpy2 import mpz_from_old_binary
-from pybulletproofs import pedersen_aggregate, pedersen_commit, zkrp_verify
+from pybulletproofs import pedersen_aggregate, pedersen_commit, zkrp_verify, zkrp_prove
 
 
 INPUTMASK_SHARES_DIR = os.getenv(
@@ -279,6 +279,24 @@ async def verify_proof(server, idxValue, maskedValue, idxValueBlinding, maskedVa
 
     # print("((((((((", agg_commitment, commitment)
     return agg_commitment == commitment
+
+def get_zkrp(secret_value, r, exp_str):
+    value = secret_value
+    if exp_str == '>=':
+        value = value - r
+    elif exp_str == '>': #secret_value > r <==> secret_value - r -1 >= 0
+        value = value - r - 1
+    elif exp_str == '<=': # secret_value <= r <==> r - secret_value >= 0 
+        value = r - value
+    elif exp_str == '<': #secret_value < r <==> r - secret_value - 1 >= 0
+        value = r - value - 1
+
+    #To prove value >= 0
+    bits = 32
+    proof, commitment, blinding_bytes = zkrp_prove(value, bits)
+    blinding = int.from_bytes(blinding_bytes, byteorder='little')
+
+    return value, proof, commitment, blinding
 
 
 leaderHostname = 'mpcnode0'

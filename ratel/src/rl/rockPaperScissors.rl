@@ -18,28 +18,22 @@ contract rockPaperScissors {
     constructor() public {}
 
 
-    function createGame($#uint value1) public {
+    function createGame($uint value1, $#uint pfvalue1) public {
         address player1 = msg.sender;
         uint gameId = ++gameCnt;
 
-        mpc(uint gameId, address player1, $#uint value1) {
-            mpcInput(sint value1)
+        mpc(uint gameId, address player1, $uint value1, $#uint pfvalue1) {
+            verify_zkrp(pfvalue1)
 
-            valid = ((value1.greater_equal(1, bit_length=bit_length)) * (value1.less_equal(3, bit_length=bit_length))).reveal()
+            game = {
+                'player1': player1,
+                'value1': value1,
+            }
+            print('**** game', game)
+            writeDB(f'gameBoard_{gameId}', game, dict)
 
-            mpcOutput(cint valid)
-
-            print('**** valid', valid)
-            if valid == 1:
-                game = {
-                    'player1': player1,
-                    'value1': value1,
-                }
-                print('**** game', game)
-                writeDB(f'gameBoard_{gameId}', game, dict)
-
-                curStatus = 1
-                set(status, uint curStatus, uint gameId)
+            curStatus = 1
+            set(status, uint curStatus, uint gameId)
         }
     }
 
