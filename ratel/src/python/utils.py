@@ -253,7 +253,17 @@ def dict_to_bytes(value):
     return bytes(str(value), encoding='utf-8')
 
 
-async def verify_proof(server, idxValue, maskedValue, idxValueBlinding, maskedValueBlinding, proof, commitment, bits=32):
+async def verify_proof(server, pfstr, liszkp):
+
+    has_found = False
+    for e_zkp in liszkp:  
+        (zkpstr,idxValue, maskedValue, idxValueBlinding, maskedValueBlinding, proof, commitment, bits) = e_zkp
+        if pfstr == zkpstr:
+            has_found = True
+
+    if not has_found:
+        return False
+
     # TODO:
     # proof, commitment, blinding_ = zkrp_prove(2022, 32)
     if not zkrp_verify(proof, commitment, bits):

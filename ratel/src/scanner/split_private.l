@@ -224,6 +224,10 @@ void processEventParam() {
             if (args[i][1] == '#') {
                 textLine += ", idx" + postVarName + "Blinding, masked" + postVarName + "Blinding, proof" + postVarName + ", commitment" + postVarName;
             }
+        } else if(getType(args[i]) == "zkp_stmt"){
+            string postVarName = removeType(args[i]);
+            postVarName[0] = toupper(postVarName[0]);
+            textLine += "zkp_stmt" + postVarName + "str, idx" + postVarName + ", masked" + postVarName + ", idx" + postVarName + "Blinding, masked" + postVarName + "Blinding,  proof" + postVarName + ", commitment" + postVarName;
         } else {
             textLine += removeType(args[i]);
         }
@@ -268,6 +272,29 @@ void monitorEvent() {
                 textFuncUpper += tab(1) + commitmentVarName + " = log['args']['" + commitmentVarName + "']\n";
             }
 
+        } else if (type == "zkp_stmt"){
+            varName[0] = toupper(varName[0]);
+
+            string pfstrName = "zkp_stmt" + varName + "str";
+            textFuncUpper += tab(1) + pfstrName + " = log['args']['" + pfstrName + "']\n";
+
+            string idxVarName = "idx" + varName;
+            textFuncUpper += tab(1) + idxVarName + " = log['args']['" + idxVarName + "']\n";
+
+            string maskedVarName = "masked" + varName;
+            textFuncUpper += tab(1) + maskedVarName + " = log['args']['" + maskedVarName + "']\n";
+
+            string idxVarNameBlinding = "idx" + varName + "Blinding";
+            textFuncUpper += tab(1) + idxVarNameBlinding + " = log['args']['" + idxVarNameBlinding + "']\n";
+
+            string maskedVarNameBlinding = "masked" + varName + "Blinding";
+            textFuncUpper += tab(1) + maskedVarNameBlinding + " = log['args']['" + maskedVarNameBlinding + "']\n";
+
+            string proofVarName = "proof" + varName;
+            textFuncUpper += tab(1) + proofVarName + " = log['args']['" + proofVarName + "']\n";
+
+            string commitmentVarName = "commitment" + varName;
+            textFuncUpper += tab(1) + commitmentVarName + " = log['args']['" + commitmentVarName + "']\n";
         } else {
             textFuncUpper += tab(1) + varName + " = log['args']['" + varName + "']\n";
         }
@@ -281,6 +308,9 @@ void monitorEvent() {
 void unmaskInput() {
     bool flag = 0;
     bool hasZKP = 0;
+
+    textFuncUpper += "    liszkp = []\n";
+
     for (int i = 0; i < args.size(); i++) {
         if (args[i][0] == '$') {
             flag = 1;
@@ -293,6 +323,17 @@ void unmaskInput() {
 
                 hasZKP = 1;
             }
+        } else if(getType(args[i]) == "zkp_stmt"){
+            flag = 1;
+            string varName = removeType(args[i]);
+            string postVarName = varName;
+            postVarName[0] = toupper(postVarName[0]);
+            textFuncUpper += "    " + varName + " = recover_input(server.db, masked" + postVarName + ", idx" + postVarName + ")\n";
+            textFuncUpper += "    " + varName + "Blinding = recover_input(server.db, masked" + postVarName + "Blinding, idx" + postVarName + "Blinding)\n";
+
+            textFuncUpper += "    " + "liszkp.append((" + "zkp_stmt" + postVarName + "str, idx" + postVarName + ", masked" + postVarName + ", idx" + postVarName + "Blinding, masked" + postVarName + "Blinding, proof" + postVarName + ", commitment" + postVarName + "))\n";
+
+            hasZKP = 1;
         }
     }
     if (flag) textFuncUpper += "\n";
@@ -561,10 +602,9 @@ void mpcOutput() {
 }
 
 void verify_zkrp(){
-    string varName = args[0];
-    string postVarName = varName;
-    postVarName[0] = toupper(postVarName[0]);
-    textFuncLower += "    assert(await verify_proof(server, idx" + postVarName + ", masked" + postVarName + ", idx" + postVarName + "Blinding, masked" + postVarName + "Blinding, proof" + postVarName + ", commitment" + postVarName + "))\n";
+    string pfstr = args[0];
+
+    textFuncLower += "    assert(await verify_proof(server, " + pfstr + ",liszkp))\n";
 }
 
 

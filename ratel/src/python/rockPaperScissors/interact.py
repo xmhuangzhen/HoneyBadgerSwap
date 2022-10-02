@@ -33,7 +33,7 @@ def createGame(appContract, value1, account):
     maskedvalue1, maskedvalue2, maskedvalue3 = (value1 + mask1) % prime, (zkp_value1 + mask2) % prime, (blinding1 + mask3) % prime
     
     web3.eth.defaultAccount = account.address
-    tx = appContract.functions.createGame(idx1, maskedvalue1, idx2, maskedvalue2, idx3, maskedvalue3, proof1, commitment1).buildTransaction({
+    tx = appContract.functions.createGame(idx1, maskedvalue1, 'value>=1', idx2, maskedvalue2, idx3, maskedvalue3, proof1, commitment1).buildTransaction({
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
     })
     receipt = sign_and_send(tx, web3, account)
