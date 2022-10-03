@@ -331,7 +331,7 @@ void unmaskInput() {
             textFuncUpper += "    " + varName + " = recover_input(server.db, masked" + postVarName + ", idx" + postVarName + ")\n";
             textFuncUpper += "    " + varName + "Blinding = recover_input(server.db, masked" + postVarName + "Blinding, idx" + postVarName + "Blinding)\n";
 
-            textFuncUpper += "    " + "liszkp.append((" + "zkp_stmt" + postVarName + "str, idx" + postVarName + ", masked" + postVarName + ", idx" + postVarName + "Blinding, masked" + postVarName + "Blinding, proof" + postVarName + ", commitment" + postVarName + "))\n";
+            textFuncUpper += "    liszkp.append((zkp_stmt" + postVarName + "str, idx" + postVarName + ", masked" + postVarName + ", idx" + postVarName + "Blinding, masked" + postVarName + "Blinding, proof" + postVarName + ", commitment" + postVarName + ",32))\n";
 
             hasZKP = 1;
         }

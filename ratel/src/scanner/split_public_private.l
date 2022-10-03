@@ -93,12 +93,11 @@ string argWithType(string arg, bool isEvent=false) {
             tmp = ", uint idx" + postVarName + "Blinding, uint masked" + postVarName + "Blinding, uint8[] " + mem + " proof" + postVarName + ", uint8[] " + mem + " commitment" + postVarName;
         }
         ret = "uint idx" + postVarName + ", uint masked" + postVarName + tmp;
-    } else if(getType(arg).substr(1) == "zkp_stmt") {
+    } else if(getType(arg) == "zkp_stmt") {
         string postVarName = removeType(arg);
         postVarName[0] = toupper(postVarName[0]);
-        string tmp = "";
         string mem = isEvent ? "" : "memory" ;
-        ret = "string zkp_stmt" + postVarName + "str, uint idx" + postVarName + ", uint masked" + postVarName + ", uint idx" + postVarName + "Blinding, uint masked" + postVarName + "Blinding, uint8[]" + mem + " proof" + postVarName + ", uint8[] " + mem + " commitment" + postVarName;
+        ret = "string " + mem + " zkp_stmt" + postVarName + "str, uint idx" + postVarName + ", uint masked" + postVarName + ", uint idx" + postVarName + "Blinding, uint masked" + postVarName + "Blinding, uint8[]" + mem + " proof" + postVarName + ", uint8[] " + mem + " commitment" + postVarName;
     } else {
         ret = arg;
     }
@@ -115,12 +114,10 @@ string argWithoutType(string arg) {
         if (arg[1] == '#') {
             ret += ", idx" + postVarName + "Blinding, masked" + postVarName + "Blinding, proof" + postVarName + ", commitment" + postVarName;
         }
-    } else if(getType(arg).substr(1) == "zkp_stmt") {
+    } else if(getType(arg) == "zkp_stmt") {
         string postVarName = removeType(arg);
         postVarName[0] = toupper(postVarName[0]);
-        string tmp = "";
-        string mem = isEvent ? "" : "memory" ;
-        ret = "zkp_stmt" + postVarName + "str, idx" + postVarName + ", masked" + postVarName + ", idx" + postVarName + "Blinding, masked" + postVarName + "Blinding, " + mem + " proof" + postVarName + ", " + mem + " commitment" + postVarName;
+        ret = "zkp_stmt" + postVarName + "str, idx" + postVarName + ", masked" + postVarName + ", idx" + postVarName + "Blinding, masked" + postVarName + "Blinding, proof" + postVarName + ", commitment" + postVarName;
     } else {
         ret = removeType(arg);
     }
