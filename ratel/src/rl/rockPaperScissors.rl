@@ -23,7 +23,7 @@ contract rockPaperScissors {
         uint gameId = ++gameCnt;
 
         mpc(uint gameId, address player1, $uint value1, zkp_stmt stmt1) {
-            verify_zkrp('value>=1')
+            zkrp('value>=1')
 
             game = {
                 'player1': player1,

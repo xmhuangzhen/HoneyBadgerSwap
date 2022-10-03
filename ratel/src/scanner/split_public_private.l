@@ -97,7 +97,7 @@ string argWithType(string arg, bool isEvent=false) {
         string postVarName = removeType(arg);
         postVarName[0] = toupper(postVarName[0]);
         string mem = isEvent ? "" : "memory" ;
-        ret = "string " + mem + " zkp_stmt" + postVarName + "str, uint idx" + postVarName + ", uint masked" + postVarName + ", uint idx" + postVarName + "Blinding, uint masked" + postVarName + "Blinding, uint8[]" + mem + " proof" + postVarName + ", uint8[] " + mem + " commitment" + postVarName;
+        ret = "string " + mem + " zkp_stmt" + postVarName + "str, uint idx" + postVarName + ", uint masked" + postVarName + ", uint idx" + postVarName + "Blinding, uint masked" + postVarName + "Blinding, uint8[] " + mem + " proof" + postVarName + ", uint8[] " + mem + " commitment" + postVarName;
     } else {
         ret = arg;
     }

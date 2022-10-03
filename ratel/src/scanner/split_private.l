@@ -601,7 +601,7 @@ void mpcOutput() {
     }
 }
 
-void verify_zkrp(){
+void zkrp(){
     string pfstr = args[0];
 
     textFuncLower += "    assert(await verify_proof(server, " + pfstr + ",liszkp))\n";
@@ -699,7 +699,7 @@ SPACE [ \t\r]+
     isArg = true;
 }
 
-^.*verify_zkrp\( {
+^.*zkrp\( {
     isZkrp = true;
     isArg = true;
 
@@ -821,7 +821,7 @@ SPACE [ \t\r]+
 
         isMpcOutput = false;
     } else if(isZkrp){
-        verify_zkrp();
+        zkrp();
         textFuncLower += textLine;
 
         isZkrp = false;
