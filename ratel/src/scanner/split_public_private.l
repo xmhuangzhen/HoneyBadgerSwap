@@ -39,6 +39,8 @@ string indent;
 bool isSetData, isAddData;
 set<string> setDataPool, addDataPool;
 
+int cntZkrp;
+bool isZkrp;
 
 string removeType(string st) {
     for (int i = st.length() - 1; i >= 0; i--) {
@@ -385,6 +387,8 @@ SPACE [ \t\r]+
     isArg = true;
     mpcBracesPos = braces;
 
+    cntZkrp = 0;
+
     string text = string(yytext);
     mpcIndentLen = getIndent(text).length();
     textLine += text.substr(0, text.length() - 1) + " " + funcName + "(";
@@ -394,6 +398,8 @@ SPACE [ \t\r]+
 ^.*pureMpc.*\( {
     isMpc = true;
     mpcBracesPos = braces;
+
+    cntZkrp = 0;
 
     funcName = getFuncName(string(yytext));
 
@@ -418,6 +424,12 @@ SPACE [ \t\r]+
     indent = getIndent(string(yytext)).substr(mpcIndentLen);
 }
 
+^.*zkrp\( {
+    isZkrp = true;
+    isArg = true;
+
+    indent = getIndent(string(yytext));
+}
 
 ,{SPACE}* {
     if (isArg) {
@@ -484,6 +496,9 @@ SPACE [ \t\r]+
         if (braces == mpcBracesPos) {
             isMpc = false;
             textLine += "\n";
+
+//////////////////////////ADD zkrp arg here//////////////////////////////
+            textLine += "cnt_ZKrp: "+ to_string(cntZkrp) + "\n";
         }
 
         if (isMpcParam) {
@@ -504,6 +519,11 @@ SPACE [ \t\r]+
             callFunc("Add", 1);
 
             isAddData = false;
+            args.clear();
+        } else if(isZkrp){
+            cntZkrp++;
+
+            isZkrp = false;
             args.clear();
         } else {
             textPrivate += (textLine.length() > mpcIndentLen ? textLine.substr(mpcIndentLen): textLine);

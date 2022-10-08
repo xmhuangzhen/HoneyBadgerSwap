@@ -27,6 +27,7 @@ int cntMPC;
 bool isMPC; /* MP-SPDZ code */
 int numInput;
 
+
 string textLine;
 
 string textFuncUpper; /* read from log, recover private input, acquire locks */
@@ -647,6 +648,7 @@ SPACE [ \t\r]+
     isArg = true;
     cntMPC = 0;
     cntReadDB = 0;
+    cntZkrp = 0;
     textFuncUpper = "";
     textFuncLower = "";
     readKeySet.clear();
@@ -660,6 +662,7 @@ SPACE [ \t\r]+
     isArg = true;
     cntMPC = 0;
     cntReadDB = 0;
+    cntZkrp = 0;
     textFuncUpper = "";
     textFuncLower = "";
     readKeySet.clear();
