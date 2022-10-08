@@ -457,17 +457,17 @@ void addZkrpArgs(){
         ////////////add event param////////////
         string event_str = "event " + funcName;
         for(pos = 0;pos < textPublicEvents.length();++pos){
-            if(textPublic.compare(pos,event_str.length(),event_str) == 0){
+            if(textPublicEvents.compare(pos,event_str.length(),event_str) == 0){
                 break;
             }
         }
         if(pos < textPublicEvents.length()){
-            for(;pos < textPublic.length();++pos){
-                if(textPublic[pos]== ')'){
+            for(;pos < textPublicEvents.length();++pos){
+                if(textPublicEvents[pos]== ')'){
                     break;
                 }
             }
-            textPublic.insert(pos,text_addParam_event);
+            textPublicEvents.insert(pos,text_addParam_event);
         }
 
     }
