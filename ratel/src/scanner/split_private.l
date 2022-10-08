@@ -27,6 +27,7 @@ int cntMPC;
 bool isMPC; /* MP-SPDZ code */
 int numInput;
 
+int cntZkrp;
 
 string textLine;
 
@@ -621,6 +622,40 @@ void addText(char *yytext) {
     }
 }
 
+void addZkrpArgs(){
+    if(cntZkrp > 0){
+        string recover_str = "";
+        string liszkp_str = "";
+        for(int i = 0;i < cntZkrp;++i){
+            string postVarName = "zkpstmt" + to_string(i);
+
+            /////////////////////add recover input for zkp/////////////////////
+            recover_str += "    " + postVarName + " = recover_input(server.db, masked" + postVarName + ", idx" + postVarName + ")\n";
+            recover_str += "    " + postVarName + "Blinding = recover_input(server.db, masked" + postVarName + "Blinding, idx" + postVarName + "Blinding)\n";
+
+            ////////////////////add liszkp///////////////////////////
+            liszkp_str += "    liszkp.append(("+ postVarName + "str, idx" + postVarName + ", masked" + postVarName + ", idx" + postVarName + "Blinding, masked" + postVarName + "Blinding, proof" + postVarName + ", commitment" + postVarName + ",32))\n";
+        }
+
+        int pos = 0;
+        string search_str = "    liszkp = []\n";
+        for(;pos < textFuncUpper.length();++pos){
+            if(textFuncUpper.compare(pos,search_str.length(),search_str) == 0){
+                break;
+            }
+        }
+        if(pos < textFuncUpper.length()){
+            for(;pos < textFuncUpper.length();++pos){
+                if(textFuncUpper[pos]== '\n'){
+                    break;
+                }
+            }
+
+            string addstr = recover_str + liszkp_str;
+            textFuncUpper.insert(pos+1,addstr);
+        }
+    }
+}
 
 %}
 
@@ -647,6 +682,7 @@ SPACE [ \t\r]+
     isPureMpc = true;
     isArg = true;
     cntMPC = 0;
+    cntZkrp = 0;
     cntReadDB = 0;
     textFuncUpper = "";
     textFuncLower = "";
@@ -660,6 +696,7 @@ SPACE [ \t\r]+
     isEvent = true;
     isArg = true;
     cntMPC = 0;
+    cntZkrp = 0;
     cntReadDB = 0;
     textFuncUpper = "";
     textFuncLower = "";
@@ -771,6 +808,8 @@ SPACE [ \t\r]+
 
         setRecover();
 
+        addZkrpArgs();
+
         textPythonLower += textFuncUpper + textFuncLower;
 
         if (!inPureMpc) {
@@ -822,6 +861,7 @@ SPACE [ \t\r]+
 
         isMpcOutput = false;
     } else if(isZkrp){
+        cntZkrp++;
         zkrp();
         textFuncLower += textLine;
 

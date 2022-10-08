@@ -470,6 +470,22 @@ void addZkrpArgs(){
             textPublicEvents.insert(pos,text_addParam_event);
         }
 
+        //////////add zkp_stmt to textPrivate/////
+        string mpc_str = "mpc " + funcName;
+        for(pos = 0;pos < textPrivate.length();++pos){
+            if(textPrivate.compare(pos,mpc_str.length(),mpc_str) == 0){
+                break;
+            }
+        }
+        if(pos < textPrivate.length()){
+            for(;pos < textPrivate.length();++pos){
+                if(textPrivate[pos]== ')'){
+                    break;
+                }
+            }
+            textPrivate.insert(pos,text_addParam_with_type);
+        }
+
     }
 }
 
@@ -537,9 +553,10 @@ SPACE [ \t\r]+
 
 ^.*zkrp\( {
     isZkrp = true;
-    isArg = true;
 
-    indent = getIndent(string(yytext));
+    string text = string(yytext);
+    textLine += text.substr(0, text.length() - 1) + "(";
+    indent = getIndent(string(yytext)).substr(mpcIndentLen);
 }
 
 ,{SPACE}* {
@@ -633,6 +650,7 @@ SPACE [ \t\r]+
             args.clear();
         } else if(isZkrp){
             cntZkrp++;
+            textPrivate += (textLine.length() > mpcIndentLen ? textLine.substr(mpcIndentLen): textLine);
 
             isZkrp = false;
             args.clear();
