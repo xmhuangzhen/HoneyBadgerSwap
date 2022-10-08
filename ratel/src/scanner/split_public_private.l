@@ -371,6 +371,7 @@ void addZkrpArgs(){
         string text_addParam_with_type = "";
         string text_addParam_without_type = "";
         string text_addParam_event = "";
+        string text_addParam_recover = "";
         for(int i = 0;i < cntZkrp;++i){
             string postVarName = "zkpstmt" + to_string(i);
             text_addParam_without_type += ", " + postVarName + "str, idx" + postVarName + ", masked" + postVarName ;
@@ -384,6 +385,10 @@ void addZkrpArgs(){
             text_addParam_event += ", string  " + postVarName + "str, uint idx" + postVarName + ", uint masked" + postVarName ;
             text_addParam_event += ", uint idx" + postVarName + "Blinding, uint masked" + postVarName + "Blinding";
             text_addParam_event += ", uint8[]  proof" + postVarName + ", uint8[]  commitment" + postVarName;
+
+            text_addParam_recover += postVarName + "str, idx" + postVarName + ", masked" + postVarName ;
+            text_addParam_recover += ", idx" + postVarName + "Blinding, masked" + postVarName + "Blinding";
+            text_addParam_recover += ", proof" + postVarName + ", commitment" + postVarName + ",";
         }
         
         
@@ -485,6 +490,40 @@ void addZkrpArgs(){
             }
             textPrivate.insert(pos,text_addParam_with_type);
         }
+
+        ///////////add zkp param to textRecover/////////////
+        string rec_str = "    if opEvent == \'" + funcName + "\':\n";
+        for(pos = 0;pos < textRecover.length();++pos){
+            if(textRecover.compare(pos,rec_str.length(),rec_str) == 0){
+                break;
+            }
+        }
+        pos += rec_str.length();
+        if(pos < textRecover.length()){
+            for(;pos < textRecover.length();++pos){
+                if(textRecover[pos]== '='){
+                    break;
+                }
+            }
+            textRecover.insert(pos,text_addParam_recover);
+        }
+
+        rec_str = "eval(f'\{op\}" + funcName + "')(opSeq";;
+        for(;pos < textRecover.length();++pos){
+            if(textRecover.compare(pos,rec_str.length(),rec_str) == 0){
+                break;
+            }
+        }
+        pos += rec_str.length();
+        if(pos < textRecover.length()){
+            for(;pos < textRecover.length();++pos){
+                if(textRecover[pos]== ')'){
+                    break;
+                }
+            }
+            textRecover.insert(pos,text_addParam_without_type);
+        }
+
 
     }
 }
