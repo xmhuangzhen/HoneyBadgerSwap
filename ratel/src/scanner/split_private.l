@@ -104,6 +104,7 @@ string getIndent(string text) {
 
 void initPython() {
     textPythonUpper += "import asyncio\n";
+    textPythonUpper += "import json\n";
     textPythonUpper += "from ratel.src.python.utils import location_sharefile, prog, mpcPort, prime, sz, int_to_hex, hex_to_int, recover_input, fp, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof\n";
     textPythonUpper += "from ratel.benchmark.src.test_mpc import run_online\n";
     textPythonUpper += "\n";
@@ -614,42 +615,57 @@ void zkrp(){
         }
     }
 
-    string varName = pfstr.substr(0,pospf);
-    string pfVarName = "pfVar" + varName + to_string(cntZkrp-1);
+    string varName;
+    for(int i = pospf-1;i >= 0;--i){
+        if(pfstr[i] != ' '){
+            varName = pfstr.substr(0,i+1);
+            break;
+        }
+    }
 
+    string pfVarName = "pfVar" + varName + to_string(cntZkrp-1);
+    string rangeType;
     string zkpstmtName = "zkpstmt" + to_string(cntZkrp-1);
 
     if(pfstr[pospf] == '>' && pfstr[pospf+1] == '=') {
+        rangeType = ">=";
+
         string rangeName = pfstr.substr(pospf+2);
-        textFuncLower += "    tmpRange = " + rangeName + "\n";
 
         // secret_value >= r <==> secret_value - r >= 0
-        textFuncLower += "    " + pfVarName + " = " + varName + " - tmpRange\n";
+//        textFuncLower += "    " + pfVarName + " = " + varName + " - tmpRange\n";
     } else if(pfstr[pospf] == '>' && pfstr[pospf+1] != '=') {
+        rangeType = ">";
+
         string rangeName = pfstr.substr(pospf+1);
-        textFuncLower += "    tmpRange = " + rangeName + "\n";
 
         // secret_value > r <==> secret_value - r - 1 >= 0
-        textFuncLower += "    " + pfVarName + " = " + varName + " - tmpRange - 1\n";
+//        textFuncLower += "    " + pfVarName + " = " + varName + " - tmpRange - 1\n";
     } else if(pfstr[pospf] == '<' && pfstr[pospf+1] == '=') { 
+        rangeType = "<=";
+
         string rangeName = pfstr.substr(pospf+2);
-        textFuncLower += "    tmpRange = " + rangeName + "\n";
 
         // secret_value <= r <==> r - secret_value >= 0 
-        textFuncLower += "    " + pfVarName + " = tmpRange - " + varName + "\n";
-    } else if(pfstr[pospf] == '>' && pfstr[pospf+1] != '=') { 
+//        textFuncLower += "    " + pfVarName + " = tmpRange - " + varName + "\n";
+    } else if(pfstr[pospf] == '<' && pfstr[pospf+1] != '=') { 
+        rangeType = "<";
+
         string rangeName = pfstr.substr(pospf+1);
-        textFuncLower += "    tmpRange = " + rangeName + "\n";
 
         // secret_value < r <==> r - secret_value - 1 >= 0
-        textFuncLower += "    " + pfVarName + " = tmpRange - " + varName + " - 1\n";
+//        textFuncLower += "    " + pfVarName + " = tmpRange - " + varName + " - 1\n";
     } else {
         return;
     }
 
     string postVarName = varName;
     postVarName[0] = toupper(postVarName[0]);
-    textFuncLower += "    assert(await verify_proof(server, " + pfVarName + ", idx" + zkpstmtName + "Blinding, masked" + zkpstmtName + "Blinding, proof" + zkpstmtName + ", commitment" + zkpstmtName + " ))\n";
+//    textFuncLower += "    assert(await verify_proof(server, " + pfVarName + ", idx" + zkpstmtName + "Blinding, masked" + zkpstmtName + "Blinding, proof" + zkpstmtName + ", commitment" + zkpstmtName + " ))\n";
+//    textFuncLower += "    print(\"pfVarVal:\"," + pfVarName + ")\n";
+//    textFuncLower += "    print(\" " + varName + ": \" ," + varName  + ")\n";  
+    textFuncLower += "    assert(await verify_proof(server, " + pfVarName + ", " + rangeType + ", " + rangeName + ", " + zkpstmtName + " ))\n";
+
 }
 
 

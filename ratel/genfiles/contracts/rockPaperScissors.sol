@@ -80,8 +80,7 @@ contract rockPaperScissors {
     }
 
 
-    function createGame(uint idxValue1, uint maskedValue1, uint publicRangezkpstmt0, uint idxzkpstmt0Blinding, uint maskedzkpstmt0Blinding, uint8[] memory proofzkpstmt0, uint8[] memory commitmentzkpstmt0) public {
-        require(inputMaskOwner[idxzkpstmt0Blinding] == msg.sender);
+    function createGame(uint idxValue1, uint maskedValue1, string memory zkpstmt0) public {
         require(inputMaskOwner[idxValue1] == msg.sender);
 
         address player1 = msg.sender;
@@ -89,13 +88,13 @@ contract rockPaperScissors {
 
         uint seqCreateGame = opCnt++;
         opEvent[seqCreateGame] = "CreateGame";
-        opContent[seqCreateGame] = abi.encode(gameId, player1, idxValue1, maskedValue1, publicRangezkpstmt0, idxzkpstmt0Blinding, maskedzkpstmt0Blinding, proofzkpstmt0, commitmentzkpstmt0);
+        opContent[seqCreateGame] = abi.encode(gameId, player1, idxValue1, maskedValue1, zkpstmt0);
 
-        emit CreateGame(seqCreateGame, gameId, player1, idxValue1, maskedValue1, publicRangezkpstmt0, idxzkpstmt0Blinding, maskedzkpstmt0Blinding, proofzkpstmt0, commitmentzkpstmt0);
+        emit CreateGame(seqCreateGame, gameId, player1, idxValue1, maskedValue1, zkpstmt0);
     }
 
 
-    function joinGame(uint gameId, uint idxValue2, uint maskedValue2) public {
+    function joinGame(uint gameId, uint idxValue2, uint maskedValue2, string memory zkpstmt0, string memory zkpstmt1) public {
         require(inputMaskOwner[idxValue2] == msg.sender);
 
         require(status[gameId] == 1);
@@ -103,9 +102,9 @@ contract rockPaperScissors {
 
         uint seqJoinGame = opCnt++;
         opEvent[seqJoinGame] = "JoinGame";
-        opContent[seqJoinGame] = abi.encode(gameId, player2, idxValue2, maskedValue2);
+        opContent[seqJoinGame] = abi.encode(gameId, player2, idxValue2, maskedValue2, zkpstmt0, zkpstmt1);
 
-        emit JoinGame(seqJoinGame, gameId, player2, idxValue2, maskedValue2);
+        emit JoinGame(seqJoinGame, gameId, player2, idxValue2, maskedValue2, zkpstmt0, zkpstmt1);
     }
 
 
@@ -121,8 +120,8 @@ contract rockPaperScissors {
         emit StartRecon(seqStartRecon, gameId);
     }
 
-    event CreateGame(uint seqCreateGame, uint gameId, address player1, uint idxValue1, uint maskedValue1, uint publicRangezkpstmt0, uint idxzkpstmt0Blinding, uint maskedzkpstmt0Blinding, uint8[]  proofzkpstmt0, uint8[]  commitmentzkpstmt0);
-    event JoinGame(uint seqJoinGame, uint gameId, address player2, uint idxValue2, uint maskedValue2);
+    event CreateGame(uint seqCreateGame, uint gameId, address player1, uint idxValue1, uint maskedValue1, string zkpstmt0);
+    event JoinGame(uint seqJoinGame, uint gameId, address player2, uint idxValue2, uint maskedValue2, string zkpstmt0, string zkpstmt1);
     event StartRecon(uint seqStartRecon, uint gameId);
 
 

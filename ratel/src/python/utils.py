@@ -3,6 +3,7 @@ import asyncio
 import json
 import leveldb
 import os
+import json
 
 from gmpy import binary, mpz
 from gmpy2 import mpz_from_old_binary
@@ -253,7 +254,10 @@ def dict_to_bytes(value):
     return bytes(str(value), encoding='utf-8')
 
 
-async def verify_proof(server, pfval, idxValueBlinding, maskedValueBlinding, proof, commitment):
+async def verify_proof(server, pfval, zkpstmt_str):
+    zkpstmt = json.loads(zkpstmt_str)
+    [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
+
     # TODO:
     # proof, commitment, blinding_ = zkrp_prove(2022, 32)
     if not zkrp_verify(proof, commitment, 32):
@@ -263,6 +267,8 @@ async def verify_proof(server, pfval, idxValueBlinding, maskedValueBlinding, pro
     blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
 
     # TODO: where is the blinding mask created? we also need to share it.
+    server.serverID
+
     value1_bytes = list(pfval.to_bytes(32, byteorder='little'))
     blinding_bytes = list(blinding.to_bytes(32, byteorder='little'))
 

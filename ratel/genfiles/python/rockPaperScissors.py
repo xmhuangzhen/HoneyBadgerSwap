@@ -1,4 +1,5 @@
 import asyncio
+import json
 from ratel.src.python.utils import location_sharefile, prog, mpcPort, prime, sz, int_to_hex, hex_to_int, recover_input, fp, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof
 from ratel.benchmark.src.test_mpc import run_online
 
@@ -46,13 +47,8 @@ async def runCreateGame(server, log):
     player1 = log['args']['player1']
     idxValue1 = log['args']['idxValue1']
     maskedValue1 = log['args']['maskedValue1']
-    publicRangezkpstmt0 = log['args']['publicRangezkpstmt0']
-    idxzkpstmt0Blinding = log['args']['idxzkpstmt0Blinding']
-    maskedzkpstmt0Blinding = log['args']['maskedzkpstmt0Blinding']
-    proofzkpstmt0 = log['args']['proofzkpstmt0']
-    commitmentzkpstmt0 = log['args']['commitmentzkpstmt0']
+    zkpstmt0 = log['args']['zkpstmt0']
 
-    liszkp = []
     value1 = recover_input(server.db, maskedValue1, idxValue1)
 
     readKeys = []
@@ -78,7 +74,8 @@ async def runCreateGame(server, log):
 
     tmpRange = 1
     pfVarvalue10 = value1 - tmpRange
-    assert(await verify_proof(server, pfVarvalue10, idxValue1, idxzkpstmt0Blinding, maskedzkpstmt0Blinding, proofzkpstmt0, commitmentzkpstmt0 ))
+    print("pfVarVal:",pfVarvalue10)
+    assert(await verify_proof(server, pfVarvalue10, zkpstmt0 ))
 
 
     game = {
@@ -104,8 +101,9 @@ async def runJoinGame(server, log):
     player2 = log['args']['player2']
     idxValue2 = log['args']['idxValue2']
     maskedValue2 = log['args']['maskedValue2']
+    zkpstmt0 = log['args']['zkpstmt0']
+    zkpstmt1 = log['args']['zkpstmt1']
 
-    liszkp = []
     value2 = recover_input(server.db, maskedValue2, idxValue2)
 
     readKeys = [f'gameBoard_{gameId}']
@@ -141,18 +139,16 @@ async def runJoinGame(server, log):
     value1 = bytes_to_dict(value1)
     game = value1
 
-    file = location_sharefile(server.serverID, port)
-    with open(file, "wb") as f:
-        f.write(
-            int_to_hex(value2)
-        )
+    tmpRange =  1
+    pfVarvalue20 = value2 - tmpRange
+    print("pfVarVal:",pfVarvalue20)
+    assert(await verify_proof(server, pfVarvalue20, zkpstmt0 ))
 
-    await run_online(server.serverID, port, server.players, server.threshold, 'rockPaperScissorsJoinGame1', seqJoinGame)
+    tmpRange =  3
+    pfVarvalue21 = tmpRange - value2
+    print("pfVarVal:",pfVarvalue21)
+    assert(await verify_proof(server, pfVarvalue21, zkpstmt1 ))
 
-    input_arg_num = 1
-    with open(file, "rb") as f:
-        f.seek(input_arg_num * sz)
-        valid = hex_to_int(f.read(sz))
 
     print('**** valid', valid)
     if valid == 1:
@@ -177,7 +173,6 @@ async def runStartRecon(server, log):
     seqStartRecon = log['args']['seqStartRecon']
     gameId = log['args']['gameId']
 
-    liszkp = []
     readKeys = [f'gameBoard_{gameId}']
     writeKeys = []
     readKeys =  [k.lower() for k in readKeys]
