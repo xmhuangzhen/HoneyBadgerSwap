@@ -253,7 +253,7 @@ def dict_to_bytes(value):
     return bytes(str(value), encoding='utf-8')
 
 
-async def verify_proof(server, pfval, idxValue, idxValueBlinding, maskedValueBlinding, proof, commitment):
+async def verify_proof(server, pfval, idxValueBlinding, maskedValueBlinding, proof, commitment):
     # TODO:
     # proof, commitment, blinding_ = zkrp_prove(2022, 32)
     if not zkrp_verify(proof, commitment, 32):
@@ -271,8 +271,8 @@ async def verify_proof(server, pfval, idxValue, idxValueBlinding, maskedValueBli
     # TODO: create the function to commit to the unmasked secret shares.
     # TODO: we also need to change the current zkrp interface to allow specifying r and choose range to prove.
 
-    server.zkrpShares[f'{idxValue}'] = share_commitment
-    results = await server.get_zkrp_shares(players(server.contract), f'{idxValue}')
+    server.zkrpShares[f'{idxValueBlinding}'] = share_commitment
+    results = await server.get_zkrp_shares(players(server.contract), f'{idxValueBlinding}')
     # print(")))))))", results)
     agg_commitment = pedersen_aggregate(results, [x + 1 for x in list(range(server.players))])
 

@@ -33,7 +33,7 @@ def createGame(appContract, value1, account):
     maskedvalue1, maskedvalue3 = (value1 + mask1) % prime, (blinding1 + mask3) % prime
     
     web3.eth.defaultAccount = account.address
-    tx = appContract.functions.createGame(idx1, maskedvalue1, 1, idx3, maskedvalue3, proof1, commitment1).buildTransaction({
+    tx = appContract.functions.createGame(idx1, maskedvalue1, idx3, maskedvalue3, proof1, commitment1).buildTransaction({
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
     })
     receipt = sign_and_send(tx, web3, account)
@@ -49,14 +49,17 @@ def createGame(appContract, value1, account):
 
 def joinGame(appContract, gameId, value2, account):
     print(f'**** JoinGame {value2}')
-    idx = reserveInput(web3, appContract, 1, account)[0]
-    mask = asyncio.run(
-        get_inputmasks(players(appContract), f"{idx}", threshold(appContract))
-    )[0]
-    maskedValue = (value2 + mask) % prime
+
+    proof1, commitment1, blinding1 = get_zkrp(value2, '>=', 1)
+    proof2, commitment2, blinding2 = get_zkrp(value2, '<=', 3)
+
+    idx1, idx2, idx3 = reserveInput(web3, appContract, 3, account)
+    mask1, mask2, mask3 = asyncio.run(get_inputmasks(players(appContract), f'{idx1},{idx2},{idx3}', threshold(appContract)))
+    maskedvalue1, maskedvalue2, maskedvalue3 = (value2 + mask1) % prime, (blinding1 + mask2) % prime, (blinding2 + mask3) % prime
+
 
     web3.eth.defaultAccount = account.address
-    tx = appContract.functions.joinGame(gameId, idx, maskedValue).buildTransaction(
+    tx = appContract.functions.joinGame(gameId, idx1, maskedvalue1, idx2,maskedvalue2,proof1,commitment1,idx3,maskedvalue3,proof2,commitment2).buildTransaction(
         {"nonce": web3.eth.get_transaction_count(web3.eth.defaultAccount)}
     )
     sign_and_send(tx, web3, account)

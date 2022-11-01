@@ -311,7 +311,7 @@ void unmaskInput() {
     bool flag = 0;
     bool hasZKP = 0;
 
-    textFuncUpper += "    liszkp = []\n";
+//    textFuncUpper += "    liszkp = []\n";
 
     for (int i = 0; i < args.size(); i++) {
         if (args[i][0] == '$') {
@@ -649,7 +649,7 @@ void zkrp(){
 
     string postVarName = varName;
     postVarName[0] = toupper(postVarName[0]);
-    textFuncLower += "    assert(await verify_proof(server, " + pfVarName + ", idx" + postVarName + ", idx" + zkpstmtName + "Blinding, masked" + zkpstmtName + "Blinding, proof" + zkpstmtName + ", commitment" + zkpstmtName + " ))\n";
+    textFuncLower += "    assert(await verify_proof(server, " + pfVarName + ", idx" + zkpstmtName + "Blinding, masked" + zkpstmtName + "Blinding, proof" + zkpstmtName + ", commitment" + zkpstmtName + " ))\n";
 }
 
 

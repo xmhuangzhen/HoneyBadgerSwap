@@ -45,11 +45,8 @@ contract rockPaperScissors {
         mpc(uint gameId, address player2, $uint value2) {
             game = readDB(f'gameBoard_{gameId}', dict)
 
-            mpcInput(sint value2)
-
-            valid = ((value2.greater_equal(1, bit_length=bit_length)) * (value2.less_equal(3, bit_length=bit_length))).reveal()
-
-            mpcOutput(cint valid)
+            zkrp(value2 >= 1)
+            zkrp(value2 <= 3)
 
             print('**** valid', valid)
             if valid == 1:

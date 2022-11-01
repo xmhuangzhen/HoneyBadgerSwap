@@ -77,8 +77,8 @@ async def runCreateGame(server, log):
         server.dbLockCnt[key] += 1
 
     tmpRange = 1
-    pfVarvalue11 = value1 - tmpRange
-    assert(await verify_proof(server, value1, idxValue1, idxzkpstmt0Blinding, maskedzkpstmt0Blinding, proofzkpstmt0, commitmentzkpstmt0 ))
+    pfVarvalue10 = value1 - tmpRange
+    assert(await verify_proof(server, pfVarvalue10, idxValue1, idxzkpstmt0Blinding, maskedzkpstmt0Blinding, proofzkpstmt0, commitmentzkpstmt0 ))
 
 
     game = {
