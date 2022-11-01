@@ -253,28 +253,17 @@ def dict_to_bytes(value):
     return bytes(str(value), encoding='utf-8')
 
 
-async def verify_proof(server, pfstr, liszkp):
-
-    has_found = False
-    for e_zkp in liszkp:  
-        (zkpstr,idxValue, maskedValue, idxValueBlinding, maskedValueBlinding, proof, commitment, bits) = e_zkp
-        if pfstr == zkpstr:
-            has_found = True
-
-    if not has_found:
-        return False
-
+async def verify_proof(server, pfval, idxValue, idxValueBlinding, maskedValueBlinding, proof, commitment):
     # TODO:
     # proof, commitment, blinding_ = zkrp_prove(2022, 32)
-    if not zkrp_verify(proof, commitment, bits):
+    if not zkrp_verify(proof, commitment, 32):
         print("[Error]: Committed secret value does not pass range proof verification!")
         return False
 
-    value1 = recover_input(server.db, maskedValue, idxValue)
     blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
 
     # TODO: where is the blinding mask created? we also need to share it.
-    value1_bytes = list(value1.to_bytes(32, byteorder='little'))
+    value1_bytes = list(pfval.to_bytes(32, byteorder='little'))
     blinding_bytes = list(blinding.to_bytes(32, byteorder='little'))
 
     share_commitment = pedersen_commit(value1_bytes, blinding_bytes)
@@ -306,7 +295,7 @@ def get_zkrp(secret_value, exp_str, r):
     proof, commitment, blinding_bytes = zkrp_prove(value, bits)
     blinding = int.from_bytes(blinding_bytes, byteorder='little')
 
-    return value, proof, commitment, blinding
+    return proof, commitment, blinding
 
 
 leaderHostname = 'mpcnode0'

@@ -606,7 +606,39 @@ void mpcOutput() {
 void zkrp(){
     string pfstr = args[0];
 
-    textFuncLower += "    assert(await verify_proof(server, " + pfstr + ",liszkp))\n";
+    int pospf = 0;
+    for(int i = 0;i < pfstr.length();++i){
+        if(pfstr[i] == '<' || pfstr[i] == '>'){
+            pospf = i;
+            break;
+        }
+    }
+
+    string varName = pfstr.substr(0,pospf);
+    string pfVarName = "pfVar" + varName + to_string(cntZkrp);
+    string rangeName = pfstr.substr(pospf+1);
+
+    string zkpstmtName = "zkpstmt" + to_string(cntZkrp);
+
+    textFuncLower += "    tmpRange = " + rangeName;
+
+    if(pfstr[pospf] == '>' && pfstr[pospf+1] == '=') {
+        // secret_value >= r <==> secret_value - r >= 0
+        textFuncLower += "    " + pfVarName + " = " + varName + " - tmpRange\n";
+    } else if(pfstr[pospf] == '>' && pfstr[pospf+1] != '=') { 
+        // secret_value > r <==> secret_value - r - 1 >= 0
+        textFuncLower += "    " + pfVarName + " = " + varName + " - tmpRange - 1\n";
+    } else if(pfstr[pospf] == '<' && pfstr[pospf+1] == '=') { 
+        // secret_value <= r <==> r - secret_value >= 0 
+        textFuncLower += "    " + pfVarName + " = tmpRange - " + varName + "\n";
+    } else if(pfstr[pospf] == '>' && pfstr[pospf+1] != '=') { 
+        // secret_value < r <==> r - secret_value - 1 >= 0
+        textFuncLower += "    " + pfVarName + " = tmpRange - " + varName + " - 1\n";
+    } else {
+        return;
+    }
+
+    textFuncLower += "    assert(await verify_proof(server, " + varName + ", idx" + varName + ", idx" + zkpstmtName + "Blinding, masked" + zkpstmtName + "Blinding, proof" + zkpstmtName + ", commitment" + zkpstmtName + " ))\n";
 }
 
 
@@ -634,11 +666,11 @@ void addZkrpArgs(){
             recover_str += "    " + postVarName + "Blinding = recover_input(server.db, masked" + postVarName + "Blinding, idx" + postVarName + "Blinding)\n";
 
             ////////////////////add liszkp///////////////////////////
-            liszkp_str += "    liszkp.append(("+ postVarName + "str, idx" + postVarName + ", masked" + postVarName + ", idx" + postVarName + "Blinding, masked" + postVarName + "Blinding, proof" + postVarName + ", commitment" + postVarName + ",32))\n";
+            //liszkp_str += "    liszkp.append(("+ postVarName + "str, idx" + postVarName + ", masked" + postVarName + ", idx" + postVarName + "Blinding, masked" + postVarName + "Blinding, proof" + postVarName + ", commitment" + postVarName + ",32))\n";
         }
 
         int pos = 0;
-        string search_str = "    liszkp = []\n";
+//        string search_str = "    liszkp = []\n";
         for(;pos < textFuncUpper.length();++pos){
             if(textFuncUpper.compare(pos,search_str.length(),search_str) == 0){
                 break;

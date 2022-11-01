@@ -26,14 +26,14 @@ contract_name = "rockPaperScissors"
 def createGame(appContract, value1, account):
     print(f'**** CreateGame {value1}')
 
-    zkp_value1, proof1, commitment1, blinding1 = get_zkrp(value1, '>=', 1)
+    proof1, commitment1, blinding1 = get_zkrp(value1, '>=', 1)
 
-    idx1, idx2, idx3 = reserveInput(web3, appContract, 3, account)
-    mask1, mask2, mask3 = asyncio.run(get_inputmasks(players(appContract), f'{idx1},{idx2},{idx3}', threshold(appContract)))
-    maskedvalue1, maskedvalue2, maskedvalue3 = (value1 + mask1) % prime, (zkp_value1 + mask2) % prime, (blinding1 + mask3) % prime
+    idx1, idx3 = reserveInput(web3, appContract, 2, account)
+    mask1, mask3 = asyncio.run(get_inputmasks(players(appContract), f'{idx1},{idx3}', threshold(appContract)))
+    maskedvalue1, maskedvalue3 = (value1 + mask1) % prime, (blinding1 + mask3) % prime
     
     web3.eth.defaultAccount = account.address
-    tx = appContract.functions.createGame(idx1, maskedvalue1, 'value>=1', idx2, maskedvalue2, idx3, maskedvalue3, proof1, commitment1).buildTransaction({
+    tx = appContract.functions.createGame(idx1, maskedvalue1, 1, idx3, maskedvalue3, proof1, commitment1).buildTransaction({
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
     })
     receipt = sign_and_send(tx, web3, account)
