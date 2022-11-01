@@ -669,23 +669,23 @@ void addZkrpArgs(){
             //liszkp_str += "    liszkp.append(("+ postVarName + "str, idx" + postVarName + ", masked" + postVarName + ", idx" + postVarName + "Blinding, masked" + postVarName + "Blinding, proof" + postVarName + ", commitment" + postVarName + ",32))\n";
         }
 
-        int pos = 0;
+//        int pos = 0;
 //        string search_str = "    liszkp = []\n";
-        for(;pos < textFuncUpper.length();++pos){
-            if(textFuncUpper.compare(pos,search_str.length(),search_str) == 0){
-                break;
-            }
-        }
-        if(pos < textFuncUpper.length()){
-            for(;pos < textFuncUpper.length();++pos){
-                if(textFuncUpper[pos]== '\n'){
-                    break;
-                }
-            }
+//        for(;pos < textFuncUpper.length();++pos){
+//            if(textFuncUpper.compare(pos,search_str.length(),search_str) == 0){
+//                break;
+//            }
+//        }
+//        if(pos < textFuncUpper.length()){
+//            for(;pos < textFuncUpper.length();++pos){
+//                if(textFuncUpper[pos]== '\n'){
+//                    break;
+//                }
+//            }
 
-            string addstr = recover_str + liszkp_str;
-            textFuncUpper.insert(pos+1,addstr);
-        }
+//            string addstr = recover_str + liszkp_str;
+//            textFuncUpper.insert(pos+1,addstr);
+//        }
     }
 }
 
