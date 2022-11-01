@@ -615,31 +615,31 @@ void zkrp(){
     }
 
     string varName = pfstr.substr(0,pospf);
-    string pfVarName = "pfVar" + varName + to_string(cntZkrp);
+    string pfVarName = "pfVar" + varName + to_string(cntZkrp-1);
 
-    string zkpstmtName = "zkpstmt" + to_string(cntZkrp);
+    string zkpstmtName = "zkpstmt" + to_string(cntZkrp-1);
 
     if(pfstr[pospf] == '>' && pfstr[pospf+1] == '=') {
         string rangeName = pfstr.substr(pospf+2);
-        textFuncLower += "    tmpRange = " + rangeName;
+        textFuncLower += "    tmpRange = " + rangeName + "\n";
 
         // secret_value >= r <==> secret_value - r >= 0
         textFuncLower += "    " + pfVarName + " = " + varName + " - tmpRange\n";
     } else if(pfstr[pospf] == '>' && pfstr[pospf+1] != '=') {
         string rangeName = pfstr.substr(pospf+1);
-        textFuncLower += "    tmpRange = " + rangeName;
+        textFuncLower += "    tmpRange = " + rangeName + "\n";
 
         // secret_value > r <==> secret_value - r - 1 >= 0
         textFuncLower += "    " + pfVarName + " = " + varName + " - tmpRange - 1\n";
     } else if(pfstr[pospf] == '<' && pfstr[pospf+1] == '=') { 
         string rangeName = pfstr.substr(pospf+2);
-        textFuncLower += "    tmpRange = " + rangeName;
+        textFuncLower += "    tmpRange = " + rangeName + "\n";
 
         // secret_value <= r <==> r - secret_value >= 0 
         textFuncLower += "    " + pfVarName + " = tmpRange - " + varName + "\n";
     } else if(pfstr[pospf] == '>' && pfstr[pospf+1] != '=') { 
         string rangeName = pfstr.substr(pospf+1);
-        textFuncLower += "    tmpRange = " + rangeName;
+        textFuncLower += "    tmpRange = " + rangeName + "\n";
 
         // secret_value < r <==> r - secret_value - 1 >= 0
         textFuncLower += "    " + pfVarName + " = tmpRange - " + varName + " - 1\n";
@@ -647,7 +647,9 @@ void zkrp(){
         return;
     }
 
-    textFuncLower += "    assert(await verify_proof(server, " + varName + ", idx" + varName + ", idx" + zkpstmtName + "Blinding, masked" + zkpstmtName + "Blinding, proof" + zkpstmtName + ", commitment" + zkpstmtName + " ))\n";
+    string postVarName = varName;
+    postVarName[0] = toupper(postVarName[0]);
+    textFuncLower += "    assert(await verify_proof(server, " + pfVarName + ", idx" + postVarName + ", idx" + zkpstmtName + "Blinding, masked" + zkpstmtName + "Blinding, proof" + zkpstmtName + ", commitment" + zkpstmtName + " ))\n";
 }
 
 
