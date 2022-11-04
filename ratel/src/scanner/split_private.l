@@ -630,15 +630,12 @@ void zkrp(){
     if(pfstr[pospf] == '>' && pfstr[pospf+1] == '=') {
         string rangeName = pfstr.substr(pospf+2);
         textFuncLower += "    tmpRange = " + rangeName + "\n";
-        textFuncLower += "    tmpRange = 0\n";
-
 
         // secret_value >= r <==> secret_value - r >= 0
         textFuncLower += "    " + pfVarName + " = " + varName + " - tmpRange\n";
     } else if(pfstr[pospf] == '>' && pfstr[pospf+1] != '=') {
         string rangeName = pfstr.substr(pospf+1);
         textFuncLower += "    tmpRange = " + rangeName + "\n";
-        textFuncLower += "    tmpRange = 0\n";
 
         // secret_value > r <==> secret_value - r - 1 >= 0
         textFuncLower += "    " + pfVarName + " = " + varName + " - tmpRange - 1\n";
@@ -647,15 +644,15 @@ void zkrp(){
         textFuncLower += "    tmpRange = " + rangeName + "\n";
 
         // secret_value <= r <==> r - secret_value >= 0 
-        textFuncLower += "    " + pfVarName + " = tmpRange - " + varName + "\n";
+        textFuncLower += "    " + pfVarName + " = (prime + tmpRange - " + varName + ") % prime\n";
     } else if(pfstr[pospf] == '>' && pfstr[pospf+1] != '=') { 
         string rangeName = pfstr.substr(pospf+1);
         textFuncLower += "    tmpRange = " + rangeName + "\n";
 
         // secret_value < r <==> r - secret_value - 1 >= 0
-        textFuncLower += "    " + pfVarName + " = tmpRange - " + varName + " - 1\n";
+        textFuncLower += "    " + pfVarName + " = (prime + tmpRange - " + varName + " - 1) % prime\n";
     } else {
-        return;
+        assert(0);
     }
 
     string postVarName = varName;

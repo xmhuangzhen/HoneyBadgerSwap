@@ -63,7 +63,7 @@ def joinGame(appContract, gameId, value2, account):
     zkp2 = json.dumps([idx3,maskedvalue3,proof2,commitment2])
 
     web3.eth.defaultAccount = account.address
-    tx = appContract.functions.joinGame(gameId, idx1, maskedvalue1, idx2, zkp1).buildTransaction(
+    tx = appContract.functions.joinGame(gameId, idx1, maskedvalue1, zkp1, zkp2).buildTransaction(
         {"nonce": web3.eth.get_transaction_count(web3.eth.defaultAccount)}
     )
     sign_and_send(tx, web3, account)

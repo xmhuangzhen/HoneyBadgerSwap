@@ -43,9 +43,11 @@ contract rockPaperScissors {
         address player2 = msg.sender;
 
         mpc(uint gameId, address player2, $uint value2) {
-            game = readDB(f'gameBoard_{gameId}', dict)
 
             zkrp(value2 >= 1)
+            zkrp(value2 <= 3)
+
+            game = readDB(f'gameBoard_{gameId}', dict)
 
             game['player2'] = player2
             game['value2'] = value2
