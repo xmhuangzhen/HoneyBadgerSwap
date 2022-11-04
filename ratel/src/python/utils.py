@@ -258,7 +258,7 @@ async def verify_proof(server, pfval, zkpstmt_str):
     [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
     # TODO:
     # proof, commitment, blinding_ = zkrp_prove(2022, 32)
-    if not zkrp_verify(proof, commitment, 8):
+    if not zkrp_verify(proof, commitment, 32):
         print("[Error]: Committed secret value does not pass range proof verification!")
         return False
 
@@ -293,7 +293,7 @@ def get_zkrp(secret_value, exp_str, r):
         value = r - value - 1
 
     #To prove value >= 0
-    bits = 8
+    bits = 32
     proof, commitment, blinding_bytes = zkrp_prove(value, bits)
     blinding = int.from_bytes(blinding_bytes, byteorder='little')
 

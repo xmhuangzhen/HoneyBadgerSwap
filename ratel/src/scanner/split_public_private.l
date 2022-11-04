@@ -456,13 +456,16 @@ void addZkrpArgs(){
                 break;
             }
         }
-        string req_str = "";
-        for(int i = 0;i < cntZkrp;++i){
-            string postVarName = "zkpstmt" + to_string(i);
+//        string req_str = "";
+//        for(int i = 0;i < cntZkrp;++i){
+//            string postVarName = "zkpstmt" + to_string(i);
 //            req_str += "        require(inputMaskOwner[idx" + postVarName + "] == msg.sender);\n";
-            req_str += "        require(inputMaskOwner[idx" + postVarName + "Blinding] == msg.sender);\n";
-        }
-        textPublic.insert(pos+1,req_str);
+    
+//            req_str += "        tmpzkpstmt = json.loads(" + postVarName + ")\n";
+//            req_str += "        [tmpidxValueBlinding, tmpmaskedValueBlinding, tmpproof, tmpcommitment] = tmpzkpstmt \n";
+//            req_str += "        require(inputMaskOwner[tmpidxValueBlinding] == msg.sender);\n";
+//        }
+//        textPublic.insert(pos+1,req_str);
 
         ////////////add event param////////////
         string event_str = "event " + funcName;

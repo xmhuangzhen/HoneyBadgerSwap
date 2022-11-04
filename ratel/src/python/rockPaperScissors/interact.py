@@ -1,6 +1,6 @@
 import asyncio
 import time
-
+import json
 
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
@@ -32,8 +32,10 @@ def createGame(appContract, value1, account):
     mask1, mask3 = asyncio.run(get_inputmasks(players(appContract), f'{idx1},{idx3}', threshold(appContract)))
     maskedvalue1, maskedvalue3 = (value1 + mask1) % prime, (blinding1 + mask3) % prime
     
+    zkp1 = json.dumps([idx3, maskedvalue3, proof1, commitment1])
+
     web3.eth.defaultAccount = account.address
-    tx = appContract.functions.createGame(idx1, maskedvalue1, idx3, maskedvalue3, proof1, commitment1).buildTransaction({
+    tx = appContract.functions.createGame(idx1, maskedvalue1, zkp1).buildTransaction({
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
     })
     receipt = sign_and_send(tx, web3, account)
@@ -57,9 +59,11 @@ def joinGame(appContract, gameId, value2, account):
     mask1, mask2, mask3 = asyncio.run(get_inputmasks(players(appContract), f'{idx1},{idx2},{idx3}', threshold(appContract)))
     maskedvalue1, maskedvalue2, maskedvalue3 = (value2 + mask1) % prime, (blinding1 + mask2) % prime, (blinding2 + mask3) % prime
 
+    zkp1 = json.dumps([idx2,maskedvalue2,proof1,commitment1])
+    zkp2 = json.dumps([idx3,maskedvalue3,proof2,commitment2])
 
     web3.eth.defaultAccount = account.address
-    tx = appContract.functions.joinGame(gameId, idx1, maskedvalue1, idx2,maskedvalue2,proof1,commitment1,idx3,maskedvalue3,proof2,commitment2).buildTransaction(
+    tx = appContract.functions.joinGame(gameId, idx1, maskedvalue1, idx2, zkp1).buildTransaction(
         {"nonce": web3.eth.get_transaction_count(web3.eth.defaultAccount)}
     )
     sign_and_send(tx, web3, account)
@@ -96,7 +100,7 @@ if __name__ == "__main__":
     client_1 = getAccount(web3, f"/opt/poa/keystore/client_1/")
     client_2 = getAccount(web3, f"/opt/poa/keystore/client_2/")
 
-    gameId = createGame(appContract, 515, client_1)
+    gameId = createGame(appContract, 1, client_1)
     joinGame(appContract, gameId, 1, client_2)
     startRecon(appContract, gameId, client_1)
 
