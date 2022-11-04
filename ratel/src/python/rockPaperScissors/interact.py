@@ -96,7 +96,7 @@ if __name__ == "__main__":
     client_1 = getAccount(web3, f"/opt/poa/keystore/client_1/")
     client_2 = getAccount(web3, f"/opt/poa/keystore/client_2/")
 
-    gameId = createGame(appContract, 1, client_1)
+    gameId = createGame(appContract, 515, client_1)
     joinGame(appContract, gameId, 1, client_2)
     startRecon(appContract, gameId, client_1)
 

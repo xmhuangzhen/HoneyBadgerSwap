@@ -104,6 +104,7 @@ string getIndent(string text) {
 
 void initPython() {
     textPythonUpper += "import asyncio\n";
+    textPythonUpper += "import json\n";
     textPythonUpper += "from ratel.src.python.utils import location_sharefile, prog, mpcPort, prime, sz, int_to_hex, hex_to_int, recover_input, fp, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof\n";
     textPythonUpper += "from ratel.benchmark.src.test_mpc import run_online\n";
     textPythonUpper += "\n";
@@ -649,7 +650,8 @@ void zkrp(){
 
     string postVarName = varName;
     postVarName[0] = toupper(postVarName[0]);
-    textFuncLower += "    assert(await verify_proof(server, " + pfVarName + ", idx" + zkpstmtName + "Blinding, masked" + zkpstmtName + "Blinding, proof" + zkpstmtName + ", commitment" + zkpstmtName + " ))\n";
+    textFuncLower += "    assert(await verify_proof(server, " + pfVarName + ", " + zkpstmtName + " ))\n";
+//    textFuncLower += "    assert(await verify_proof(server, " + pfVarName + ", idx" + zkpstmtName + "Blinding, masked" + zkpstmtName + "Blinding, proof" + zkpstmtName + ", commitment" + zkpstmtName + " ))\n";
 }
 
 

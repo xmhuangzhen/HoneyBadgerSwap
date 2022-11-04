@@ -46,19 +46,16 @@ contract rockPaperScissors {
             game = readDB(f'gameBoard_{gameId}', dict)
 
             zkrp(value2 >= 1)
-            zkrp(value2 <= 3)
 
-            print('**** valid', valid)
-            if valid == 1:
-                game['player2'] = player2
-                game['value2'] = value2
+            game['player2'] = player2
+            game['value2'] = value2
 
-                print('**** game', game)
+            print('**** game', game)
 
-                writeDB(f'gameBoard_{gameId}', game, dict)
+            writeDB(f'gameBoard_{gameId}', game, dict)
 
-                curStatus = 2
-                set(status, uint curStatus, uint gameId)
+            curStatus = 2
+            set(status, uint curStatus, uint gameId)
         }
     }
 
