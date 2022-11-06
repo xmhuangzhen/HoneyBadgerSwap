@@ -301,6 +301,9 @@ contract hbswap {
 
             times.append(time.perf_counter())
 
+            buyA = zkrp(amtA > 0)
+            buyB = 1 - buyA
+
             mpcInput(sfix balanceA, sfix amtA, sfix balanceB, sfix amtB, sfix poolA, sfix poolB, sint totalCnt)
 
             feeRate = 0.003
@@ -320,10 +323,12 @@ contract hbswap {
             actualAmtA = poolA - poolProduct / (poolB - amtB)
             actualAmtB = poolB - poolProduct / (poolA - amtA)
 
-            buyA = amtA > 0 ### TODO: could also be replaced by ZKP
-            acceptA = actualAmtA >= amtA
-            acceptB = actualAmtB >= amtB
-            buyB = 1 - buyA
+            mpcOutput(sfix actualAmtA, sfix actualAmtB, sfix totalA, sfix totalB)
+
+            acceptA = zkrp(actualAmtA >= amtA)
+            acceptB = zkrp(actualAmtB >= amtB)
+
+            mpcInput(sfix amtA, sfix amtB, sfix actualAmtA, sfix actualAmtB, sfix totalA, sfix totalB)
 
             flagBuyA = buyA * acceptA
             flagBuyB = buyB * acceptB
