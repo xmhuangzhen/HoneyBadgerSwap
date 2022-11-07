@@ -40,13 +40,13 @@ def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
     maskA, maskB, maskzkp1, maskzkp2, maskzkp3, maskzkp4 = asyncio.run(get_inputmasks(players(appContract), f'{idxAmtA},{idxAmtB},{idxzkp1},{idxzkp2},{idxzkp3},{idxzkp4}', threshold(appContract)))
     maskedAmtA, maskedAmtB, maskedzkp1, maskedzkp2, maskedzkp3, maskedzkp4 = (amtA + maskA) % prime, (amtB + maskB) % prime, (blinding1 + maskzkp1) % prime, (blinding2 + maskzkp2) % prime, (blinding3 + maskzkp3) % prime, (blinding4 + maskzkp4) % prime
 
-    zkp1 = json.dumps([idxzkp1,maskedzkp1,proof1,commitment1])
-    zkp2 = json.dumps([idxzkp2,maskedzkp2,proof2,commitment2])
-    zkp3 = json.dumps([idxzkp3,maskedzkp3,proof3,commitment3])
-    zkp4 = json.dumps([idxzkp4,maskedzkp4,proof4,commitment4])
+    zkp1 = [idxzkp1,maskedzkp1,proof1,commitment1]
+    zkp2 = [idxzkp2,maskedzkp2,proof2,commitment2]
+    zkp3 = [idxzkp3,maskedzkp3,proof3,commitment3]
+    zkp4 = [idxzkp4,maskedzkp4,proof4,commitment4]
+    zkps = json.dumps([zkp1,zkp2,zkp3,zkp4])
 
-
-    tx = appContract.functions.trade(tokenA, tokenB, idxAmtA, maskedAmtA, idxAmtB, maskedAmtB, zkp1, zkp2, zkp3, zkp4).buildTransaction({
+    tx = appContract.functions.trade(tokenA, tokenB, idxAmtA, maskedAmtA, idxAmtB, maskedAmtB, zkps).buildTransaction({
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
     })
     receipt = sign_and_send(tx, web3, account)

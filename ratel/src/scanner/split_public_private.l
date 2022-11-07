@@ -365,36 +365,36 @@ void callFunc(string op, int init) {
 
 
 void addZkrpArgs(){
-    if(cntZkrp){
+    if(cntZkrp > 0){
         int pos = textPublic.length()-1;
         
-        string text_addParam_with_type = "";
-        string text_addParam_without_type = "";
-        string text_addParam_event = "";
-        string text_addParam_recover = "";
-        for(int i = 0;i < cntZkrp;++i){
-            string postVarName = "zkpstmt" + to_string(i);
-            text_addParam_without_type += ", " + postVarName;
+        string text_addParam_with_type = ", string memory lis_zkpstmt";
+        string text_addParam_without_type = ", lis_zkpstmt";
+        string text_addParam_event = ", string lis_zkpstmt";
+        string text_addParam_recover = "lis_zkpstmt, ";
+//        for(int i = 0;i < cntZkrp;++i){
+//            string postVarName = "zkpstmt" + to_string(i);
+//            text_addParam_without_type += ", " + postVarName;
 //            text_addParam_without_type += ", publicRange" + postVarName ;
 //            text_addParam_without_type += ", idx" + postVarName + "Blinding, masked" + postVarName + "Blinding";
 //            text_addParam_without_type += ", proof" + postVarName + ", commitment" + postVarName;
 
-            text_addParam_with_type += ", string memory " + postVarName;
+//            text_addParam_with_type += ", string memory " + postVarName;
 //            text_addParam_with_type += ", uint publicRange" + postVarName ;
 //            text_addParam_with_type += ", uint idx" + postVarName + "Blinding, uint masked" + postVarName + "Blinding";
 //            text_addParam_with_type += ", uint8[] memory proof" + postVarName + ", uint8[] memory commitment" + postVarName;
 
-            text_addParam_event += ", string " + postVarName;
+//            text_addParam_event += ", string " + postVarName;
 //            text_addParam_event += ", uint publicRange" + postVarName ;
 //            text_addParam_event += ", uint idx" + postVarName + "Blinding, uint masked" + postVarName + "Blinding";
 //            text_addParam_event += ", uint8[]  proof" + postVarName + ", uint8[]  commitment" + postVarName;
 
-            if(i != 0) text_addParam_recover += ",";
-            text_addParam_recover += postVarName;
+//            if(i != 0) text_addParam_recover += ",";
+//            text_addParam_recover += postVarName;
 //            text_addParam_recover += "publicRange" + postVarName ;
 //            text_addParam_recover += ",idx" + postVarName + "Blinding, masked" + postVarName + "Blinding";
 //            text_addParam_recover += ", proof" + postVarName + ", commitment" + postVarName + ",";
-        }
+//        }
         
         
         //////////////////add emit param////////////////

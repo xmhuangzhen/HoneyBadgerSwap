@@ -261,8 +261,7 @@ def dict_to_bytes(value):
     return bytes(str(value), encoding='utf-8')
 
 
-async def verify_proof(server, pfval, zkpstmt_str):
-    zkpstmt = json.loads(zkpstmt_str)
+async def verify_proof(server, pfval, zkpstmt):
     [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
     # TODO:
     # proof, commitment, blinding_ = zkrp_prove(2022, 32)

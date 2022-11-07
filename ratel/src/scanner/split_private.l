@@ -655,6 +655,8 @@ void zkrp(){
         assert(0);
     }
 
+    textFuncLower += "    " + zkpstmtName + " = lis_zkpstmt[" + to_string(cntZkrp-1) + "]\n";
+
     
 }
 
