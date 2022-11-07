@@ -290,6 +290,10 @@ async def verify_proof(server, pfval, zkpstmt):
 
 def get_zkrp(secret_value, exp_str, r, isFloat = False):
     value = secret_value
+    if isFloat:
+        value = int(value * fp)
+        r = int(r * fp)
+
     if exp_str == '>=':
         value = value - r
     elif exp_str == '>': #secret_value > r <==> secret_value - r -1 >= 0
@@ -301,9 +305,6 @@ def get_zkrp(secret_value, exp_str, r, isFloat = False):
 
     if value < 0:
         return None, None, 0
-
-    if isFloat:
-        value = int(value * fp)
 
     #To prove value >= 0
     bits = 32
