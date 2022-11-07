@@ -32,10 +32,11 @@ def createGame(appContract, value1, account):
     mask1, mask3 = asyncio.run(get_inputmasks(players(appContract), f'{idx1},{idx3}', threshold(appContract)))
     maskedvalue1, maskedvalue3 = (value1 + mask1) % prime, (blinding1 + mask3) % prime
     
-    zkp1 = json.dumps([idx3, maskedvalue3, proof1, commitment1])
+    zkp1 = [idx3, maskedvalue3, proof1, commitment1]
+    zkps = json.dumps([zkp1])
 
     web3.eth.defaultAccount = account.address
-    tx = appContract.functions.createGame(idx1, maskedvalue1, zkp1).buildTransaction({
+    tx = appContract.functions.createGame(idx1, maskedvalue1, zkps).buildTransaction({
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
     })
     receipt = sign_and_send(tx, web3, account)
@@ -59,11 +60,12 @@ def joinGame(appContract, gameId, value2, account):
     mask1, mask2, mask3 = asyncio.run(get_inputmasks(players(appContract), f'{idx1},{idx2},{idx3}', threshold(appContract)))
     maskedvalue1, maskedvalue2, maskedvalue3 = (value2 + mask1) % prime, (blinding1 + mask2) % prime, (blinding2 + mask3) % prime
 
-    zkp1 = json.dumps([idx2,maskedvalue2,proof1,commitment1])
-    zkp2 = json.dumps([idx3,maskedvalue3,proof2,commitment2])
+    zkp1 = [idx2,maskedvalue2,proof1,commitment1]
+    zkp2 = [idx3,maskedvalue3,proof2,commitment2]
+    zkps = json.dumps([zkp1,zkp2])
 
     web3.eth.defaultAccount = account.address
-    tx = appContract.functions.joinGame(gameId, idx1, maskedvalue1, zkp1, zkp2).buildTransaction(
+    tx = appContract.functions.joinGame(gameId, idx1, maskedvalue1, zkps).buildTransaction(
         {"nonce": web3.eth.get_transaction_count(web3.eth.defaultAccount)}
     )
     sign_and_send(tx, web3, account)

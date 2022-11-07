@@ -267,6 +267,8 @@ async def verify_proof(server, pfval, zkpstmt):
 
     blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
 
+    if pfval < 0:
+        pfval = pfval + prime
     print('pfval:',pfval)
 
     # TODO: where is the blinding mask created? we also need to share it.
@@ -286,7 +288,7 @@ async def verify_proof(server, pfval, zkpstmt):
     # print("((((((((", agg_commitment, commitment)
     return agg_commitment == commitment
 
-def get_zkrp(secret_value, exp_str, r):
+def get_zkrp(secret_value, exp_str, r, isFloat = False):
     value = secret_value
     if exp_str == '>=':
         value = value - r
@@ -299,6 +301,9 @@ def get_zkrp(secret_value, exp_str, r):
 
     if value < 0:
         return None, None, 0
+
+    if isFloat:
+        value = int(value * fp)
 
     #To prove value >= 0
     bits = 32
