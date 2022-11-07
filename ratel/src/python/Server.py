@@ -130,12 +130,6 @@ class Server:
 
             res = ""
             for mask_idx in mask_idxes:
-                poolidx = key_inputpoolval_index(mask_idx)
-                print('poolidx:',poolidx)
-                print('poolidx type:',type(poolidx))
-                poolv = int.from_bytes(bytes(self.db.Get(poolidx)),'big')
-                print('poolv',poolv)
-
                 res += f"{',' if len(res) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_inputpoolval_index(mask_idx))), 'big')}"
             data = {
                 "inputpoolval_shares": res,

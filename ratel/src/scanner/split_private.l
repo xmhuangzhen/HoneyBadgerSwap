@@ -605,6 +605,10 @@ void mpcOutput() {
 }
 
 void zkrp(){
+    if(cntZkrp == 1){
+        textFuncLower += "    lis_zkpstmt = json.loads(json_lis_zkpstmt)\n";
+    }
+
     string pfstr = args[0];
 
     int pospf = 0;
@@ -656,6 +660,7 @@ void zkrp(){
     }
 
     textFuncLower += "    " + zkpstmtName + " = lis_zkpstmt[" + to_string(cntZkrp-1) + "]\n";
+    textFuncLower += "    print(\'zkpstmt,\'" + zkpstmtName + ")\n";
 
     
 }

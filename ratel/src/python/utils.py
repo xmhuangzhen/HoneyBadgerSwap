@@ -198,12 +198,10 @@ def mark_finish(server, seq):
 
 def read_db(server, key, finalize_on_chain=False):
     key = key.lower()
-    print('read_db key:',key.encode())
     try:
         value = server.db.Get(key.encode())
     except KeyError:
         value = bytes(0)
-    print('read_db val:',value)
 
     if key in server.dbLock.keys():
         server.dbLockCnt[key] -= 1
@@ -217,8 +215,6 @@ def read_db(server, key, finalize_on_chain=False):
 def write_db(server, key, value, finalize_on_chain=False):
     key = key.lower()
     server.db.Put(key.encode(), value)
-
-    print('writedb type',key.encode(),type(key.encode()),value)
 
     if key in server.dbLock.keys():
         server.dbLockCnt[key] -= 1
@@ -265,11 +261,13 @@ async def verify_proof(server, pfval, zkpstmt):
     [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
     # TODO:
     # proof, commitment, blinding_ = zkrp_prove(2022, 32)
-    if not zkrp_verify(proof, commitment, 32):
+    if proof is None or commitment is None or not zkrp_verify(proof, commitment, 32):
         print("[Error]: Committed secret value does not pass range proof verification!")
         return False
 
     blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
+
+    print('pfval:',pfval)
 
     # TODO: where is the blinding mask created? we also need to share it.
     value1_bytes = list(pfval.to_bytes(32, byteorder='little'))
@@ -300,7 +298,7 @@ def get_zkrp(secret_value, exp_str, r):
         value = r - value - 1
 
     if value < 0:
-        return None, None, None
+        return None, None, 0
 
     #To prove value >= 0
     bits = 32

@@ -368,10 +368,10 @@ void addZkrpArgs(){
     if(cntZkrp > 0){
         int pos = textPublic.length()-1;
         
-        string text_addParam_with_type = ", string memory lis_zkpstmt";
-        string text_addParam_without_type = ", lis_zkpstmt";
-        string text_addParam_event = ", string lis_zkpstmt";
-        string text_addParam_recover = "lis_zkpstmt, ";
+        string text_addParam_with_type = ", string memory json_lis_zkpstmt";
+        string text_addParam_without_type = ", json_lis_zkpstmt";
+        string text_addParam_event = ", string json_lis_zkpstmt";
+        string text_addParam_recover = "json_lis_zkpstmt, ";
 //        for(int i = 0;i < cntZkrp;++i){
 //            string postVarName = "zkpstmt" + to_string(i);
 //            text_addParam_without_type += ", " + postVarName;
