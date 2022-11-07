@@ -325,7 +325,8 @@ contract hbswap {
 
 
             buyA = zkrp(amtA > 0)
-            buyB = 1 - buyA
+            buyB = zkrp(amtB > 0)
+            assert(buyA * buyB == 0)
 
             acceptA = zkrp(actualAmtA >= amtA)
             acceptB = zkrp(actualAmtB >= amtB)

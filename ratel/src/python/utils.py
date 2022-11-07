@@ -83,7 +83,8 @@ def key_inputmask_version(idx):
     return f'inputmask_version_{idx}'.encode()
 
 def key_inputpoolval_index(idx):
-    return f'pool_{idx}'.encode()
+    idx = idx.lower()
+    return f'{idx}'.encode()
 
 
 def location_sharefile(server_id, base_port):
@@ -197,10 +198,12 @@ def mark_finish(server, seq):
 
 def read_db(server, key, finalize_on_chain=False):
     key = key.lower()
+    print('read_db key:',key.encode())
     try:
         value = server.db.Get(key.encode())
     except KeyError:
         value = bytes(0)
+    print('read_db val:',value)
 
     if key in server.dbLock.keys():
         server.dbLockCnt[key] -= 1
@@ -214,6 +217,8 @@ def read_db(server, key, finalize_on_chain=False):
 def write_db(server, key, value, finalize_on_chain=False):
     key = key.lower()
     server.db.Put(key.encode(), value)
+
+    print('writedb type',key.encode(),type(key.encode()),value)
 
     if key in server.dbLock.keys():
         server.dbLockCnt[key] -= 1
@@ -294,6 +299,9 @@ def get_zkrp(secret_value, exp_str, r):
         value = r - value
     elif exp_str == '<': #secret_value < r <==> r - secret_value - 1 >= 0
         value = r - value - 1
+
+    if value < 0:
+        return None, None, None
 
     #To prove value >= 0
     bits = 32

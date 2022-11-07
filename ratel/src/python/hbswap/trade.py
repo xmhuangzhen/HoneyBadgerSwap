@@ -5,36 +5,48 @@ import json
 
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
-from ratel.src.python.Client import get_inputmasks, reserveInput
+from ratel.src.python.Client import get_inputmasks, reserveInput, get_poolval
 from ratel.src.python.deploy import url, app_addr, token_addrs
 from ratel.src.python.utils import fp, prime, getAccount, sign_and_send, parse_contract, players, threshold, get_zkrp
 
 
 def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
-    amtA = int(amtA * fp)
-    amtB = int(amtB * fp)
 
     ###############zkrp prove here#############
-    poolA, poolB = asyncio.run(get_inputmasks(players(appContract), tokenA, tokenB, threshold(appContract)))
+    poolA, poolB = asyncio.run(get_poolval(players(appContract), tokenA, tokenB, threshold(appContract)))
+    poolA = float(poolA / fp)
+    poolB = float(poolA / fp)
     poolProduct = poolA * poolB
     actualAmtA = poolA - poolProduct / (poolB - amtB)
     actualAmtB = poolB - poolProduct / (poolA - amtA)
 
+    print('before fp:',poolA,poolB,actualAmtA, actualAmtB)
+
+    amtA = int(amtA * fp)
+    amtB = int(amtB * fp)
+    actualAmtA = int(actualAmtA * fp)
+    actualAmtB = int(actualAmtB * fp)
+
+    print('after fp:',actualAmtA, actualAmtB, amtA, amtB)
+
     proof1, commitment1, blinding1 = get_zkrp(amtA, '>', 0)
-    proof2, commitment2, blinding2 = get_zkrp(actualAmtA, '>=', amtA) # acceptA = zkrp(actualAmtA >= amtA)
-    proof3, commitment3, blinding3 = get_zkrp(actualAmtB, '>=', amtB) # acceptB = zkrp(actualAmtB >= amtB)
+    proof2, commitment2, blinding2 = get_zkrp(amtB, '>', 0)
+    proof3, commitment3, blinding3 = get_zkrp(actualAmtA, '>=', amtA) # acceptA = zkrp(actualAmtA >= amtA)
+    proof4, commitment4, blinding4 = get_zkrp(actualAmtB, '>=', amtB) # acceptB = zkrp(actualAmtB >= amtB)
     ###############zkrp prove end#############
 
-    idxAmtA, idxAmtB, idxzkp1, idxzkp2, idxzkp3 = reserveInput(web3, appContract, 5, account)
-    maskA, maskB, maskzkp1, maskzkp2, maskzkp3 = asyncio.run(get_inputmasks(players(appContract), f'{idxAmtA},{idxAmtB},{idxzkp1},{idxzkp2},{idxzkp3}', threshold(appContract)))
-    maskedAmtA, maskedAmtB, maskedzkp1, maskedzkp2, maskedzkp3 = (amtA + maskA) % prime, (amtB + maskB) % prime, (blinding1 + maskzkp1) % prime, (blinding2 + maskzkp2) % prime, (blinding3 + maskzkp3) % prime
+
+    idxAmtA, idxAmtB, idxzkp1, idxzkp2, idxzkp3, idxzkp4 = reserveInput(web3, appContract, 6, account)
+    maskA, maskB, maskzkp1, maskzkp2, maskzkp3, maskzkp4 = asyncio.run(get_inputmasks(players(appContract), f'{idxAmtA},{idxAmtB},{idxzkp1},{idxzkp2},{idxzkp3},{idxzkp4}', threshold(appContract)))
+    maskedAmtA, maskedAmtB, maskedzkp1, maskedzkp2, maskedzkp3, maskedzkp4 = (amtA + maskA) % prime, (amtB + maskB) % prime, (blinding1 + maskzkp1) % prime, (blinding2 + maskzkp2) % prime, (blinding3 + maskzkp3) % prime, (blinding4 + maskzkp4) % prime
 
     zkp1 = json.dumps([idxzkp1,maskedzkp1,proof1,commitment1])
     zkp2 = json.dumps([idxzkp2,maskedzkp2,proof2,commitment2])
     zkp3 = json.dumps([idxzkp3,maskedzkp3,proof3,commitment3])
+    zkp4 = json.dumps([idxzkp4,maskedzkp4,proof4,commitment4])
 
 
-    tx = appContract.functions.trade(tokenA, tokenB, idxAmtA, maskedAmtA, idxAmtB, maskedAmtB, zkp1, zkp2, zkp3).buildTransaction({
+    tx = appContract.functions.trade(tokenA, tokenB, idxAmtA, maskedAmtA, idxAmtB, maskedAmtB, zkp1, zkp2, zkp3, zkp4).buildTransaction({
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
     })
     receipt = sign_and_send(tx, web3, account)
