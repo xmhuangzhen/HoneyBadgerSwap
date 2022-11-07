@@ -655,10 +655,7 @@ void zkrp(){
         assert(0);
     }
 
-    string postVarName = varName;
-    postVarName[0] = toupper(postVarName[0]);
-    textFuncLower += "    assert(await verify_proof(server, " + pfVarName + ", " + zkpstmtName + " ))\n";
-//    textFuncLower += "    assert(await verify_proof(server, " + pfVarName + ", idx" + zkpstmtName + "Blinding, masked" + zkpstmtName + "Blinding, proof" + zkpstmtName + ", commitment" + zkpstmtName + " ))\n";
+    
 }
 
 
@@ -681,33 +678,44 @@ void addZkrpArgs(){
         for(int i = 0;i < cntZkrp;++i){
             string postVarName = "zkpstmt" + to_string(i);
 
+            //todos
             /////////////////////add recover input for zkp/////////////////////
-            recover_str += "    " + postVarName + " = recover_input(server.db, masked" + postVarName + ", idx" + postVarName + ")\n";
-            recover_str += "    " + postVarName + "Blinding = recover_input(server.db, masked" + postVarName + "Blinding, idx" + postVarName + "Blinding)\n";
-
-            ////////////////////add liszkp///////////////////////////
-            //liszkp_str += "    liszkp.append(("+ postVarName + "str, idx" + postVarName + ", masked" + postVarName + ", idx" + postVarName + "Blinding, masked" + postVarName + "Blinding, proof" + postVarName + ", commitment" + postVarName + ",32))\n";
+//            recover_str += "    " + postVarName + " = recover_input(server.db, masked" + postVarName + ", idx" + postVarName + ")\n";
+//            recover_str += "    " + postVarName + "Blinding = recover_input(server.db, masked" + postVarName + "Blinding, idx" + postVarName + "Blinding)\n";
         }
-
-//        int pos = 0;
-//        string search_str = "    liszkp = []\n";
-//        for(;pos < textFuncUpper.length();++pos){
-//            if(textFuncUpper.compare(pos,search_str.length(),search_str) == 0){
-//                break;
-//            }
-//        }
-//        if(pos < textFuncUpper.length()){
-//            for(;pos < textFuncUpper.length();++pos){
-//                if(textFuncUpper[pos]== '\n'){
-//                    break;
-//                }
-//            }
-
-//            string addstr = recover_str + liszkp_str;
-//            textFuncUpper.insert(pos+1,addstr);
-//        }
     }
 }
+
+
+void zkrpStmt(){
+    string pfstr = args[0];
+
+    int pospf = 0;
+    for(int i = 0;i < pfstr.length();++i){
+        if(pfstr[i] == '<' || pfstr[i] == '>'){
+            pospf = i;
+            break;
+        }
+    }
+
+    string varName;
+    for(int i = pospf-1;i >= 0;--i){
+        if(pfstr[i] != ' '){
+            varName = pfstr.substr(0,i+1);
+            break;
+        }
+    }
+
+    string pfVarName = "pfVar" + varName + to_string(cntZkrp);
+
+    string zkpstmtName = "zkpstmt" + to_string(cntZkrp);
+
+    string postVarName = varName;
+    postVarName[0] = toupper(postVarName[0]);
+    textLine += "await verify_proof(server, " + pfVarName + ", " + zkpstmtName + " )";
+}
+
+
 
 %}
 
@@ -794,6 +802,8 @@ SPACE [ \t\r]+
     isArg = true;
 
     indent = getIndent(string(yytext));
+    string text = string(yytext);
+    textLine += text.substr(0, text.length() - strlen("zkrp("));
 }
 
 ^.*return {
@@ -824,6 +834,8 @@ SPACE [ \t\r]+
         } else if (isWriteDB) {
             assert(args.size() == 3);
             writeDB();
+        } else if (isZkrp){
+            zkrpStmt();
         }
 
         isArg = false;

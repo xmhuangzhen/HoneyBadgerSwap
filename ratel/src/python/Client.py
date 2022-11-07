@@ -76,3 +76,18 @@ async def get_inputmasks(players, inputmask_idxes, threshold):
     inputmasks = batch_interpolate(results, threshold)
 
     return inputmasks
+
+async def get_poolval(players, tokenA, tokenB, threshold):
+    poolA_idx = f'pool_{tokenA}_{tokenB}_{tokenA}'
+    poolB_idx = f'pool_{tokenA}_{tokenB}_{tokenB}'
+    inputpoolval_idxes = f'{poolA_idx},{poolB_idx}'
+
+    request = f"inputpoolval/{inputpoolval_idxes}"
+    results = await send_requests(players, request)
+    for i in range(len(results)):
+        results[i] = re.split(",", results[i]["inputpoolval_shares"])
+
+    inputpoolval = batch_interpolate(results, threshold)
+
+    return inputpoolval
+
