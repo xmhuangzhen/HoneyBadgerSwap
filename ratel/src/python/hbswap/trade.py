@@ -46,7 +46,7 @@ def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
     })
     receipt = sign_and_send(tx, web3, account)
     log = appContract.events.Trade().processReceipt(receipt)[0]
-    print(log['args'])
+    # print(log['args'])
     seqTrade = log['args']['seqTrade']
     with open('ratel/benchmark/data/gas.csv', 'a') as f:
         f.write(f"trade\t{seqTrade}\t"
