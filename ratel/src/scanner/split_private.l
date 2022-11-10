@@ -43,7 +43,8 @@ string textRecover;
 
 string returnLine;
 
-int isArg = 0;
+bool isArg;
+int cntArg;
 string arg;
 vector<string> args;
 
@@ -697,7 +698,8 @@ SPACE [ \t\r]+
 ^pureMpc{SPACE} {
     inPureMpc = true;
     isPureMpc = true;
-    isArg = 1;
+    isArg = true;
+    cntArg = 1;
     cntMPC = 0;
     cntZkrp = 0;
     cntReadDB = 0;
@@ -711,7 +713,8 @@ SPACE [ \t\r]+
 ^mpc{SPACE} {
     inFunc = true;
     isEvent = true;
-    isArg = 1;
+    isArg = true;
+    cntArg = 1;
     cntMPC = 0;
     cntZkrp = 0;
     cntReadDB = 0;
@@ -724,7 +727,8 @@ SPACE [ \t\r]+
 
 ^.*readDB\( {
     isReadDB = true;
-    isArg = 1;
+    isArg = true;
+    cntArg = 1;
 
     string text = string(yytext);
     indent = getIndent(text);
@@ -734,7 +738,8 @@ SPACE [ \t\r]+
 
 ^.*writeDB\( {
     isWriteDB = true;
-    isArg = 1;
+    isArg = true;
+    cntArg = 1;
 
     string text = string(yytext);
     indent = getIndent(text);
@@ -743,7 +748,8 @@ SPACE [ \t\r]+
 
 ^.*mpcInput\( {
     isMpcInput = true;
-    isArg = 1;
+    isArg = true;
+    cntArg = 1;
 
     indent = getIndent(string(yytext));
 }
@@ -751,12 +757,14 @@ SPACE [ \t\r]+
 
 ^.*mpcOutput\( {
     isMpcOutput = true;
-    isArg = 1;
+    isArg = true;
+    cntArg = 1;
 }
 
 ^.*zkrp\( {
     isZkrp = true;
-    isArg = 1;
+    isArg = true;
+    cntArg = 1;
 
     indent = getIndent(string(yytext));
     string text = string(yytext);
@@ -769,6 +777,9 @@ SPACE [ \t\r]+
 
 
 \( {
+    if(isArg){
+        cntArg++;
+    }
     if (isEvent || isPureMpc) {
         funcName = arg;
         arg = "";
@@ -780,9 +791,17 @@ SPACE [ \t\r]+
 
 \) {
     if (isArg) {
-        if (isArg == 1 && arg.length()) {
-            args.push_back(arg);
-            arg = "";
+        if (arg.length()) {
+//            if(!isZkrp){
+                textFuncLower += "arg:::::::::["+arg+"]  cntArg:" + to_string(cntArg) + " \n";
+  //          }
+            if(!isZkrp){
+                args.push_back(arg);
+                arg = "";
+            } else if(cntArg == 1){
+                args.push_back(arg);
+                arg = "";
+            }
         }
 
         if (isReadDB) {
@@ -792,11 +811,16 @@ SPACE [ \t\r]+
             assert(args.size() == 3);
             writeDB();
         } else if (isZkrp){
-            if(isArg == 1)
+            if(cntArg == 1)
                 zkrpStmt();
         }
+        
+        textFuncLower += "    curARG:::"+to_string(cntArg)+"\n";    
 
-        isArg--;
+        cntArg--;
+  //      if(cntArg == 0) {
+            isArg = false;
+    //    }
     } else {
         addText(yytext);
     }
