@@ -43,7 +43,7 @@ string textRecover;
 
 string returnLine;
 
-bool isArg;
+int isArg = 0;
 string arg;
 vector<string> args;
 
@@ -611,58 +611,7 @@ void zkrp(){
 
     string pfstr = args[0];
 
-    int pospf = 0;
-    for(int i = 0;i < pfstr.length();++i){
-        if(pfstr[i] == '<' || pfstr[i] == '>'){
-            pospf = i;
-            break;
-        }
-    }
-
-    string varName;
-    for(int i = pospf-1;i >= 0;--i){
-        if(pfstr[i] != ' '){
-            varName = pfstr.substr(0,i+1);
-            break;
-        }
-    }
-
-    string pfVarName = "pfVar" + to_string(cntZkrp-1);
-
-    string zkpstmtName = "zkpstmt" + to_string(cntZkrp-1);
-
-    if(pfstr[pospf] == '>' && pfstr[pospf+1] == '=') {
-        string rangeName = pfstr.substr(pospf+2);
-        textFuncLower += "    tmpRange = " + rangeName + "\n";
-
-        // secret_value >= r <==> secret_value - r >= 0
-        textFuncLower += "    " + pfVarName + " = " + varName + " - tmpRange\n";
-    } else if(pfstr[pospf] == '>' && pfstr[pospf+1] != '=') {
-        string rangeName = pfstr.substr(pospf+1);
-        textFuncLower += "    tmpRange = " + rangeName + "\n";
-
-        // secret_value > r <==> secret_value - r - 1 >= 0
-        textFuncLower += "    " + pfVarName + " = " + varName + " - tmpRange - 1\n";
-    } else if(pfstr[pospf] == '<' && pfstr[pospf+1] == '=') { 
-        string rangeName = pfstr.substr(pospf+2);
-        textFuncLower += "    tmpRange = " + rangeName + "\n";
-
-        // secret_value <= r <==> r - secret_value >= 0 
-        textFuncLower += "    " + pfVarName + " = tmpRange - " + varName + "\n";
-    } else if(pfstr[pospf] == '>' && pfstr[pospf+1] != '=') { 
-        string rangeName = pfstr.substr(pospf+1);
-        textFuncLower += "    tmpRange = " + rangeName + "\n";
-
-        // secret_value < r <==> r - secret_value - 1 >= 0
-        textFuncLower += "    " + pfVarName + " = tmpRange - " + varName + " - 1\n";
-    } else {
-        assert(0);
-    }
-
-    textFuncLower += "    " + zkpstmtName + " = lis_zkpstmt[" + to_string(cntZkrp-1) + "]\n";
-//    textFuncLower += "    print(\'cntZkrp:" + to_string(cntZkrp-1) + "\')\n";
-//    textFuncLower += "    print(\'zkpstmt\'," + zkpstmtName + ")\n";
-
+    textFuncLower += "    print(\'" + pfstr +  "\')\n";
     
 }
 
@@ -748,7 +697,7 @@ SPACE [ \t\r]+
 ^pureMpc{SPACE} {
     inPureMpc = true;
     isPureMpc = true;
-    isArg = true;
+    isArg = 1;
     cntMPC = 0;
     cntZkrp = 0;
     cntReadDB = 0;
@@ -762,7 +711,7 @@ SPACE [ \t\r]+
 ^mpc{SPACE} {
     inFunc = true;
     isEvent = true;
-    isArg = true;
+    isArg = 1;
     cntMPC = 0;
     cntZkrp = 0;
     cntReadDB = 0;
@@ -775,7 +724,7 @@ SPACE [ \t\r]+
 
 ^.*readDB\( {
     isReadDB = true;
-    isArg = true;
+    isArg = 1;
 
     string text = string(yytext);
     indent = getIndent(text);
@@ -785,7 +734,7 @@ SPACE [ \t\r]+
 
 ^.*writeDB\( {
     isWriteDB = true;
-    isArg = true;
+    isArg = 1;
 
     string text = string(yytext);
     indent = getIndent(text);
@@ -794,7 +743,7 @@ SPACE [ \t\r]+
 
 ^.*mpcInput\( {
     isMpcInput = true;
-    isArg = true;
+    isArg = 1;
 
     indent = getIndent(string(yytext));
 }
@@ -802,12 +751,12 @@ SPACE [ \t\r]+
 
 ^.*mpcOutput\( {
     isMpcOutput = true;
-    isArg = true;
+    isArg = 1;
 }
 
 ^.*zkrp\( {
     isZkrp = true;
-    isArg = true;
+    isArg = 1;
 
     indent = getIndent(string(yytext));
     string text = string(yytext);
@@ -831,7 +780,7 @@ SPACE [ \t\r]+
 
 \) {
     if (isArg) {
-        if (arg.length()) {
+        if (isArg == 1 && arg.length()) {
             args.push_back(arg);
             arg = "";
         }
@@ -843,10 +792,11 @@ SPACE [ \t\r]+
             assert(args.size() == 3);
             writeDB();
         } else if (isZkrp){
-            zkrpStmt();
+            if(isArg == 1)
+                zkrpStmt();
         }
 
-        isArg = false;
+        isArg--;
     } else {
         addText(yytext);
     }
