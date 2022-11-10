@@ -215,6 +215,7 @@ def read_db(server, key, finalize_on_chain=False):
 def write_db(server, key, value, finalize_on_chain=False):
     key = key.lower()
     server.db.Put(key.encode(), value)
+    print('writedb:',key.encode())
 
     if key in server.dbLock.keys():
         server.dbLockCnt[key] -= 1

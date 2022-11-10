@@ -78,10 +78,10 @@ async def get_inputmasks(players, inputmask_idxes, threshold):
     return inputmasks
 
 async def get_serverval(players, server_idxes, threshold):
-    request = f"inputserverval/{server_idxes}"
+    request = f"serverval/{server_idxes}"
     results = await send_requests(players, request)
     for i in range(len(results)):
-        results[i] = re.split(",", results[i]["inputserverval_shares"])
+        results[i] = re.split(",", results[i]["serverval_shares"])
 
     inputserverval = batch_interpolate(results, threshold)
 

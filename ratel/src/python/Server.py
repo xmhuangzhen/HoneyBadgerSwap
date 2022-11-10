@@ -130,9 +130,12 @@ class Server:
 
             res = ""
             for mask_idx in mask_idxes:
+                t1 = key_serverval_index(mask_idx)
+                print('t1:',t1)
+                int.from_bytes(bytes(self.db.Get(t1)), 'big')
                 res += f"{',' if len(res) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_serverval_index(mask_idx))), 'big')}"
             data = {
-                "inputserverval_shares": res,
+                "serverval_shares": res,
             }
             print(f"s{self.serverID} response: {res}")
             return web.json_response(data)

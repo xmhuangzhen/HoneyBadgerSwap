@@ -13,8 +13,8 @@ from ratel.src.python.utils import fp, prime, getAccount, sign_and_send, parse_c
 def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
 
     ###############zkrp prove here#############
-    serverval_idx1 = f'balance_{tokenA}_{account.addr}'
-    serverval_idx2 = f'balance_{tokenB}_{account.addr}'
+    serverval_idx1 = f'balance_{tokenA}_{account.address}'
+    serverval_idx2 = f'balance_{tokenB}_{account.address}'
     
     balanceA, balanceB = asyncio.run(get_serverval(players(appContract), f'{serverval_idx1},{serverval_idx2}', threshold(appContract)))
 
@@ -30,9 +30,9 @@ def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
             # balanceA = readDB(f'balance_{tokenA}_{user}', int)
             # balanceB = readDB(f'balance_{tokenB}_{user}', int)
 
-    print('amtA:', amtA, 'amtB:', amtB)
-    print('totalA:', totalA, 'totalB:', totalB)
-    print('balanceA:', balanceA, 'balanceB:', balanceB)
+    # print('amtA:', amtA, 'amtB:', amtB)
+    # print('totalA:', totalA, 'totalB:', totalB)
+    # print('balanceA:', balanceA, 'balanceB:', balanceB)
 
     proof1, commitment1, blinding1 = get_zkrp(amtA*amtB, '<', 0, True)
     proof2, commitment2, blinding2 = get_zkrp(-totalA, '<=', balanceA, True)

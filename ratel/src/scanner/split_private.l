@@ -614,6 +614,52 @@ void zkrp(){
 
     textFuncLower += "    print(\'" + pfstr +  "\')\n";
     
+
+    int pospf = 0;
+    for(int i = 0;i < pfstr.length();++i){
+        if(pfstr[i] == '<' || pfstr[i] == '>'){
+            pospf = i;
+            break;
+        }
+    }
+
+    string pfVarName = "pfVar" + to_string(cntZkrp-1);
+
+    string varName = pfstr.substr(0,pospf);
+    string zkpstmtName = "zkpstmt" + to_string(cntZkrp-1);
+
+
+    if(pfstr[pospf] == '>' && pfstr[pospf+1] == '=') {
+        string rangeName = pfstr.substr(pospf+2);
+        textFuncLower += "    tmpRange = " + rangeName + "\n";
+
+        // secret_value >= r <==> secret_value - r >= 0
+        textFuncLower += "    " + pfVarName + " = " + varName + " - tmpRange\n";
+    } else if(pfstr[pospf] == '>' && pfstr[pospf+1] != '=') {
+        string rangeName = pfstr.substr(pospf+1);
+        textFuncLower += "    tmpRange = " + rangeName + "\n";
+
+        // secret_value > r <==> secret_value - r - 1 >= 0
+        textFuncLower += "    " + pfVarName + " = " + varName + " - tmpRange - 1\n";
+    } else if(pfstr[pospf] == '<' && pfstr[pospf+1] == '=') { 
+        string rangeName = pfstr.substr(pospf+2);
+        textFuncLower += "    tmpRange = " + rangeName + "\n";
+
+        // secret_value <= r <==> r - secret_value >= 0 
+        textFuncLower += "    " + pfVarName + " = tmpRange - " + varName + "\n";
+    } else if(pfstr[pospf] == '<' && pfstr[pospf+1] != '=') { 
+        string rangeName = pfstr.substr(pospf+1);
+        textFuncLower += "    tmpRange = " + rangeName + "\n";
+
+        // secret_value < r <==> r - secret_value - 1 >= 0
+        textFuncLower += "    " + pfVarName + " = tmpRange - " + varName + " - 1\n";
+    } else {
+        assert(0);
+    }
+
+    textFuncLower += "    " + zkpstmtName + " = lis_zkpstmt[" + to_string(cntZkrp-1) + "]\n";
+//    textFuncLower += "    print(\'cntZkrp:" + to_string(cntZkrp-1) + "\')\n";
+//    textFuncLower += "    print(\'zkpstmt\'," + zkpstmtName + ")\n";
 }
 
 
@@ -646,30 +692,10 @@ void addZkrpArgs(){
 
 
 void zkrpStmt(){
-    string pfstr = args[0];
-
-    int pospf = 0;
-    for(int i = 0;i < pfstr.length();++i){
-        if(pfstr[i] == '<' || pfstr[i] == '>'){
-            pospf = i;
-            break;
-        }
-    }
-
-    string varName;
-    for(int i = pospf-1;i >= 0;--i){
-        if(pfstr[i] != ' '){
-            varName = pfstr.substr(0,i+1);
-            break;
-        }
-    }
-
     string pfVarName = "pfVar" + to_string(cntZkrp);
 
     string zkpstmtName = "zkpstmt" + to_string(cntZkrp);
 
-    string postVarName = varName;
-    postVarName[0] = toupper(postVarName[0]);
     textLine += "await verify_proof(server, " + pfVarName + ", " + zkpstmtName + " )";
 }
 
@@ -792,15 +818,14 @@ SPACE [ \t\r]+
 \) {
     if (isArg) {
         if (arg.length()) {
-//            if(!isZkrp){
-                textFuncLower += "arg:::::::::["+arg+"]  cntArg:" + to_string(cntArg) + " \n";
-  //          }
             if(!isZkrp){
                 args.push_back(arg);
                 arg = "";
             } else if(cntArg == 1){
                 args.push_back(arg);
                 arg = "";
+            } else {
+                addText(yytext);
             }
         }
 
@@ -811,16 +836,17 @@ SPACE [ \t\r]+
             assert(args.size() == 3);
             writeDB();
         } else if (isZkrp){
-            if(cntArg == 1)
+            if(cntArg == 1){
                 zkrpStmt();
+            }
         }
         
-        textFuncLower += "    curARG:::"+to_string(cntArg)+"\n";    
-
         cntArg--;
-  //      if(cntArg == 0) {
+        if(!isZkrp){
             isArg = false;
-    //    }
+        } else if(cntArg == 0){
+            isArg = false;
+        }
     } else {
         addText(yytext);
     }
