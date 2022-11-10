@@ -82,7 +82,7 @@ def key_inputmask_index(idx):
 def key_inputmask_version(idx):
     return f'inputmask_version_{idx}'.encode()
 
-def key_inputpoolval_index(idx):
+def key_serverval_index(idx):
     idx = idx.lower()
     return f'{idx}'.encode()
 
@@ -288,9 +288,9 @@ async def verify_proof(server, pfval, zkpstmt):
     # print("((((((((", agg_commitment, commitment)
     return agg_commitment == commitment
 
-def get_zkrp(secret_value, exp_str, r, isFloat = False):
+def get_zkrp(secret_value, exp_str, r, isSfix = False):
     value = secret_value
-    if isFloat:
+    if isSfix:
         value = int(value * fp)
         r = int(r * fp)
 

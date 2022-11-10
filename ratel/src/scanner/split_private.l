@@ -627,7 +627,7 @@ void zkrp(){
         }
     }
 
-    string pfVarName = "pfVar" + varName + to_string(cntZkrp-1);
+    string pfVarName = "pfVar" + to_string(cntZkrp-1);
 
     string zkpstmtName = "zkpstmt" + to_string(cntZkrp-1);
 
@@ -648,20 +648,20 @@ void zkrp(){
         textFuncLower += "    tmpRange = " + rangeName + "\n";
 
         // secret_value <= r <==> r - secret_value >= 0 
-        textFuncLower += "    " + pfVarName + " = (prime + tmpRange - " + varName + ") % prime\n";
+        textFuncLower += "    " + pfVarName + " = tmpRange - " + varName + "\n";
     } else if(pfstr[pospf] == '>' && pfstr[pospf+1] != '=') { 
         string rangeName = pfstr.substr(pospf+1);
         textFuncLower += "    tmpRange = " + rangeName + "\n";
 
         // secret_value < r <==> r - secret_value - 1 >= 0
-        textFuncLower += "    " + pfVarName + " = (prime + tmpRange - " + varName + " - 1) % prime\n";
+        textFuncLower += "    " + pfVarName + " = tmpRange - " + varName + " - 1\n";
     } else {
         assert(0);
     }
 
     textFuncLower += "    " + zkpstmtName + " = lis_zkpstmt[" + to_string(cntZkrp-1) + "]\n";
-    textFuncLower += "    print(\'cntZkrp:" + to_string(cntZkrp-1) + "\')\n";
-    textFuncLower += "    print(\'zkpstmt\'," + zkpstmtName + ")\n";
+//    textFuncLower += "    print(\'cntZkrp:" + to_string(cntZkrp-1) + "\')\n";
+//    textFuncLower += "    print(\'zkpstmt\'," + zkpstmtName + ")\n";
 
     
 }
@@ -714,7 +714,7 @@ void zkrpStmt(){
         }
     }
 
-    string pfVarName = "pfVar" + varName + to_string(cntZkrp);
+    string pfVarName = "pfVar" + to_string(cntZkrp);
 
     string zkpstmtName = "zkpstmt" + to_string(cntZkrp);
 

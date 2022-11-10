@@ -5,7 +5,7 @@ import json
 
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
-from ratel.src.python.Client import get_inputmasks, reserveInput, get_poolval
+from ratel.src.python.Client import get_inputmasks, reserveInput, get_serverval
 from ratel.src.python.deploy import url, app_addr, token_addrs
 from ratel.src.python.utils import fp, prime, getAccount, sign_and_send, parse_contract, players, threshold, get_zkrp
 
@@ -13,33 +13,43 @@ from ratel.src.python.utils import fp, prime, getAccount, sign_and_send, parse_c
 def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
 
     ###############zkrp prove here#############
-    poolA, poolB = asyncio.run(get_poolval(players(appContract), tokenA, tokenB, threshold(appContract)))
-    poolA = float(poolA / fp)
-    poolB = float(poolA / fp)
-    poolProduct = poolA * poolB
-    actualAmtA = poolA - poolProduct / (poolB - amtB)
-    actualAmtB = poolB - poolProduct / (poolA - amtA)
+    serverval_idx1 = f'balance_{tokenA}_{account.addr}'
+    serverval_idx2 = f'balance_{tokenB}_{account.addr}'
+    
+    balanceA, balanceB = asyncio.run(get_serverval(players(appContract), f'{serverval_idx1},{serverval_idx2}', threshold(appContract)))
 
-    print('actualAmtA:',actualAmtA, 'actualAmtB', actualAmtB)
+    balanceA, balanceB = float(balanceA / fp), float(balanceB / fp)
 
-    proof1, commitment1, blinding1 = get_zkrp(amtA, '>', 0, True)
-    proof2, commitment2, blinding2 = get_zkrp(amtB, '>', 0, True)
-    proof3, commitment3, blinding3 = get_zkrp(actualAmtA, '>=', amtA, True) # acceptA = zkrp(actualAmtA >= amtA)
-    proof4, commitment4, blinding4 = get_zkrp(actualAmtB, '>=', amtB, True) # acceptB = zkrp(actualAmtB >= amtB)
+    feeRate = 0.003
+    totalA = (1 + feeRate) * amtA
+    totalB = (1 + feeRate) * amtB
+
+            # assert(zkrp((amtA * amtB) < 0))
+            # assert(zkrp((-totalA) <= balanceA))
+            # assert(zkrp((-totalB) <= balanceB))
+            # balanceA = readDB(f'balance_{tokenA}_{user}', int)
+            # balanceB = readDB(f'balance_{tokenB}_{user}', int)
+
+    print('amtA:', amtA, 'amtB:', amtB)
+    print('totalA:', totalA, 'totalB:', totalB)
+    print('balanceA:', balanceA, 'balanceB:', balanceB)
+
+    proof1, commitment1, blinding1 = get_zkrp(amtA*amtB, '<', 0, True)
+    proof2, commitment2, blinding2 = get_zkrp(-totalA, '<=', balanceA, True)
+    proof3, commitment3, blinding3 = get_zkrp(-totalB, '<=', balanceB, True)
     ###############zkrp prove end#############
 
     amtA = int(amtA * fp)
     amtB = int(amtB * fp)
     
-    idxAmtA, idxAmtB, idxzkp1, idxzkp2, idxzkp3, idxzkp4 = reserveInput(web3, appContract, 6, account)
-    maskA, maskB, maskzkp1, maskzkp2, maskzkp3, maskzkp4 = asyncio.run(get_inputmasks(players(appContract), f'{idxAmtA},{idxAmtB},{idxzkp1},{idxzkp2},{idxzkp3},{idxzkp4}', threshold(appContract)))
-    maskedAmtA, maskedAmtB, maskedzkp1, maskedzkp2, maskedzkp3, maskedzkp4 = (amtA + maskA) % prime, (amtB + maskB) % prime, (blinding1 + maskzkp1) % prime, (blinding2 + maskzkp2) % prime, (blinding3 + maskzkp3) % prime, (blinding4 + maskzkp4) % prime
+    idxAmtA, idxAmtB, idxzkp1, idxzkp2, idxzkp3 = reserveInput(web3, appContract, 5, account)
+    maskA, maskB, maskzkp1, maskzkp2, maskzkp3 = asyncio.run(get_inputmasks(players(appContract), f'{idxAmtA},{idxAmtB},{idxzkp1},{idxzkp2},{idxzkp3}', threshold(appContract)))
+    maskedAmtA, maskedAmtB, maskedzkp1, maskedzkp2, maskedzkp3 = (amtA + maskA) % prime, (amtB + maskB) % prime, (blinding1 + maskzkp1) % prime, (blinding2 + maskzkp2) % prime, (blinding3 + maskzkp3) % prime
 
     zkp1 = [idxzkp1,maskedzkp1,proof1,commitment1]
     zkp2 = [idxzkp2,maskedzkp2,proof2,commitment2]
     zkp3 = [idxzkp3,maskedzkp3,proof3,commitment3]
-    zkp4 = [idxzkp4,maskedzkp4,proof4,commitment4]
-    zkps = json.dumps([zkp1,zkp2,zkp3,zkp4])
+    zkps = json.dumps([zkp1,zkp2,zkp3])
 
     tx = appContract.functions.trade(tokenA, tokenB, idxAmtA, maskedAmtA, idxAmtB, maskedAmtB, zkps).buildTransaction({
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)

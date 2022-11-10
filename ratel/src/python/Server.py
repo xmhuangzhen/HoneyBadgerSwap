@@ -11,7 +11,7 @@ from aiohttp import web, ClientSession
 from collections import defaultdict
 
 from ratel.src.python.Client import send_requests, batch_interpolate
-from ratel.src.python.utils import key_inputmask_index, key_inputpoolval_index, spareShares, prime, \
+from ratel.src.python.utils import key_inputmask_index, key_serverval_index, spareShares, prime, \
     location_inputmask, http_host, http_port, mpc_port, location_db, openDB, getAccount, \
     confirmation, shareBatchSize, list_to_str, trade_key_num, INPUTMASK_SHARES_DIR, execute_cmd, sign_and_send, \
     key_inputmask_version
@@ -123,16 +123,16 @@ class Server:
             }
             return web.json_response(data)
 
-        async def handler_inputpoolval(request):
+        async def handler_serverval(request):
             print(f"s{self.serverID} request: {request}")
             mask_idxes = re.split(",", request.match_info.get("mask_idxes"))
             print("mask_idxes:",mask_idxes)
 
             res = ""
             for mask_idx in mask_idxes:
-                res += f"{',' if len(res) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_inputpoolval_index(mask_idx))), 'big')}"
+                res += f"{',' if len(res) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_serverval_index(mask_idx))), 'big')}"
             data = {
-                "inputpoolval_shares": res,
+                "inputserverval_shares": res,
             }
             print(f"s{self.serverID} response: {res}")
             return web.json_response(data)
@@ -157,8 +157,8 @@ class Server:
         # cors.add(resource.add_route("GET", handler_recover_db))
         resource = cors.add(app.router.add_resource("/zkrp_share_idxes/{mask_idxes}"))
         cors.add(resource.add_route("GET", handler_mpc_verify))
-        resource = cors.add(app.router.add_resource("/inputpoolval/{mask_idxes}"))
-        cors.add(resource.add_route("GET", handler_inputpoolval))
+        resource = cors.add(app.router.add_resource("/serverval/{mask_idxes}"))
+        cors.add(resource.add_route("GET", handler_serverval))
 
         print("Starting http server...")
         runner = web.AppRunner(app)

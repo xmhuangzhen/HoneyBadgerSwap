@@ -305,35 +305,29 @@ contract hbswap {
 
             feeRate = 0.003
 
-            poolProduct = poolA * poolB
-
             totalA = (1 + feeRate) * amtA
             totalB = (1 + feeRate) * amtB
 
+            mpcOutput(sfix totalA, sfix totalB)
+
+ 
             ### TODO: realize by ZKP
-            ### validOrder = (amtA * amtB) < 0
-            ### enoughB = (-totalB) <= balanceB
-            ### enoughA = (-totalA) <= balanceA
-            ### flagBuyA = validOrder * buyA * enoughB * acceptA
-            ### flagBuyB = validOrder * buyB * enoughA * acceptB
+            assert(zkrp((amtA * amtB) < 0))
+            assert(zkrp((-totalA) <= balanceA))
+            assert(zkrp((-totalB) <= balanceB))
+ 
+
+            mpcInput(sfix balanceA, sfix amtA, sfix balanceB, sfix amtB, sfix poolA, sfix poolB, sint totalCnt, sfix totalA, sfix totalB)
+
+            poolProduct = poolA * poolB
 
             actualAmtA = poolA - poolProduct / (poolB - amtB)
             actualAmtB = poolB - poolProduct / (poolA - amtA)
 
-            mpcOutput(sfix actualAmtA, sfix actualAmtB, sfix totalA, sfix totalB)
-
-
-
-            buyA = zkrp(amtA > 0)
-            buyB = zkrp(amtB > 0)
-            assert(buyA * buyB == 0)
-
-            acceptA = zkrp(actualAmtA >= amtA)
-            acceptB = zkrp(actualAmtB >= amtB)
-
-
-
-            mpcInput(sfix amtA, sfix amtB, sfix actualAmtA, sfix actualAmtB, sfix totalA, sfix totalB, sint buyA, sint buyB, sint acceptA, sint acceptB, sfix balanceA, sfix balanceB, sfix poolA, sfix poolB, sint totalCnt)
+            buyA = amtA > 0 ### TODO: could also be replaced by ZKP
+            acceptA = actualAmtA >= amtA
+            acceptB = actualAmtB >= amtB
+            buyB = 1 - buyA
 
             flagBuyA = buyA * acceptA
             flagBuyB = buyB * acceptB
