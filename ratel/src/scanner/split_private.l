@@ -613,6 +613,7 @@ void zkrp(){
     string pfstr = args[0];
 
     textFuncLower += "    print(\'" + pfstr +  "\')\n";
+
     
 
     int pospf = 0;
@@ -660,6 +661,7 @@ void zkrp(){
     textFuncLower += "    " + zkpstmtName + " = lis_zkpstmt[" + to_string(cntZkrp-1) + "]\n";
 //    textFuncLower += "    print(\'cntZkrp:" + to_string(cntZkrp-1) + "\')\n";
 //    textFuncLower += "    print(\'zkpstmt\'," + zkpstmtName + ")\n";
+    textFuncLower += "    print(\'tmpRange:\',tmpRange)\n";
 }
 
 

@@ -268,10 +268,11 @@ async def verify_proof(server, pfval, zkpstmt):
 
     blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
 
-    if pfval < 0:
-        pfval = pfval + prime
     print('pfval:',pfval)
-
+    if pfval < 0:
+        pfval = (pfval % prime + prime) % prime
+    print('pfval2:',pfval)
+    
     # TODO: where is the blinding mask created? we also need to share it.
     value1_bytes = list(pfval.to_bytes(32, byteorder='little'))
     blinding_bytes = list(blinding.to_bytes(32, byteorder='little'))
@@ -291,10 +292,23 @@ async def verify_proof(server, pfval, zkpstmt):
 
 def get_zkrp(secret_value, exp_str, r, isSfix = False):
     value = secret_value
+    fac = 1
+    # if isSfix:
+    #     fac = fp
+
+    # if exp_str == '>=':
+    #     value = int((value - r) * fac)
+    # elif exp_str == '>': #secret_value > r <==> secret_value - r -1 >= 0
+    #     value = int((value - r) * fac) - 1
+    # elif exp_str == '<=': # secret_value <= r <==> r - secret_value >= 0 
+    #     value = int((r - value) * fac)
+    # elif exp_str == '<': #secret_value < r <==> r - secret_value - 1 >= 0
+    #     value = int((r - value) * fac) - 1
+
     if isSfix:
         value = int(value * fp)
         r = int(r * fp)
-
+    
     if exp_str == '>=':
         value = value - r
     elif exp_str == '>': #secret_value > r <==> secret_value - r -1 >= 0
@@ -304,8 +318,10 @@ def get_zkrp(secret_value, exp_str, r, isSfix = False):
     elif exp_str == '<': #secret_value < r <==> r - secret_value - 1 >= 0
         value = r - value - 1
 
-    if value < 0:
-        return None, None, 0
+
+    # value = (value % prime + prime) % prime
+    if value < 0 :
+        value = (value % prime + prime) % prime
 
     #To prove value >= 0
     bits = 32

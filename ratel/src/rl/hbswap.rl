@@ -301,13 +301,18 @@ contract hbswap {
 
             times.append(time.perf_counter())
 
-            mpcInput(sfix balanceA, sfix amtA, sfix balanceB, sfix amtB, sfix poolA, sfix poolB, sint totalCnt)
+            mpcInput(sfix balanceA, sfix amtA, sfix balanceB, sfix amtB)
 
             feeRate = 0.003
 
             totalA = (1 + feeRate) * amtA
             totalB = (1 + feeRate) * amtB
 
+            print_ln("totalA:%s",totalA.reveal())
+            print_ln("totalB:%s",totalB.reveal())
+            print_ln("balanceA:%s",balanceA.reveal())
+            print_ln("balanceB:%s",balanceB.reveal())
+            
             mpcOutput(sfix totalA, sfix totalB)
 
  
