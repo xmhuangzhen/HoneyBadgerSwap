@@ -322,12 +322,7 @@ contract hbswap {
 
             times.append(time.perf_counter())
 
-            mpcInput(sfix balanceA, sfix amtA, sfix balanceB, sfix amtB, sfix poolA, sfix poolB, sint totalCnt)
-
-            feeRate = 0.5
-
-            totalA = (1 + feeRate) * amtA
-            totalB = (1 + feeRate) * amtB
+            mpcInput(sfix balanceA, sfix amtA, sfix balanceB, sfix amtB, sfix poolA, sfix poolB, sint totalCnt, sfix totalA, sfix totalB)
 
             poolProduct = poolA * poolB
 
