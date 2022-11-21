@@ -80,7 +80,6 @@ pkill -f 'python3 -m ratel.src.python.rockPaperScissors.run 2'
 ```
 
 #### Create game by a client
-```
 ```shell
 python3 -m ratel.src.python.rockPaperScissors.create_game 1 1 
 ```
