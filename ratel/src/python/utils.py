@@ -277,9 +277,9 @@ async def verify_proof(server, idxValue, maskedValue, idxValueBlinding, maskedVa
     # TODO: we also need to change the current zkrp interface to allow specifying r and choose range to prove.
 
     server.zkrpShares[f'{idxValue}'] = share_commitment
-    results = await server.get_zkrp_shares(players(server.contract), f'{idxValue}')
+    shares, server_indexes = await server.get_zkrp_shares(players(server.contract), f'{idxValue}')
     # print(")))))))", results)
-    agg_commitment = pedersen_aggregate(results, [x + 1 for x in list(range(server.players))])
+    agg_commitment = pedersen_aggregate(shares, server_indexes)
 
     # print("((((((((", agg_commitment, commitment)
     return agg_commitment == commitment

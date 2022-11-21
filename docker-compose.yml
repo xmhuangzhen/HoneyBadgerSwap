@@ -15,6 +15,10 @@ services:
       - ./scripts/latency-control.sh:/usr/src/hbswap/latency-control.sh
       - ./poa:/opt/poa
       - ./ratel/genfiles/mpc:/usr/src/hbswap/Programs/Source
+      - ./malicious-shamir-party.x:/usr/src/hbswap/malicious-shamir-party.x
+      - ./malicious-shamir-party.x:/usr/local/bin/malicious-shamir-party.x
+#      - ./tutorial.mpc:/usr/src/hbswap/Programs/Source/tutorial.mpc
+      - ./libSPDZ.so:/usr/src/MP-SPDZ/libSPDZ.so
     working_dir: /usr/src/hbswap
     platform: "linux/amd64"
     command: tail -F anything

@@ -59,11 +59,14 @@ class Server:
     async def get_zkrp_shares(self, players, inputmask_idxes):
         request = f"zkrp_share_idxes/{inputmask_idxes}"
         results = await send_requests(players, request)
-        parsed_results = []
+        shares = []
+        server_indexes = []
         for i in range(len(results)):
-            parsed_results.append(json.loads(results[i]["zkrp_share_idx"]))
+            if len(results[i]):
+                shares.append(json.loads(results[i]["zkrp_share_idx"]))
+                server_indexes.append(i + 1)
 
-        return parsed_results
+        return shares, server_indexes
 
     async def http_server(self):
         async def handler_inputmask(request):
@@ -243,9 +246,11 @@ class Server:
         request = f'recoverdb/{self.account.address}-{seq_recover_state}-{list_to_str(seq_num_list)}'
         print(f'request {request}')
         masked_states = await send_requests(self.players, request, self.serverID)
+        batch_points = []
         for i in range(len(masked_states)):
-            masked_states[i] = re.split(",", masked_states[i]["values"])
-        masked_states = batch_interpolate(self.serverID + 1, masked_states, self.threshold)
+            if len(masked_states[i]):
+                batch_points.append((i + 1, re.split(",", masked_states[i]["values"])))
+        masked_states = batch_interpolate(self.serverID + 1, batch_points, self.threshold)
         state_shares = self.unmask_states(masked_states, seq_recover_state)
         self.restore_db(seq_num_list, keys, state_shares)
 

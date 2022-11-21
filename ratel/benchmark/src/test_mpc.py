@@ -20,8 +20,8 @@ async def run_online_ONLY(server_id, port, players, threshold, mpcProg):
 
 
 async def run_online(server_id, port, players, threshold, mpcProg, seq=0):
-    src_dir = f'{mpcProg}-Player-data-port-{port}'
-    dst_dir = f'{mpcProg}-Player-data-port-{port}-s{server_id}-copy'
+    src_dir = f'offchain-data/{mpcProg}-Player-data-port-{port}'
+    dst_dir = f'offchain-data/{mpcProg}-Player-data-port-{port}-s{server_id}-copy'
 
     cmd = f'rm -rf {dst_dir}'
     await execute_cmd(cmd)
@@ -31,11 +31,11 @@ async def run_online(server_id, port, players, threshold, mpcProg, seq=0):
 
     dir = dst_dir
     cmd = f'{prog} -N {players} -T {threshold} -p {server_id} -pn {port} -P {prime} -F --prep-dir {dir} -npfs {mpcProg}'
-    await execute_cmd(cmd, f'**** trade seq {seq}')
+    await execute_cmd(cmd, f'**** task seq {seq}')
 
 
 async def run_offline(server_id, port, players, threshold, mpcProg):
-    dir = f'{mpcProg}-Player-data-port-{port}'
+    dir = f'offchain-data/{mpcProg}-Player-data-port-{port}'
     cmd = f'{offline_prog} -N {players} -T {threshold} -p {server_id} -pn {port} -P {prime} --prep-dir {dir} -npfs {mpcProg}'
     await execute_cmd(cmd)
 
