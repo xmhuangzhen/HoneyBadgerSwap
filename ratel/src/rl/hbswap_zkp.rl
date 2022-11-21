@@ -302,10 +302,11 @@ contract hbswap {
             times.append(time.perf_counter())
 
 
-            feeRate = 0.5
+            feeRate = 0.003
 
             totalA = (1 + feeRate) * amtA
             totalB = (1 + feeRate) * amtB
+
 
             times.append(time.perf_counter())
 
@@ -322,12 +323,7 @@ contract hbswap {
 
             times.append(time.perf_counter())
 
-            mpcInput(sfix balanceA, sfix amtA, sfix balanceB, sfix amtB, sfix poolA, sfix poolB, sint totalCnt)
-
-            feeRate = 0.5
-
-            totalA = (1 + feeRate) * amtA
-            totalB = (1 + feeRate) * amtB
+            mpcInput(sfix balanceA, sfix amtA, sfix balanceB, sfix amtB, sfix poolA, sfix poolB, sint totalCnt, sfix totalA, sfix totalB)
 
             poolProduct = poolA * poolB
 
@@ -353,8 +349,8 @@ contract hbswap {
             orderSucceed = flagBuyA + flagBuyB
             totalCnt += orderSucceed
 
-            print_ln('**** balanceA %s', balanceA.reveal())
-            print_ln('**** balanceB %s', balanceB.reveal())
+            #print_ln('**** balanceA %s', balanceA.reveal())
+            #print_ln('**** balanceB %s', balanceB.reveal())
             #print_ln('**** poolA %s', poolA.reveal())
             #print_ln('**** poolB %s', poolB.reveal())
 

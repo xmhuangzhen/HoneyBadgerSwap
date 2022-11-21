@@ -20,7 +20,7 @@ def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
 
     balanceA, balanceB = float(balanceA / fp), float(balanceB / fp)
 
-    feeRate = 0.003
+    feeRate = 0.5
     totalA = (1 + feeRate) * amtA
     totalB = (1 + feeRate) * amtB
 
@@ -34,7 +34,7 @@ def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
     print('totalA:', totalA, 'totalB:', totalB)
     print('balanceA:', balanceA, 'balanceB:', balanceB)
 
-    proof1, commitment1, blinding1 = get_zkrp(int(amtA*fp)*int(amtB*fp), '<', 0, False)
+    proof1, commitment1, blinding1 = get_zkrp(amtA*amtB, '<', 0, True)
     proof2, commitment2, blinding2 = get_zkrp(-totalA, '<=', balanceA, True)
     proof3, commitment3, blinding3 = get_zkrp(-totalB, '<=', balanceB, True)
     ###############zkrp prove end#############
@@ -50,6 +50,7 @@ def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
     zkp2 = [idxzkp2,maskedzkp2,proof2,commitment2]
     zkp3 = [idxzkp3,maskedzkp3,proof3,commitment3]
     zkps = json.dumps([zkp1,zkp2,zkp3])
+    # zkps = json.dumps([zkp1])
 
     tx = appContract.functions.trade(tokenA, tokenB, idxAmtA, maskedAmtA, idxAmtB, maskedAmtB, zkps).buildTransaction({
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
@@ -86,4 +87,5 @@ if __name__=='__main__':
 
     for i in range(repetition):
         trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id)
+        # time.sleep(60)
         trade(appContract, tokenA, tokenB, amtB, amtA, account, web3, client_id)

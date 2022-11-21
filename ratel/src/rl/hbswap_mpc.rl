@@ -301,86 +301,83 @@ contract hbswap {
 
             times.append(time.perf_counter())
 
+            mpcInput(sfix amtA, sfix amtB)
 
-            feeRate = 0.5
+            feeRate = 0.003
 
             totalA = (1 + feeRate) * amtA
             totalB = (1 + feeRate) * amtB
+            
+            mpcOutput(sfix totalA, sfix totalB)
 
             times.append(time.perf_counter())
-
-            mpcInput(sfix amtA, sfix amtB)
-            
-            productAB = amtA * amtB
-
-            mpcOutput(sfix productAB)
 
             ### TODO: realize by ZKP
-            assert(zkrp(productAB < 0))
-            assert(zkrp((-totalA) <= balanceA))
-            assert(zkrp((-totalB) <= balanceB))
+            
+            mpcInput(sfix amtA, sfix amtB)
+
+            validOrder = ((amtA * amtB) < 0).reveal()
+            
+            mpcOutput(cint validOrder)
 
             times.append(time.perf_counter())
 
-            mpcInput(sfix balanceA, sfix amtA, sfix balanceB, sfix amtB, sfix poolA, sfix poolB, sint totalCnt)
+            if validOrder:
 
-            feeRate = 0.5
+                mpcInput(sfix balanceA, sfix amtA, sfix balanceB, sfix amtB, sfix poolA, sfix poolB, sint totalCnt, sfix totalA, sfix totalB)
 
-            totalA = (1 + feeRate) * amtA
-            totalB = (1 + feeRate) * amtB
+                poolProduct = poolA * poolB
 
-            poolProduct = poolA * poolB
+                actualAmtA = poolA - poolProduct / (poolB - amtB)
+                actualAmtB = poolB - poolProduct / (poolA - amtA)
 
-            actualAmtA = poolA - poolProduct / (poolB - amtB)
-            actualAmtB = poolB - poolProduct / (poolA - amtA)
+                buyA = amtA > 0 ### TODO: could also be replaced by ZKP
+                acceptA = actualAmtA >= amtA
+                acceptB = actualAmtB >= amtB
+                buyB = 1 - buyA
 
-            buyA = amtA > 0 ### TODO: could also be replaced by ZKP
-            acceptA = actualAmtA >= amtA
-            acceptB = actualAmtB >= amtB
-            buyB = 1 - buyA
+                flagBuyA = buyA * acceptA
+                flagBuyB = buyB * acceptB
 
-            flagBuyA = buyA * acceptA
-            flagBuyB = buyB * acceptB
+                changeA = flagBuyA * actualAmtA + flagBuyB * totalA
+                changeB = flagBuyA * totalB + flagBuyB * actualAmtB
 
-            changeA = flagBuyA * actualAmtA + flagBuyB * totalA
-            changeB = flagBuyA * totalB + flagBuyB * actualAmtB
+                poolA -= changeA
+                poolB -= changeB
+                balanceA += changeA
+                balanceB += changeB
 
-            poolA -= changeA
-            poolB -= changeB
-            balanceA += changeA
-            balanceB += changeB
+                orderSucceed = flagBuyA + flagBuyB
+                totalCnt += orderSucceed
 
-            orderSucceed = flagBuyA + flagBuyB
-            totalCnt += orderSucceed
+                #print_ln('**** balanceA %s', balanceA.reveal())
+                #print_ln('**** balanceB %s', balanceB.reveal())
+                #print_ln('**** poolA %s', poolA.reveal())
+                #print_ln('**** poolB %s', poolB.reveal())
 
-            print_ln('**** balanceA %s', balanceA.reveal())
-            print_ln('**** balanceB %s', balanceB.reveal())
-            #print_ln('**** poolA %s', poolA.reveal())
-            #print_ln('**** poolB %s', poolB.reveal())
+                mpcOutput(sfix balanceA, sfix balanceB, sfix poolA, sfix poolB, sfix changeA, sfix changeB, sint orderSucceed, sint totalCnt)
 
-            mpcOutput(sfix balanceA, sfix balanceB, sfix poolA, sfix poolB, sfix changeA, sfix changeB, sint orderSucceed, sint totalCnt)
+                times.append(time.perf_counter())
 
-            times.append(time.perf_counter())
+                writeDB(f'balance_{tokenA}_{user}', balanceA, int)
+                writeDB(f'balance_{tokenB}_{user}', balanceB, int)
+                writeDB(f'pool_{tokenA}_{tokenB}_{tokenA}', poolA, int)
+                writeDB(f'pool_{tokenA}_{tokenB}_{tokenB}', poolB, int)
+                writeDB(f'totalCnt_{tokenA}_{tokenB}', totalCnt, int)
 
-            writeDB(f'balance_{tokenA}_{user}', balanceA, int)
-            writeDB(f'balance_{tokenB}_{user}', balanceB, int)
-            writeDB(f'pool_{tokenA}_{tokenB}_{tokenA}', poolA, int)
-            writeDB(f'pool_{tokenA}_{tokenB}_{tokenB}', poolB, int)
-            writeDB(f'totalCnt_{tokenA}_{tokenB}', totalCnt, int)
+                ### TODO: delayed reveal individual price
+                ### NOTICE: users have to calculate price by themselves
+                priceInfo = [orderSucceed, changeA, changeB]
+                writeDB(f'price_{seqTrade}', priceInfo, list)
 
-            ### TODO: delayed reveal individual price
-            ### NOTICE: users have to calculate price by themselves
-            priceInfo = [orderSucceed, changeA, changeB]
-            writeDB(f'price_{seqTrade}', priceInfo, list)
+                times.append(time.perf_counter())
 
-            times.append(time.perf_counter())
-
-            with open(f'ratel/benchmark/data/latency_{server.serverID}.csv', 'a') as f:
-                for op, t in enumerate(times):
-                    f.write(f'trade\t'
-                            f'seq\t{seqTrade}\t'
-                            f'op\t{op + 1}\t'
-                            f'cur_time\t{t}\n')
+                with open(f'ratel/benchmark/data/latency_{server.serverID}.csv', 'a') as f:
+                    for op, t in enumerate(times):
+                        f.write(f'trade\t'
+                                f'seq\t{seqTrade}\t'
+                                f'op\t{op + 1}\t'
+                                f'cur_time\t{t}\n')
         }
     }
 

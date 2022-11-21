@@ -16,6 +16,8 @@ bool isPureMpc, isEvent, isReadDB, isWriteDB, isMpcInput, isMpcOutput, isZkrp; /
 bool inPureMpc; /* in pureMpc block */
 bool inFunc; /* in function block */
 
+bool hasFloatPoint;
+
 int braces;
 
 string fileName;
@@ -102,11 +104,64 @@ string getIndent(string text) {
     }
 }
 
+void checkFloatConstant(){
+    int pos_point = 0;
+    for(int i = textLine.length()-1;i >= 0;--i){
+        if(textLine[i] == '.'){
+            pos_point = i;
+            break;
+        }
+    }
+    if (pos_point == 0){
+        return;
+    }
+
+    if(textLine[pos_point - 1] < '0' || textLine[pos_point - 1] > '9'){
+        return;
+    }
+    if(textLine[pos_point + 1] < '0' || textLine[pos_point + 1] > '9'){
+        return;
+    }
+
+    //get Float Constant
+    int pos_l, pos_r;
+    for(pos_l = pos_point - 1;pos_l >= 0;--pos_l){
+        if(textLine[pos_l] < '0' || textLine[pos_l] > '9'){
+            break;
+        }
+    }
+    pos_l = pos_l + 1;
+
+    for(pos_r = pos_point + 1;pos_r < textLine.length();++pos_r){
+        if(textLine[pos_r] < '0' || textLine[pos_r] > '9'){
+            break;
+        }
+    }
+    pos_r = pos_r - 1;
+
+    
+    int lenFloat = pos_r - pos_point;
+    int lenInt = pos_point - pos_l;
+    int lenNum = pos_r - pos_l + 1;
+
+    string strFloatConstantInt = textLine.substr(pos_l,lenInt) + textLine.substr(pos_point+1,lenFloat);
+    int pos_act;
+    for(pos_act = 0;pos_act < strFloatConstantInt.length();++pos_act){
+        if(strFloatConstantInt[pos_act] != '0'){
+            break;
+        }
+    }
+    strFloatConstantInt = strFloatConstantInt.substr(pos_act);
+
+    string strReplace = strFloatConstantInt + " * pow(inv_10," + to_string(lenFloat) + ",prime) % prime";
+    
+    textLine.replace(pos_l,lenNum,strReplace);
+}
 
 void initPython() {
     textPythonUpper += "import asyncio\n";
     textPythonUpper += "import json\n";
-    textPythonUpper += "from ratel.src.python.utils import location_sharefile, prog, mpcPort, prime, sz, int_to_hex, hex_to_int, recover_input, fp, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof\n";
+    textPythonUpper += "from ratel.src.python.utils import location_sharefile, prog, mpcPort, prime, inv_10, sz, int_to_hex, hex_to_int, recover_input, fp, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof\n";
     textPythonUpper += "from ratel.benchmark.src.test_mpc import run_online\n";
     textPythonUpper += "\n";
 
@@ -626,34 +681,40 @@ void zkrp(){
 
     string pfVarName = "pfVar" + to_string(cntZkrp-1);
 
-    string varName = pfstr.substr(0,pospf);
+    string pfExp = pfstr.substr(0,pospf);
     string zkpstmtName = "zkpstmt" + to_string(cntZkrp-1);
 
+    bool hasMul = false;
+    for(int i = 0;i < pfExp.length();++i){
+        if(pfExp[i] == '*'){
+            hasMul = true;
+        }
+    }
 
     if(pfstr[pospf] == '>' && pfstr[pospf+1] == '=') {
         string rangeName = pfstr.substr(pospf+2);
         textFuncLower += "    tmpRange = " + rangeName + "\n";
 
         // secret_value >= r <==> secret_value - r >= 0
-        textFuncLower += "    " + pfVarName + " = " + varName + " - tmpRange\n";
+        textFuncLower += "    " + pfVarName + " = " + pfExp + " - tmpRange\n";
     } else if(pfstr[pospf] == '>' && pfstr[pospf+1] != '=') {
         string rangeName = pfstr.substr(pospf+1);
         textFuncLower += "    tmpRange = " + rangeName + "\n";
 
         // secret_value > r <==> secret_value - r - 1 >= 0
-        textFuncLower += "    " + pfVarName + " = " + varName + " - tmpRange - 1\n";
+        textFuncLower += "    " + pfVarName + " = " + pfExp + " - tmpRange - 1\n";
     } else if(pfstr[pospf] == '<' && pfstr[pospf+1] == '=') { 
         string rangeName = pfstr.substr(pospf+2);
         textFuncLower += "    tmpRange = " + rangeName + "\n";
 
         // secret_value <= r <==> r - secret_value >= 0 
-        textFuncLower += "    " + pfVarName + " = tmpRange - " + varName + "\n";
+        textFuncLower += "    " + pfVarName + " = tmpRange - " + pfExp + "\n";
     } else if(pfstr[pospf] == '<' && pfstr[pospf+1] != '=') { 
         string rangeName = pfstr.substr(pospf+1);
         textFuncLower += "    tmpRange = " + rangeName + "\n";
 
         // secret_value < r <==> r - secret_value - 1 >= 0
-        textFuncLower += "    " + pfVarName + " = tmpRange - " + varName + " - 1\n";
+        textFuncLower += "    " + pfVarName + " = tmpRange - " + pfExp + " - 1\n";
     } else {
         assert(0);
     }
@@ -911,6 +972,12 @@ SPACE [ \t\r]+
 
 //    printf("-textLine:%s", textLine.c_str());
 
+    if(hasFloatPoint && (!isMPC)){
+        checkFloatConstant();
+        hasFloatPoint = false;
+    }
+
+
     if (isPureMpc) {
         processPureMpc();
 
@@ -959,6 +1026,10 @@ SPACE [ \t\r]+
     textLine = "";
 }
 
+\. {
+    hasFloatPoint = true;
+    addText(yytext);
+}
 
 . {
     addText(yytext);

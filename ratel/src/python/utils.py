@@ -215,7 +215,6 @@ def read_db(server, key, finalize_on_chain=False):
 def write_db(server, key, value, finalize_on_chain=False):
     key = key.lower()
     server.db.Put(key.encode(), value)
-    print('writedb:',key.encode())
 
     if key in server.dbLock.keys():
         server.dbLockCnt[key] -= 1
@@ -268,6 +267,8 @@ async def verify_proof(server, pfval, zkpstmt):
 
     blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
 
+    pfval = pfval % prime
+
     print('pfval:',pfval)
     if pfval < 0:
         pfval = (pfval % prime + prime) % prime
@@ -279,6 +280,7 @@ async def verify_proof(server, pfval, zkpstmt):
 
     share_commitment = pedersen_commit(value1_bytes, blinding_bytes)
 
+    print('share_commitment:',share_commitment)
     # TODO: create the function to commit to the unmasked secret shares.
     # TODO: we also need to change the current zkrp interface to allow specifying r and choose range to prove.
 
@@ -287,7 +289,7 @@ async def verify_proof(server, pfval, zkpstmt):
     # print(")))))))", results)
     agg_commitment = pedersen_aggregate(results, [x + 1 for x in list(range(server.players))])
 
-    # print("((((((((", agg_commitment, commitment)
+    print("agg_commit:", agg_commitment, commitment)
     return agg_commitment == commitment
 
 def get_zkrp(secret_value, exp_str, r, isSfix = False):
@@ -346,6 +348,8 @@ prime = 723700557733226221397318656304299424085711635937990760600195093828545425
 R = 7237005577332262213973186563042994240413239274941949949428319933631315875101
 prime_bit_length = 253
 inverse_R = get_inverse(R)
+
+inv_10 = 723700557733226221397318656304299424085711635937990760600195093828545425099
 
 fp = 2 ** 16
 decimal = 10 ** 15
