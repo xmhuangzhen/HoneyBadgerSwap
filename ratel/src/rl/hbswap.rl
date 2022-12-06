@@ -302,7 +302,7 @@ contract hbswap {
             times.append(time.perf_counter())
 
 
-            feeRate = 0.5
+            feeRate = 0.003
 
             totalA = (1 + feeRate) * amtA
             totalB = (1 + feeRate) * amtB

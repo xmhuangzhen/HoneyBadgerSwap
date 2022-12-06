@@ -261,7 +261,7 @@ async def verify_proof(server, pfval, zkpstmt):
     [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
     # TODO:
     # proof, commitment, blinding_ = zkrp_prove(2022, 32)
-    if proof is None or commitment is None or not zkrp_verify(proof, commitment, 32):
+    if proof is None or commitment is None or not zkrp_verify(proof, commitment, 64):
         print("[Error]: Committed secret value does not pass range proof verification!")
         return False
 
@@ -275,8 +275,8 @@ async def verify_proof(server, pfval, zkpstmt):
     print('pfval2:',pfval)
     
     # TODO: where is the blinding mask created? we also need to share it.
-    value1_bytes = list(pfval.to_bytes(32, byteorder='little'))
-    blinding_bytes = list(blinding.to_bytes(32, byteorder='little'))
+    value1_bytes = list(pfval.to_bytes(64, byteorder='little'))
+    blinding_bytes = list(blinding.to_bytes(64, byteorder='little'))
 
     share_commitment = pedersen_commit(value1_bytes, blinding_bytes)
 
@@ -294,9 +294,6 @@ async def verify_proof(server, pfval, zkpstmt):
 
 def get_zkrp(secret_value, exp_str, r, isSfix = False):
     value = secret_value
-    fac = 1
-    # if isSfix:
-    #     fac = fp
 
     # if exp_str == '>=':
     #     value = int((value - r) * fac)
@@ -321,12 +318,14 @@ def get_zkrp(secret_value, exp_str, r, isSfix = False):
         value = r - value - 1
 
 
-    # value = (value % prime + prime) % prime
+    value = (value % prime + prime) % prime
     if value < 0 :
         value = (value % prime + prime) % prime
 
+    print('value:',value)
+
     #To prove value >= 0
-    bits = 32
+    bits = 64
     proof, commitment, blinding_bytes = zkrp_prove(value, bits)
     blinding = int.from_bytes(blinding_bytes, byteorder='little')
 
