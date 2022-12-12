@@ -224,7 +224,7 @@ class Server:
     async def gen_zkrp_blinding_shares(self, share_batch_size=shareBatchSize):
         print(f'Generating blinding shares... s-{self.serverID}')
 
-        cmd = f'./random-shamir.x -i {self.serverID} -N {self.players} -T {self.threshold} --nshares {share_batch_size} --prep-dir {ZKRP_BLINDING_SHARES_DIR} -P {prime}'
+        cmd = f'./random-shamir.x -i {self.serverID} -N {self.players} -T {self.threshold} --nshares {share_batch_size} --prep-dir {INPUTMASK_SHARES_DIR} -P {prime}'
         await execute_cmd(cmd)
 
         cur_zkrp_blinding_cnt = self.local_zkrp_blinding_share_cnt
@@ -265,9 +265,12 @@ class Server:
 
     async def preprocess_zkrp_blinding(self):
         ##### (1) generating the zkrp blinding shares (idx:0,...,zkrp_cnt-1) #####
-        while self.zkrp_cnt + spareShares >= self.local_zkrp_blinding_share_cnt:
+        while self.local_zkrp_blinding_share_cnt < self.zkrp_cnt + spareShares:
             print(f'Request to generate zkrp blinding shares....')
-            self.gen_zkrp_blinding_shares()
+            await self.gen_zkrp_blinding_shares()
+            # await asyncio.sleep(600)
+
+        print('generated the zkrp shares!')
 
         ##### (2) interpolate the blinding commitment #####
         for idx_zkrp in range(self.zkrp_cnt):
