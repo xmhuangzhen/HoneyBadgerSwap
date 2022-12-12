@@ -1,5 +1,6 @@
 import ast
 import asyncio
+import glob
 import json
 import leveldb
 import os
@@ -100,7 +101,9 @@ def location_inputmask(server_id, players):
     inputmask_shares_dir = os.getenv(
         'INPUTMASK_SHARES', '/opt/hbswap/inputmask-shares',
     )
-    return f'{inputmask_shares_dir}/{players}-MSp-{prime_bit_length}/Randoms-MSp-P{server_id}'
+    filepath = f'{inputmask_shares_dir}/{players}*/*P{server_id}'
+    for file in glob.glob(filepath):
+        return file
 
 
 def openDB(location):

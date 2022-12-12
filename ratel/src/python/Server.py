@@ -19,7 +19,7 @@ from ratel.src.python.utils import key_inputmask_index, threshold_available_inpu
 
 
 class Server:
-    def __init__(self, serverID, web3, contract, init_players, init_threshold, concurrency, recover):  # , test=False):
+    def __init__(self, serverID, web3, contract, init_players, init_threshold, concurrency, recover , test_recover=False):
         self.serverID = serverID
 
         self.db = openDB(location_db(serverID))
@@ -54,7 +54,7 @@ class Server:
 
         self.recover = recover
 
-        # self.test = test
+        self.test_recover = test_recover
 
     async def get_zkrp_shares(self, players, inputmask_idxes):
         request = f"zkrp_share_idxes/{inputmask_idxes}"
@@ -177,7 +177,7 @@ class Server:
         while True:
             num_used_input_mask = self.contract.functions.numUsedInputMask().call()
             num_total_input_mask = self.contract.functions.numTotalInputMask().call()
-            if num_used_input_mask - num_used_input_mask < threshold_available_input_masks:
+            if num_total_input_mask - num_used_input_mask < threshold_available_input_masks:
                 print(f'Initialize input mask generation process....')
                 tx = self.contract.functions.initGenInputMask(True).buildTransaction(
                     {'from': self.account.address, 'gas': 1000000,
@@ -185,7 +185,8 @@ class Server:
                 sign_and_send(tx, self.web3, self.account)
             await asyncio.sleep(600)
 
-    async def prepare(self):
+    async def prepare(self, repetition=1):
+        # TODO: consider the ordering of crash recovery related functions
         is_server = self.contract.functions.isServer(self.account.address).call()
         print(f's-{self.serverID} {is_server}')
         if not is_server:
@@ -196,14 +197,13 @@ class Server:
                 'nonce': self.web3.eth.get_transaction_count(self.account.address)
             })
             sign_and_send(tx, self.web3, self.account)
+        if not self.test_recover:
+            await self.check_input_mask()
 
-        # TODO: consider the ordering of crash recovery related functions
-        seq_num_list = self.check_missing_tasks()
+        seq_num_list = self.check_missing_tasks() * repetition
         print(f'seq_num_list {seq_num_list}')
         if len(seq_num_list) == 0:
             return
-
-        await self.check_input_mask()
         await self.recover_history(seq_num_list)
 
     async def check_input_mask(self):
@@ -274,15 +274,15 @@ class Server:
         return seq_list
 
     def collect_keys(self, seq_num_list):
-        # if not self.test:
-        #     seq_num_list = list(set(seq_num_list))
+        if not self.test_recover:
+            seq_num_list = list(set(seq_num_list))
 
         keys = []
         for seq_num in seq_num_list:
             keys.extend(self.recover(self.contract, int(seq_num), 'writeSet'))
 
-        # if not self.test:
-        #     keys = list(set(keys))
+        if not self.test_recover:
+            keys = list(set(keys))
 
         return keys
 

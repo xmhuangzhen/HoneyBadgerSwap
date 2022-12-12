@@ -106,6 +106,17 @@ SPACE [ \t\r]*
         textPublic += "\n";
         textPublic += "\n";
 
+        textPublic += "    event RemoveServer();\n";
+        textPublic += "    function removeServer(address server) public {\n";
+        textPublic += "        // TODO: provide & verify agreement proof of majority of servers\n";
+        textPublic += "        require(isServer[server]);\n";
+        textPublic += "        isServer[server] = false;\n";
+        textPublic += "        N--;\n";
+        textPublic += "        emit RemoveServer();\n";
+        textPublic += "    }\n";
+        textPublic += "\n";
+        textPublic += "\n";
+
 //        textPublic += "    function registerServer() public {\n";
         //textPublic += "        address server = msg.sender;\n";
         //textPublic += "        require(!isServer[server]);\n";

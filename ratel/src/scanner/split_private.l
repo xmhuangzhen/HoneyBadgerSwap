@@ -102,8 +102,9 @@ string getIndent(string text) {
 
 void initPython() {
     textPythonUpper += "import asyncio\n";
-    textPythonUpper += "from ratel.src.python.utils import location_sharefile, prog, mpcPort, prime, sz, int_to_hex, hex_to_int, recover_input, fp, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof, key_inputmask_index, key_inputmask_version, input_mask_gen_batch_size, key_state_mask\n";
-    textPythonUpper += "from ratel.benchmark.src.test_mpc import run_online\n";
+    textPythonUpper += "import os\n";
+    textPythonUpper += "from ratel.src.python.utils import location_sharefile, prog, mpcPort, prime, sz, int_to_hex, hex_to_int, recover_input, fp, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof, key_inputmask_index, key_inputmask_version, input_mask_gen_batch_size, key_state_mask, mpc_port\n";
+    textPythonUpper += "from ratel.benchmark.src.test_mpc import run_online, run_offline\n";
     textPythonUpper += "\n";
 
     textPythonUpper += "async def monitor(server):\n";
@@ -124,6 +125,7 @@ void finalizePython() {
     events.push_back("InitGenInputMask");
     events.push_back("GenStateMask");
     events.push_back("FinalizeGenInputMask");
+    events.push_back("RemoveServer");
     events.push_back("AddServer");
 
     if (finalizeOnChain) {
@@ -199,9 +201,29 @@ void finalizePython() {
     textPythonUpper += "\n";
     textPythonUpper += "\n";
 
+    textPythonUpper += "async def runRemoveServer(server, log):\n";
+    textPythonUpper += "    server.players -= 1\n";
+    textPythonUpper += "    print(f'players {server.players}')\n";
+    textPythonUpper += "\n";
+    textPythonUpper += "\n";
+
     textPythonUpper += "async def runAddServer(server, log):\n";
     textPythonUpper += "    server.players += 1\n";
     textPythonUpper += "    print(f'players {server.players}')\n";
+    textPythonUpper += "#    await execute_cmd(f'rm -rf offline_data/s{server.serverID}')\n";
+    textPythonUpper += "#    directory = os.fsencode(f'ratel/genfiles/mpc')\n";
+    textPythonUpper += "#    for file in os.listdir(directory):\n";
+    textPythonUpper += "#        filename = os.fsdecode(file)\n";
+    textPythonUpper += "#        if filename.endswith('.mpc'):\n";
+    textPythonUpper += "#            mpc_prog = filename[:-4]\n";
+    textPythonUpper += "#            await run_offline(server.serverID, mpc_port, server.players, server.threshold, mpc_prog)\n";
+    textPythonUpper += "#            for i in range(1, server.concurrency):\n";
+    textPythonUpper += "#                port = mpc_port + i * 100\n";
+    textPythonUpper += "#                src_dir = f'offline_data/s{server.serverID}/{mpc_prog}_port_{mpc_port}'\n";
+    textPythonUpper += "#                dst_dir = f'offline_data/s{server.serverID}/{mpc_prog}_port_{port}'\n";
+    textPythonUpper += "#                cmd = f'cp -rf {src_dir} {dst_dir}'\n";
+    textPythonUpper += "#                asyncio.run(execute_cmd(cmd))\n";
+
     textPythonUpper += "\n";
 
     fprintf(pythonFp, "%s", textPythonUpper.c_str());

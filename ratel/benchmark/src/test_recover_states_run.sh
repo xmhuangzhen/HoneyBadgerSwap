@@ -4,16 +4,17 @@ source ratel/src/utils.sh
 set -e
 set -x
 
-seq=3
+##### fixed parameter
+threshold=1
+concurrency=1
+#####
 
 online_players=$1
 repetion=$2
 
-kill_python
-kill_mpc
 
-rm ratel/benchmark/data/recover_states.csv || true
+#./latency-control.sh start 200 50
 
-for ((server_id = 0; server_id < $online_players; server_id++ )) do
-  python3 -m ratel.benchmark.src.test_recover_states $server_id $(($online_players-1)) $seq $repetion &
-done
+python3 -m ratel.benchmark.src.test_recover_states $(($online_players)) $online_players $threshold $concurrency $repetion
+
+#./latency-control.sh stop

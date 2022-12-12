@@ -16,7 +16,7 @@ if __name__ == '__main__':
     init_players = int(sys.argv[2])
     init_threshold = int(sys.argv[3])
     concurrency = int(sys.argv[4])
-    test = bool(sys.argv[5])
+    test_recover = bool(sys.argv[5])
 
     web3 = Web3(Web3.WebsocketProvider(url))
 
@@ -33,7 +33,7 @@ if __name__ == '__main__':
         init_threshold,
         concurrency,
         recover,
-        # test,
+        test_recover,
     )
 
     server.loop.run_until_complete(server.init(rockPaperScissors.monitor(server)))
