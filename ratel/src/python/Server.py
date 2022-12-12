@@ -258,9 +258,6 @@ class Server:
         request = f'recoverdb/{self.account.address}-{seq_recover_state}-{list_to_str(seq_num_list)}'
         # print(request)
 
-        ### benchmark
-        times.append(time.perf_counter())
-
         masked_states = await send_requests(self.players, request, self.serverID)
 
         ### benchmark
