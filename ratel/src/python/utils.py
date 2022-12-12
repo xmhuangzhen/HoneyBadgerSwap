@@ -82,6 +82,10 @@ def key_inputmask_index(idx):
 def key_inputmask_version(idx):
     return f'inputmask_version_{idx}'.encode()
 
+def key_zkrp_blinding_index(idx):
+    return f'zkrp_blinding_index_{idx}'.encode()
+
+
 def key_serverval_index(idx):
     idx = idx.lower()
     return f'{idx}'.encode()

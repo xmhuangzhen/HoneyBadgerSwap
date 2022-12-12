@@ -30,6 +30,7 @@ bool isMPC; /* MP-SPDZ code */
 int numInput;
 
 int cntZkrp;
+int sumZkrp = 0;
 
 string textLine;
 
@@ -759,7 +760,7 @@ void zkrpStmt(){
 
     string zkpstmtName = "zkpstmt" + to_string(cntZkrp);
 
-    textLine += "await verify_proof(server, " + pfVarName + ", " + zkpstmtName + " )";
+    textLine += "await verify_proof(server, " + pfVarName + ", " + zkpstmtName + "," + to_string(cntZkrp) + " )";
 }
 
 
@@ -960,6 +961,8 @@ SPACE [ \t\r]+
 
         textPythonLower += returnLine;
 
+        sumZkrp += cntZkrp;
+
         inPureMpc = false;
         inFunc = false;
         returnLine = "";
@@ -1057,6 +1060,12 @@ int main(int argc, char **argv) {
     recoverFp = fopen(recoverFile.c_str(), "a");
     fprintf(recoverFp, "%s", textRecover.c_str());
     fclose(recoverFp);
+
+    FILE *tmpFp;
+    string tmpFile = "tmp.txt";
+    tmpFp = fopen(tmpFile.c_str(), "a");
+    fprintf(tmpFp, "%s", to_string(sumZkrp).c_str());
+    fclose(tmpFp);
 
 	return 0;
 }

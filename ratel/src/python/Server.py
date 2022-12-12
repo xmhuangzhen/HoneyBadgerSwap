@@ -11,14 +11,14 @@ from aiohttp import web, ClientSession
 from collections import defaultdict
 
 from ratel.src.python.Client import send_requests, batch_interpolate
-from ratel.src.python.utils import key_inputmask_index, key_serverval_index, spareShares, prime, \
+from ratel.src.python.utils import key_inputmask_index, key_serverval_index, key_zkrp_blinding_index, spareShares, prime, \
     location_inputmask, http_host, http_port, mpc_port, location_db, openDB, getAccount, \
     confirmation, shareBatchSize, list_to_str, trade_key_num, INPUTMASK_SHARES_DIR, execute_cmd, sign_and_send, \
     key_inputmask_version
 
 
 class Server:
-    def __init__(self, serverID, web3, contract, init_players, init_threshold, concurrency, recover):#, test=False):
+    def __init__(self, serverID, web3, contract, init_players, init_threshold, concurrency, recover, zkrp_cnt = 0):#, test=False):
         self.serverID = serverID
 
         self.db = openDB(location_db(serverID))
@@ -49,6 +49,10 @@ class Server:
         self.loop = asyncio.get_event_loop()
 
         self.local_input_mask_cnt = 0
+        self.local_zkrp_blinding_share_cnt = 0
+        self.zkrp_cnt = zkrp_cnt
+
+        self.zkrp_blinding_commitment = []
 
         # self.test = test
         #
@@ -140,6 +144,19 @@ class Server:
             print(f"s{self.serverID} response: {res}")
             return web.json_response(data)
 
+        async def handler_zkrp_blinding_shares(request):
+            print(f"s{self.serverID} request: {request}")
+            mask_idxes = re.split(",", request.match_info.get("mask_idxes"))
+
+            res = ""
+            for mask_idx in mask_idxes:
+                res += f"{',' if len(res) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_zkrp_blinding_index(mask_idx))), 'big')}"
+            data = {
+                "zkrp_blinding_shares": res,
+            }
+            print(f"s{self.serverID} response: {res}")
+            return web.json_response(data)
+
 
         app = web.Application()
 
@@ -162,6 +179,8 @@ class Server:
         cors.add(resource.add_route("GET", handler_mpc_verify))
         resource = cors.add(app.router.add_resource("/serverval/{mask_idxes}"))
         cors.add(resource.add_route("GET", handler_serverval))
+        resource = cors.add(app.router.add_resource("/zkrp_blinding_shares/{mask_idxes}"))
+        cors.add(resource.add_route("GET", handler_zkrp_blinding_shares))
 
         print("Starting http server...")
         runner = web.AppRunner(app)
@@ -197,9 +216,27 @@ class Server:
         tasks = [
             monitor,
             self.http_server(),
-            self.preprocessing()
+            self.preprocessing(),
+            self.preprocess_zkrp_blinding()
         ]
         await asyncio.gather(*tasks)
+
+    async def gen_zkrp_blinding_shares(self, share_batch_size=shareBatchSize):
+        print(f'Generating blinding shares... s-{self.serverID}')
+
+        cmd = f'./random-shamir.x -i {self.serverID} -N {self.players} -T {self.threshold} --nshares {share_batch_size} --prep-dir {ZKRP_BLINDING_SHARES_DIR} -P {prime}'
+        await execute_cmd(cmd)
+
+        cur_zkrp_blinding_cnt = self.local_zkrp_blinding_share_cnt
+        file = location_inputmask(self.serverID, self.players)
+        with open(file, "r") as f:
+            for line in f.readlines():
+                share = int(line) % prime
+                self.db.Put(key_zkrp_blinding_index(cur_zkrp_blinding_cnt), share.to_bytes((share.bit_length() + 7) // 8, 'big'))
+                cur_zkrp_blinding_cnt += 1
+
+        self.local_zkrp_blinding_share_cnt = cur_zkrp_blinding_cnt
+        print(f'Total zkrp blinding shares number: {self.local_zkrp_blinding_share_cnt}\n')
 
     async def gen_input_mask(self, input_mask_cnt, input_mask_version, share_batch_size=shareBatchSize):
         print(f'Generating new inputmasks... s-{self.serverID}')
@@ -224,6 +261,25 @@ class Server:
     #     input_mask_queue_head = self.contract.functions.inputMaskCnt().call()
     #     if input_mask_queue_head + spareShares >= self.input_mask_queue_tail:
     #         await self.genInputMask(shareBatchSize)
+
+
+    async def preprocess_zkrp_blinding(self):
+        ##### (1) generating the zkrp blinding shares (idx:0,...,zkrp_cnt-1) #####
+        while self.zkrp_cnt + spareShares >= self.local_zkrp_blinding_share_cnt:
+            print(f'Request to generate zkrp blinding shares....')
+            self.gen_zkrp_blinding_shares()
+
+        ##### (2) interpolate the blinding commitment #####
+        for idx_zkrp in range(self.zkrp_cnt):
+            request = f"zkrp_blinding_shares/{idx_zkrp}"
+            results = await send_requests(self.players, request)
+            for i in range(len(results)):
+                results[i] = re.split(",", results[i]["zkrp_blinding_shares"])
+
+            cur_blinding_commitment = batch_interpolate(results, self.threshold)
+            self.zkrp_blinding_commitment.append(cur_blinding_commitment)
+
+        print('blinding_commitments:',self.zkrp_blinding_commitment)
 
 
     async def preprocessing(self):
