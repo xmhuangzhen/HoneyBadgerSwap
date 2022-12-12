@@ -204,7 +204,7 @@ class Server:
         print(f'seq_num_list {seq_num_list}')
         if len(seq_num_list) == 0:
             return
-        await self.recover_history(seq_num_list)
+        await self.recover_history(seq_num_list, repetition)
 
     async def check_input_mask(self):
         version_input_mask = self.contract.functions.versionInputMask().call()
@@ -239,20 +239,53 @@ class Server:
                     pass
                 await asyncio.sleep(1)
 
-    async def recover_history(self, seq_num_list):
+    async def recover_history(self, seq_num_list, repetition):
+        ### benchmark
+        times = []
+        times.append(time.perf_counter())
+
         keys = self.collect_keys(seq_num_list)
-        print(f'keys {keys}')
+        # print(f'keys {keys}')
+
+        ### benchmark
+        times.append(time.perf_counter())
+
         seq_recover_state = await self.reserve_state_mask(len(keys))
+
+        ### benchmark
+        times.append(time.perf_counter())
+
         request = f'recoverdb/{self.account.address}-{seq_recover_state}-{list_to_str(seq_num_list)}'
-        print(f'request {request}')
+        # print(request)
+
+        ### benchmark
+        times.append(time.perf_counter())
+
         masked_states = await send_requests(self.players, request, self.serverID)
+
+        ### benchmark
+        times.append(time.perf_counter())
+
         batch_points = []
         for i in range(len(masked_states)):
             if len(masked_states[i]):
                 batch_points.append((i + 1, re.split(",", masked_states[i]["values"])))
         masked_states = batch_interpolate(self.serverID + 1, batch_points, self.threshold)
         state_shares = self.unmask_states(masked_states, seq_recover_state)
+
+        ### benchmark
+        times.append(time.perf_counter())
+
         self.restore_db(seq_num_list, keys, state_shares)
+
+        ### benchmark
+        times.append(time.perf_counter())
+
+        ### benchmark
+        with open(f'ratel/benchmark/data/recover_states_{repetition}.csv', 'a') as f:
+            for op, t in enumerate(times):
+                f.write(f'op\t{op + 1}\t'
+                        f'cur_time\t{t}\n')
 
         # TODO: recover states of on-going MPC tasks
 
@@ -365,7 +398,7 @@ class Server:
         assert len(keys) == len(values)
 
         for key, value in zip(keys, values):
-            print(f'key {key} value {value}')
+            # print(f'key {key} value {value}')
             self.db.Put(key.encode(), value.to_bytes((value.bit_length() + 7) // 8, 'big'))
 
         key = 'execHistory'
