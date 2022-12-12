@@ -11,8 +11,6 @@ test_recover=1
 token_num=0
 concurrency=1
 prog='rockPaperScissors'
-client_id=1
-value=1
 #####
 online_players=$1
 
@@ -25,8 +23,6 @@ ids=$(create_ids $online_players)
 bash ratel/src/run.sh $prog $ids $online_players $threshold $concurrency $test_recover
 
 python3 -m ratel.src.python.refill client_$client_id 0
-
-python3 -m ratel.src.python.rockPaperScissors.create_game $client_id $value
 
 
 
