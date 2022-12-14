@@ -176,13 +176,18 @@ class Server:
 
         async def handler_zkrp_blinding_info(request):
             print(f"s{self.serverID} request: {request}")
-            mask_idxes = re.split(",", request.match_info.get("mask_idxes"))
+            need_num = int(re.split(",", request.match_info.get("mask_idxes"))[0])
+            if self.used_zkrp_blinding_share + need_num > self.local_zkrp_blinding_share_cnt:
+                await self.gen_zkrp_blinding_shares()
+
 
             res1 = ""
             res2 = ""
-            for mask_idx in mask_idxes:
-                res1 += f"{',' if len(res1) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_zkrp_blinding_commitment_index(mask_idx))), 'big')}"
-                res2 += f"{',' if len(res2) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_zkrp_agg_commitment_index(mask_idx))), 'big')}"
+            for i in range(need_num):
+                real_idx = self.used_zkrp_blinding_share + i
+                res1 += f"{',' if len(res1) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_zkrp_blinding_commitment_index(real_idx))), 'big')}"
+                res2 += f"{',' if len(res2) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_zkrp_agg_commitment_index(real_idx))), 'big')}"
+            self.used_zkrp_blinding_share += need_num
 
             data = {
                 "zkrp_blinding_prime_shares": res1,
@@ -253,7 +258,7 @@ class Server:
             monitor,
             self.http_server(),
             self.preprocessing(),
-            self.zkrp_preprocessing()
+            self.preprocess_zkrp_blinding()
         ]
         await asyncio.gather(*tasks)
 
@@ -315,7 +320,6 @@ class Server:
         origin_cnt = self.local_zkrp_blinding_share_cnt
 
         ##### (1) generating the zkrp blinding shares #####
-        print(f'Request to generate zkrp blinding shares....')
         await self.gen_zkrp_blinding_shares()
 
         ##### (2) interpolate the blinding commitment #####

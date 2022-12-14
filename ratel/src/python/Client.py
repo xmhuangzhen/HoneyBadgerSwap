@@ -87,3 +87,15 @@ async def get_serverval(players, server_idxes, threshold):
 
     return inputserverval
 
+async def get_zkrp_blinding_info(players, num, threshold):
+    request = f"zkrp_blinding_info/{num}"
+    results = await send_requests(players, request)
+
+    blinding_prime_result = []
+    for i in range(len(results)): # player_i
+        blinding_prime_result.append(re.split(",", results[i]["zkrp_blinding_prime_shares"]))
+    blinding_prime = batch_interpolate(blinding_prime_result, threshold)
+
+    agg_commit_result = re.split(",", results[0]["zkrp_agg_commitment"])
+
+    return blinding_prime, agg_commit_result
