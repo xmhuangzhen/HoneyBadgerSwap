@@ -139,6 +139,18 @@ fn zkrp_verify(proof_bytes: Vec<u8>, committed_value_bytes: [u8; 32]) -> PyResul
     Ok(proof.verify_single(&bp_gens, &pc_gens, &mut verifier_transcript, &committed_value, 32).is_ok())
 }
 
+#[pyfunction]
+fn gen_random_value(value_num: u64) -> PyResult<Vec<[u8; 32]>> {
+    let mut res_val : Vec[u8; 32] = Vec::new();
+
+    for i in 0...value_num:
+        let mut cur_res = Scalar::random(&mut rand::thread_rng());
+        res_val.push(cur_res.to_bytes());
+
+    Ok(res_val)
+}
+
+
 /// A Python module implemented in Rust.
 #[pymodule]
 fn zkrp_pyo3(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -148,5 +160,6 @@ fn zkrp_pyo3(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(pedersen_compare, m)?)?;
     m.add_function(wrap_pyfunction!(zkrp_prove, m)?)?;
     m.add_function(wrap_pyfunction!(zkrp_verify, m)?)?;
+    m.add_function(wrap_pyfunction!(gen_random_value, m)?)?;
     Ok(())
 }

@@ -3,6 +3,7 @@ import re
 
 from aiohttp import ClientSession
 from ratel.src.python.utils import http_port, http_host, get_inverse, prime, sign_and_send
+from zkrp_pyo3 import gen_random_value, pedersen_commit
 
 
 def reserveInput(web3, appContract, num, account):
@@ -99,3 +100,12 @@ async def get_zkrp_blinding_info(players, num, threshold):
     agg_commit_result = re.split(",", results[0]["zkrp_agg_commitment"])
 
     return blinding_prime, agg_commit_result
+
+async def generate_zkrp_mul(players, threshold):
+    blinding_prime_list, bliding_comm_list = await get_zkrp_blinding_info(players, 2, threshold)
+
+    random_val_list = gen_random_value(6)
+
+    print('blinding prime list:', blinding_prime_list)
+    print('blinding com list:', bliding_comm_list)
+    print('random val list:',random_val_list)
