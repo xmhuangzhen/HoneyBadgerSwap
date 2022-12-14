@@ -3,11 +3,12 @@ import asyncio
 import json
 import leveldb
 import os
+import re
 
 from gmpy import binary, mpz
 from gmpy2 import mpz_from_old_binary
 from pybulletproofs import pedersen_aggregate, pedersen_commit, zkrp_verify, zkrp_prove
-
+from ratel.src.python.Client import send_requests, batch_interpolate
 
 INPUTMASK_SHARES_DIR = os.getenv(
     'INPUTMASK_SHARES', '/opt/hbswap/inputmask-shares',
@@ -82,8 +83,14 @@ def key_inputmask_index(idx):
 def key_inputmask_version(idx):
     return f'inputmask_version_{idx}'.encode()
 
-def key_zkrp_blinding_index(idx):
-    return f'zkrp_blinding_index_{idx}'.encode()
+def key_zkrp_blinding_index(idx, num = 1):
+    return f'zkrp_blinding_index_{idx}_{num}'.encode()
+
+def key_zkrp_blinding_commitment_index(idx):
+    return f'zkrp_blinding_commitment_index_{idx}'.encode()
+
+def key_zkrp_agg_commitment_index(idx):
+    return f'zkrp_agg_commitment_index_{idx}'.encode()
 
 
 def key_serverval_index(idx):
@@ -329,11 +336,28 @@ def get_zkrp(secret_value, exp_str, r, isSfix = False):
     print('value:',value)
 
     #To prove value >= 0
-    bits = 64
+    bits = 32
     proof, commitment, blinding_bytes = zkrp_prove(value, bits)
-    blinding = int.from_bytes(blinding_bytes, byteorder='little')
 
-    return proof, commitment, blinding
+    return proof, commitment, blinding_bytes
+
+random_val_cnt = 0
+
+async def gen_random_val():
+    request = f"random_val/{random_val_cnt}"
+    random_val_cnt = random_val_cnt + 1
+    results = await send_requests(players, request)
+    for i in range(len(results)):
+        results[i] = re.split(",", results[i]["random_val_shares"])
+
+    inputserverval = batch_interpolate(results, threshold)
+
+    return inputserverval
+
+
+def get_zkrp_multiplication(x, y):
+    ##### (1) get kx, kx', ky, ky', rz, kz' #####
+    kx = get_random_val()
 
 
 leaderHostname = 'mpcnode0'
@@ -373,3 +397,6 @@ trade_key_num = 7
 repeat_experiment = 1
 
 mpc_failed_retry = 3
+
+G = 4350731187368942795016775230828607901844277661685455284355963360230979029632
+H = 1550681741444621455067898079585850791447087766689337007366275058692479955675

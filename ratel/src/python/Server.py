@@ -6,15 +6,18 @@ import asyncio
 import json
 import re
 import time
+import math
 
 from aiohttp import web, ClientSession
 from collections import defaultdict
+from pybulletproofs import pedersen_aggregate, pedersen_commit, zkrp_verify, zkrp_prove
 
 from ratel.src.python.Client import send_requests, batch_interpolate
-from ratel.src.python.utils import key_inputmask_index, key_serverval_index, key_zkrp_blinding_index, spareShares, prime, \
+from ratel.src.python.utils import key_inputmask_index, key_serverval_index, key_zkrp_blinding_index, \
+    key_zkrp_blinding_commitment_index, key_zkrp_agg_commitment_index, spareShares, prime, \
     location_inputmask, http_host, http_port, mpc_port, location_db, openDB, getAccount, \
     confirmation, shareBatchSize, list_to_str, trade_key_num, INPUTMASK_SHARES_DIR, execute_cmd, sign_and_send, \
-    key_inputmask_version
+    key_inputmask_version, G, H
 
 
 class Server:
@@ -51,6 +54,7 @@ class Server:
         self.local_input_mask_cnt = 0
         self.local_zkrp_blinding_share_cnt = 0
         self.zkrp_cnt = zkrp_cnt
+        self.used_zkrp_blinding_share = 0
 
         self.zkrp_blinding_commitment = []
 
@@ -157,6 +161,34 @@ class Server:
             print(f"s{self.serverID} response: {res}")
             return web.json_response(data)
 
+        async def handler_zkrp_blinding_commitment_shares(request):
+            print(f"s{self.serverID} request: {request}")
+            mask_idxes = re.split(",", request.match_info.get("mask_idxes"))
+
+            res = ""
+            for mask_idx in mask_idxes:
+                res += f"{',' if len(res) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_zkrp_blinding_commitment_index(mask_idx))), 'big')}"
+            data = {
+                "zkrp_blinding_commitment_shares": res,
+            }
+            print(f"s{self.serverID} response: {res}")
+            return web.json_response(data)
+
+        async def handler_zkrp_blinding_info(request):
+            print(f"s{self.serverID} request: {request}")
+            mask_idxes = re.split(",", request.match_info.get("mask_idxes"))
+
+            res1 = ""
+            res2 = ""
+            for mask_idx in mask_idxes:
+                res1 += f"{',' if len(res1) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_zkrp_blinding_commitment_index(mask_idx))), 'big')}"
+                res2 += f"{',' if len(res2) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_zkrp_agg_commitment_index(mask_idx))), 'big')}"
+
+            data = {
+                "zkrp_blinding_prime_shares": res1,
+                "zkrp_agg_commitment": res2,
+            }
+            return web.json_response(data)
 
         app = web.Application()
 
@@ -181,6 +213,10 @@ class Server:
         cors.add(resource.add_route("GET", handler_serverval))
         resource = cors.add(app.router.add_resource("/zkrp_blinding_shares/{mask_idxes}"))
         cors.add(resource.add_route("GET", handler_zkrp_blinding_shares))
+        resource = cors.add(app.router.add_resource("/zkrp_blinding_commitment_shares/{mask_idxes}"))
+        cors.add(resource.add_route("GET", handler_zkrp_blinding_commitment_shares))
+        resource = cors.add(app.router.add_resource("/zkrp_blinding_info/{mask_idxes}"))
+        cors.add(resource.add_route("GET", handler_zkrp_blinding_info))
 
         print("Starting http server...")
         runner = web.AppRunner(app)
@@ -217,7 +253,7 @@ class Server:
             monitor,
             self.http_server(),
             self.preprocessing(),
-            self.preprocess_zkrp_blinding()
+            self.zkrp_preprocessing()
         ]
         await asyncio.gather(*tasks)
 
@@ -230,10 +266,22 @@ class Server:
         cur_zkrp_blinding_cnt = self.local_zkrp_blinding_share_cnt
         file = location_inputmask(self.serverID, self.players)
         with open(file, "r") as f:
+            i = 0
             for line in f.readlines():
-                share = int(line) % prime
-                self.db.Put(key_zkrp_blinding_index(cur_zkrp_blinding_cnt), share.to_bytes((share.bit_length() + 7) // 8, 'big'))
-                cur_zkrp_blinding_cnt += 1
+                if i % 2 == 0:
+                    share = int(line) % prime
+                    self.db.Put(key_zkrp_blinding_index(cur_zkrp_blinding_cnt,0), share.to_bytes((share.bit_length() + 7) // 8, 'big'))
+                else:
+                    share_prime = int(line) % prime
+                    self.db.Put(key_zkrp_blinding_index(cur_zkrp_blinding_cnt,1), share_prime.to_bytes((share_prime.bit_length() + 7) // 8, 'big'))
+
+                    value_bytes = list(share.to_bytes(32, byteorder='little'))
+                    blinding_bytes = list(share_prime.to_bytes(32, byteorder='little'))
+                    share_commitment = pedersen_commit(value_bytes,blinding_bytes)
+                    self.db.Put(key_zkrp_blinding_commitment_index(cur_zkrp_blinding_cnt), share_commitment.to_bytes((share_commitment.bit_length() + 7) // 8, 'big'))
+
+                    cur_zkrp_blinding_cnt += 1
+                i = i + 1
 
         self.local_zkrp_blinding_share_cnt = cur_zkrp_blinding_cnt
         print(f'Total zkrp blinding shares number: {self.local_zkrp_blinding_share_cnt}\n')
@@ -263,27 +311,28 @@ class Server:
     #         await self.genInputMask(shareBatchSize)
 
 
-    async def preprocess_zkrp_blinding(self):
-        ##### (1) generating the zkrp blinding shares (idx:0,...,zkrp_cnt-1) #####
-        while self.local_zkrp_blinding_share_cnt < self.zkrp_cnt + spareShares:
-            print(f'Request to generate zkrp blinding shares....')
-            await self.gen_zkrp_blinding_shares()
-            # await asyncio.sleep(600)
+    async def gen_batch_zkrp_blinding(self):
+        origin_cnt = self.local_zkrp_blinding_share_cnt
 
-        print('generated the zkrp shares!')
+        ##### (1) generating the zkrp blinding shares #####
+        print(f'Request to generate zkrp blinding shares....')
+        await self.gen_zkrp_blinding_shares()
 
         ##### (2) interpolate the blinding commitment #####
-        for idx_zkrp in range(self.zkrp_cnt):
-            request = f"zkrp_blinding_shares/{idx_zkrp}"
+        # is it necessary for all server to keep the blinding commitment?
+        for cur_zkrp_idx in range(self.local_zkrp_blinding_share_cnt):
+            real_idx = cur_zkrp_idx + origin_cnt
+            request = f"zkrp_blinding_commitment_shares/{real_idx}"
             results = await send_requests(self.players, request)
             for i in range(len(results)):
-                results[i] = re.split(",", results[i]["zkrp_blinding_shares"])
+                results[i] = re.split(",", results[i]["zkrp_blinding_commitment_shares"])
 
-            cur_blinding_commitment = batch_interpolate(results, self.threshold)
-            self.zkrp_blinding_commitment.append(cur_blinding_commitment)
+            agg_commitment = pedersen_aggregate(results, [x + 1 for x in list(range(self.players))])
+            self.db.Put(key_zkrp_agg_commitment_index(real_idx), agg_commitment.to_bytes((agg_commitment.bit_length() + 7) // 8, 'big'))
 
-        print('blinding_commitments:',self.zkrp_blinding_commitment)
 
+    async def preprocess_zkrp_blinding(self):
+        await self.gen_batch_zkrp_blinding()
 
     async def preprocessing(self):
         ### TODO: remove the following
