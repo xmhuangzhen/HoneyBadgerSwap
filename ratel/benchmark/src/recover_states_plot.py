@@ -7,8 +7,8 @@ idx_time = 3
 idx_reserve_state_mask_start = 2
 idx_reserve_state_mask_end = 3
 
-idx_send_request_start = 4
-idx_send_request_end = 5
+idx_send_request_start = 3
+idx_send_request_end = 4
 
 idx_overall_start = 1
 idx_overall_end = 6
@@ -45,7 +45,6 @@ if __name__ == '__main__':
             if op == idx_overall_end:
                 overall += time
 
-    print(f'overall {overall}')
-    print(f'send_request {send_request}')
-    print(f'reserve_state_mask {reserve_state_mask}')
+    print(f'overall\tsend_request\treserve_state_mask')
+    print(f'{overall}\t{send_request}\t{reserve_state_mask}')
 

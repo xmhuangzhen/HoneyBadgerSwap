@@ -7,7 +7,7 @@ POADIR=${POADIR:-/opt/poa}
 KEYSTORE=${POA_KEYSTORE:-/opt/poa/keystore/admin}
 DATADIR=${POA_DATADIR:-/opt/poa/data}
 
-pkill -f geth
+pkill -f geth || true
 
 sleep 1
 
