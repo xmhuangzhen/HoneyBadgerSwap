@@ -2,7 +2,7 @@ import sys
 
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
-from ratel.src.python.deploy import url, token_addrs
+from ratel.src.python.deploy import ws_uri, token_addrs
 from ratel.src.python.utils import getAccount, parse_contract
 
 
@@ -41,7 +41,7 @@ if __name__=='__main__':
     receiver = sys.argv[1]
     token_id = int(sys.argv[2])
 
-    web3 = Web3(Web3.WebsocketProvider(url))
+    web3 = Web3(Web3.WebsocketProvider(ws_uri))
     web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
     refill(receiver, token_id)

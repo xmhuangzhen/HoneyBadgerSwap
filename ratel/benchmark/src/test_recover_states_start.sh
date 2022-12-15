@@ -14,6 +14,8 @@ prog='rockPaperScissors'
 #####
 online_players=$1
 
+./latency-control.sh stop
+
 #rm -rf offline_data
 bash ratel/src/deploy.sh $prog $token_num $online_players $threshold
 

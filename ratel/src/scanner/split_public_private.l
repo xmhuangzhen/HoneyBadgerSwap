@@ -538,10 +538,14 @@ int main(int argc, char **argv) {
 
     textRecover += "from eth_abi import decode_single\n";
     textRecover += "\n";
+    textRecover += "\n";
     textRecover += "def recover(contract, opSeq, op):\n";
     textRecover += "    opEvent = contract.functions.opEvent(opSeq).call()\n";
     textRecover += "    opContent = contract.functions.opContent(opSeq).call()\n";
+    textRecover += "    return parse(opEvent, opContent, opSeq, op)\n";
     textRecover += "\n";
+    textRecover += "\n";
+    textRecover += "def parse(opEvent, opContent, opSeq, op):\n";
 
 	yylex();
 

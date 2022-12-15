@@ -16,7 +16,7 @@ online_players=$1
 repetion=$2
 lantecy=${3:-0}
 
-rm ratel/benchmark/data/recover_states_*.csv || true
+rm ratel/benchmark/data/recover_states_* || true
 mkdir -p ratel/benchmark/data
 
 ./latency-control.sh stop

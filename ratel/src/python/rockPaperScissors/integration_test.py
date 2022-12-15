@@ -7,7 +7,7 @@ from web3 import Web3
 from web3.middleware import geth_poa_middleware
 
 from ratel.src.python.Client import get_inputmasks, reserveInput
-from ratel.src.python.deploy import url, app_addr
+from ratel.src.python.deploy import http_uri, app_addr
 from ratel.src.python.utils import (
     parse_contract,
     getAccount,
@@ -89,7 +89,7 @@ def startRecon(appContract, gameId, account, web3):
 
 
 if __name__ == "__main__":
-    web3 = Web3(Web3.WebsocketProvider(url))
+    web3 = Web3(Web3.HTTPProvider(http_uri))
     web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
     abi, bytecode = parse_contract(contract_name)

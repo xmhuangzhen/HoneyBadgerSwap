@@ -98,7 +98,8 @@ RUN pip3 install \
             uvicorn[standard] \
             # dev
             ipython \
-            ipdb
+            ipdb \
+            aio_eth
 
 WORKDIR $HBSWAP_HOME
 

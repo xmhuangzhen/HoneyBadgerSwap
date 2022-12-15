@@ -1,16 +1,15 @@
-import json
-
 import aiohttp_cors
-import ast
+import aio_eth
 import asyncio
+import eth_abi
 import json
 import re
 import time
 
 from aiohttp import web, ClientSession
-from collections import defaultdict
-
+from hexbytes import HexBytes
 from ratel.src.python.Client import send_requests, batch_interpolate
+from ratel.src.python.deploy import http_uri
 from ratel.src.python.utils import key_inputmask_index, threshold_available_input_masks, prime, \
     location_inputmask, http_host, http_port, mpc_port, location_db, openDB, getAccount, \
     confirmation, input_mask_gen_batch_size, list_to_str, trade_key_num, INPUTMASK_SHARES_DIR, execute_cmd, \
@@ -90,7 +89,7 @@ class Server:
             print(seq_recover_state)
             print(seq_num_list)
 
-            keys = self.collect_keys(seq_num_list)
+            keys = await self.collect_keys(seq_num_list)
             masked_states = await self.mask_states(server_addr, seq_recover_state, keys)
 
             res = list_to_str(masked_states)
@@ -244,7 +243,7 @@ class Server:
         times = []
         times.append(time.perf_counter())
 
-        keys = self.collect_keys(seq_num_list)
+        keys = await self.collect_keys(seq_num_list)
         # print(f'keys {keys}')
 
         ### benchmark
@@ -303,13 +302,48 @@ class Server:
 
         return seq_list
 
-    def collect_keys(self, seq_num_list):
+    async def collect_keys(self, seq_num_list):
         if not self.test_recover:
             seq_num_list = list(set(seq_num_list))
 
-        keys = []
-        for seq_num in seq_num_list:
-            keys.extend(self.recover(self.contract, int(seq_num), 'writeSet'))
+        # keys = []
+        # for seq_num in seq_num_list:
+        #     keys.extend(self.recover(self.contract, int(seq_num), 'writeSet'))
+
+        async with aio_eth.EthAioAPI(http_uri, max_tasks=2 * len(seq_num_list)) as api:
+            for seq_num in seq_num_list:
+                data = self.contract.encodeABI(fn_name='opEvent', args=[int(seq_num)])
+                api.push_task({
+                    "method": "eth_call",
+                    "params": [
+                        {
+                            "to": self.contract.address,
+                            "data": data,
+                        },
+                        "latest"
+                    ]
+                })
+
+                data = self.contract.encodeABI(fn_name='opContent', args=[int(seq_num)])
+                api.push_task({
+                    "method": "eth_call",
+                    "params": [
+                        {
+                            "to": self.contract.address,
+                            "data": data,
+                        },
+                        "latest"
+                    ]
+                })
+
+            results = await api.exec_tasks_batch()
+            # results = await api.exec_tasks_async()
+
+            keys = []
+            for seq_num, res_op_event, res_op_content in zip(seq_num_list, results[0::2], results[1::2]):
+                op_event = eth_abi.decode_abi(['string'], HexBytes(res_op_event['result']))[0]
+                op_content = eth_abi.decode_abi(['bytes'], HexBytes(res_op_content['result']))[0]
+                keys.extend(self.recover.parse(op_event, op_content, seq_num, 'writeSet'))
 
         if not self.test_recover:
             keys = list(set(keys))

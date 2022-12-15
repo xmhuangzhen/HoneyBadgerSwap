@@ -1,6 +1,6 @@
 import sys
 
-from ratel.src.python.rockPaperScissors.integration_test import url, app_addr, contract_name, createGame, \
+from ratel.src.python.rockPaperScissors.integration_test import http_uri, app_addr, contract_name, createGame, \
     parse_contract, getAccount, geth_poa_middleware, Web3
 
 if __name__ == "__main__":
@@ -8,7 +8,7 @@ if __name__ == "__main__":
     print(f'client_{client_id}')
     value = int(sys.argv[2])
 
-    web3 = Web3(Web3.WebsocketProvider(url))
+    web3 = Web3(Web3.HTTPProvider(http_uri))
     web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
     abi, bytecode = parse_contract(contract_name)

@@ -1,10 +1,10 @@
 import asyncio
 import sys
+import ratel.genfiles.python.rockPaperScissorsRecover as recover
 
 from ratel.genfiles.python.rockPaperScissors import monitor
-from ratel.genfiles.python.rockPaperScissorsRecover import recover
 from ratel.src.python.Server import Server
-from ratel.src.python.deploy import url, app_addr
+from ratel.src.python.deploy import app_addr, ws_provider
 from ratel.src.python.rockPaperScissors.integration_test import geth_poa_middleware
 from ratel.src.python.utils import parse_contract, sign_and_send
 from web3 import Web3
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     concurrency = int(get_next_argv())
     repetition = int(get_next_argv())
 
-    web3 = Web3(Web3.WebsocketProvider(url))
+    web3 = Web3(ws_provider)
     web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
     abi, bytecode = parse_contract('rockPaperScissors')
