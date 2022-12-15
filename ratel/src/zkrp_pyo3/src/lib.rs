@@ -141,11 +141,15 @@ fn zkrp_verify(proof_bytes: Vec<u8>, committed_value_bytes: [u8; 32]) -> PyResul
 
 #[pyfunction]
 fn gen_random_value(value_num: u64) -> PyResult<Vec<[u8; 32]>> {
-    let mut res_val : Vec[u8; 32] = Vec::new();
+    let mut res_val : Vec<[u8; 32]> = Vec::new();
 
-    for i in 0...value_num:
-        let mut cur_res = Scalar::random(&mut rand::thread_rng());
+    let mut i = 0;
+
+    while i < value_num {
+        let cur_res = Scalar::random(&mut rand::thread_rng());
         res_val.push(cur_res.to_bytes());
+        i = i + 1;
+    }
 
     Ok(res_val)
 }

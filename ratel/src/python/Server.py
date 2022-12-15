@@ -10,14 +10,14 @@ import math
 
 from aiohttp import web, ClientSession
 from collections import defaultdict
-from pybulletproofs import pedersen_aggregate, pedersen_commit, zkrp_verify, zkrp_prove
+from zkrp_pyo3 import pedersen_aggregate, pedersen_commit, zkrp_verify, zkrp_prove
 
 from ratel.src.python.Client import send_requests, batch_interpolate
 from ratel.src.python.utils import key_inputmask_index, key_serverval_index, key_zkrp_blinding_index, \
     key_zkrp_blinding_commitment_index, key_zkrp_agg_commitment_index, spareShares, prime, \
     location_inputmask, http_host, http_port, mpc_port, location_db, openDB, getAccount, \
     confirmation, shareBatchSize, list_to_str, trade_key_num, INPUTMASK_SHARES_DIR, execute_cmd, sign_and_send, \
-    key_inputmask_version, G, H
+    key_inputmask_version, list_to_bytes, bytes_to_list
 
 
 class Server:
@@ -167,7 +167,11 @@ class Server:
 
             res = ""
             for mask_idx in mask_idxes:
-                res += f"{',' if len(res) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_zkrp_blinding_commitment_index(mask_idx))), 'big')}"
+                cur_lis = bytes_to_list(bytes(self.db.Get(key_zkrp_blinding_commitment_index(mask_idx))))
+                print('masked_idx:',mask_idx)
+                print('com:',cur_lis)
+
+                res += f"{',' if len(res) > 0 else ''}{cur_lis}"
             data = {
                 "zkrp_blinding_commitment_shares": res,
             }
@@ -186,7 +190,7 @@ class Server:
             for i in range(need_num):
                 real_idx = self.used_zkrp_blinding_share + i
                 res1 += f"{',' if len(res1) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_zkrp_blinding_commitment_index(real_idx))), 'big')}"
-                res2 += f"{',' if len(res2) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_zkrp_agg_commitment_index(real_idx))), 'big')}"
+                res2 += f"{',' if len(res2) > 0 else ''}{bytes_to_list(bytes(self.db.Get(key_zkrp_agg_commitment_index(real_idx))))}"
             self.used_zkrp_blinding_share += need_num
 
             data = {
@@ -283,7 +287,10 @@ class Server:
                     value_bytes = list(share.to_bytes(32, byteorder='little'))
                     blinding_bytes = list(share_prime.to_bytes(32, byteorder='little'))
                     share_commitment = pedersen_commit(value_bytes,blinding_bytes)
-                    self.db.Put(key_zkrp_blinding_commitment_index(cur_zkrp_blinding_cnt), share_commitment.to_bytes((share_commitment.bit_length() + 7) // 8, 'big'))
+                    if (i < 10):
+                        print('zkrp_cnt',cur_zkrp_blinding_cnt)
+                        print('share com',share_commitment)
+                    self.db.Put(key_zkrp_blinding_commitment_index(cur_zkrp_blinding_cnt), list_to_bytes(share_commitment))
 
                     cur_zkrp_blinding_cnt += 1
                 i = i + 1
@@ -322,6 +329,9 @@ class Server:
         ##### (1) generating the zkrp blinding shares #####
         await self.gen_zkrp_blinding_shares()
 
+        if(self.serverID != 0):
+            return
+
         ##### (2) interpolate the blinding commitment #####
         # is it necessary for all server to keep the blinding commitment?
         for cur_zkrp_idx in range(self.local_zkrp_blinding_share_cnt):
@@ -330,9 +340,13 @@ class Server:
             results = await send_requests(self.players, request)
             for i in range(len(results)):
                 results[i] = re.split(",", results[i]["zkrp_blinding_commitment_shares"])
+            for i in range(len(results)):
+                for j in range(len(results[i])):
+                    results[i][j] = int(results[i][j])
 
             agg_commitment = pedersen_aggregate(results, [x + 1 for x in list(range(self.players))])
-            self.db.Put(key_zkrp_agg_commitment_index(real_idx), agg_commitment.to_bytes((agg_commitment.bit_length() + 7) // 8, 'big'))
+            print('idx:',cur_zkrp_idx,'agg_commitment:',agg_commitment)
+            self.db.Put(key_zkrp_agg_commitment_index(real_idx), list_to_bytes(agg_commitment))
 
 
     async def preprocess_zkrp_blinding(self):

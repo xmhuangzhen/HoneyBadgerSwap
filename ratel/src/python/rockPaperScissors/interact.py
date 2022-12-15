@@ -5,7 +5,7 @@ import json
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
 
-from ratel.src.python.Client import get_inputmasks, reserveInput
+from ratel.src.python.Client import get_inputmasks, reserveInput, generate_zkrp_mul
 from ratel.src.python.deploy import url, app_addr
 from ratel.src.python.utils import (
     parse_contract,
@@ -17,7 +17,7 @@ from ratel.src.python.utils import (
     get_zkrp,
 )
 
-from pybulletproofs import zkrp_prove
+from zkrp_pyo3 import zkrp_prove
 
 
 contract_name = "rockPaperScissors"
@@ -91,6 +91,11 @@ def startRecon(appContract, gameId, account):
             break
         time.sleep(1)
 
+def test(appContract, account):
+
+    idx1, idx2, idx3 = reserveInput(web3, appContract, 3, account)
+    mask1, mask2, mask3 = asyncio.run(generate_zkrp_mul(players(appContract), threshold(appContract)))
+
 
 if __name__ == "__main__":
     web3 = Web3(Web3.WebsocketProvider(url))
@@ -101,6 +106,8 @@ if __name__ == "__main__":
 
     client_1 = getAccount(web3, f"/opt/poa/keystore/client_1/")
     client_2 = getAccount(web3, f"/opt/poa/keystore/client_2/")
+
+    test(appContract, client_1)
 
     gameId = createGame(appContract, 1, client_1)
     joinGame(appContract, gameId, 1, client_2)
