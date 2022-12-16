@@ -1,5 +1,6 @@
 import asyncio
 import re
+import json
 
 from aiohttp import ClientSession
 from ratel.src.python.utils import http_port, http_host, get_inverse, prime, sign_and_send
@@ -89,19 +90,27 @@ async def get_serverval(players, server_idxes, threshold):
     return inputserverval
 
 async def get_zkrp_blinding_info(players, num, threshold):
-    request = f"zkrp_blinding_info/{num}"
-    results = await send_requests(players, request)
+    request_blinding = f"zkrp_blinding_shares/{num}"
+    blinding_res = await send_requests(players, request_blinding)
+    
+    for i in range(len(blinding_res)):
+        blinding_res[i] = re.split(',',blinding_res[i]["zkrp_blinding_shares"])
+    blinding_prime = batch_interpolate(blinding_res, threshold)
 
-    blinding_prime_result = []
-    for i in range(len(results)): # player_i
-        blinding_prime_result.append(re.split(",", results[i]["zkrp_blinding_prime_shares"]))
-    blinding_prime = batch_interpolate(blinding_prime_result, threshold)
+    request_agg = f"zkrp_new_agg_com/{num}"
+    comm_res = await send_requests(players, request_agg)
+    comm_res = comm_res[0]["zkrp_blinding_info_2"]
+    comm_res = re.split(";", comm_res)
+    for i in range(len(comm_res)):
+        comm_res[i] = re.split(',', comm_res[i][1:-1])
+        for j in range(len(comm_res[i])):
+            comm_res[i][j] = int(comm_res[i][j])
 
-    agg_commit_result = re.split(",", results[0]["zkrp_agg_commitment"])
-
-    return blinding_prime, agg_commit_result
+    return blinding_prime, comm_res
 
 async def generate_zkrp_mul(players, threshold):
+    print('generating zkrp with multiplication')
+
     blinding_prime_list, bliding_comm_list = await get_zkrp_blinding_info(players, 2, threshold)
 
     random_val_list = gen_random_value(6)

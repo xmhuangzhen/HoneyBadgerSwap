@@ -92,9 +92,7 @@ def startRecon(appContract, gameId, account):
         time.sleep(1)
 
 def test(appContract, account):
-
-    idx1, idx2, idx3 = reserveInput(web3, appContract, 3, account)
-    mask1, mask2, mask3 = asyncio.run(generate_zkrp_mul(players(appContract), threshold(appContract)))
+    asyncio.run(generate_zkrp_mul(players(appContract), threshold(appContract)))
 
 
 if __name__ == "__main__":
