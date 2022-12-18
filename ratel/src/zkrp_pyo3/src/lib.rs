@@ -1,6 +1,6 @@
 extern crate rand;
 extern crate curve25519_dalek_ng;
-use curve25519_dalek_ng::scalar::Scalar;
+use curve25519_dalek_ng::scalar::{Scalar, UnpackedScalar};
 use curve25519_dalek_ng::ristretto::CompressedRistretto;
 extern crate merlin;
 use merlin::Transcript;
@@ -154,6 +154,61 @@ fn gen_random_value(value_num: u64) -> PyResult<Vec<[u8; 32]>> {
     Ok(res_val)
 }
 
+
+#[pyfunction]
+fn zkrp_prove_mul(x_bytes: [u8; 32], rx_prime_bytes: [u8; 32], ry_prime_bytes: [u8; 32]) -> PYResult<[u8; 32]> {
+    let pc_gens = PedersenGens::default();
+
+    let x = Scalar::from_bytes_mod_order(x_bytes);
+    let rx_prime = Scalar::from_bytes_mod_order(rx_prime_bytes);
+    let ry_prime = Scalar::from_bytes_mod_order(ry_prime_bytes);
+
+    let kx = Scalar::random(&mut rand::thread_rng());
+    let kx_prime = Scalar::random(&mut rand::thread_rng());
+    let ky = Scalar::random(&mut rand::thread_rng());
+    let ky_prime = Scalar::random(&mut rand::thread_rng());
+    let rz = Scalar::random(&mut rand::thread_rng());
+    let kz_prime = Scalar::random(&mut rand::thread_rng());
+
+    let com_kx = pc_gens.commit(kx, kx_prime).compress();
+    let com_ky = pc_gens.commit(ky, ky_prime).compress();
+
+    // com_kz = pc_gens.commit(x*ky, -rx_prime*ky + kz_prime);
+    let t1_value:Scalar = (x * ky).reduce();
+    let t1_blinding_value:Scalar = (kz_prime - (rx_prime * ky).reduce()).reduce();
+    let com_kz = pc_gens.commit(t1_value, t1_blinding_value).compress();
+
+    let mut prover_transcript = Transcript::new(b"zkrpmul");
+    let c = prover_transcript.challenge_scalar(b"c");
+    
+    let sx:Scalar = ((c*x).reduce() + kx).reduce(); // sx = c * x + kx
+    let sy:Scalar = ((c*y).reduce() + ky).reduce(); // sy = c * y + ky
+    let sx_prime:Scalar = (kx_prime - (c*rx_prime).reduce()).reduce(); // sx' = c * (-rx') + kx'
+    let sy_prime:Scalar = (ky_prime - (c*ry_prime).reduce()).reduce(); // sy' = c * (-ry') + ky'
+    let sz_prime:Scalar = ((c*rz).reduce() + kz_prime).reduce(); // sz' = c * rz + kz'
+
+    
+
+    Ok(c.to_bytes())
+}
+
+#[pyfunction ]
+fn zkrp_verify_mul(mx_bytes: [u8; 32], my_bytes: [u8; 32], c_rx_bytes: [u8; 32], c_ry_bytes: [u8; 32]) -> PyResult<()> {
+    let mx = Scalar::from_bytes_mod_order(mx_bytes);
+    let my = Scalar::from_bytes_mod_order(my_bytes);
+    let c_rx = Scalar::from_bytes_mod_order(c_rx_bytes);
+    let c_ry = Scalar::from_bytes_mod_order(c_ry_bytes);
+    let zer = Scalar::zero();
+
+    let pc_gens = PedersenGens::default();
+
+    let g_mx = pc_gens.commit(mx,zer).compress();
+    let c_x = (c_rx * (g_mx.invert())).reduce();
+    let g_my = pc_gens.commit(my,zer).compress();
+    let c_y = (c_ry * (g_my.invert())).reduce();
+
+    Ok(())
+}
 
 /// A Python module implemented in Rust.
 #[pymodule]
