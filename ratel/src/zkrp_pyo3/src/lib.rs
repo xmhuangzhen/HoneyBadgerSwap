@@ -156,10 +156,10 @@ fn gen_random_value(value_num: u64) -> PyResult<Vec<[u8; 32]>> {
 
 
 #[pyfunction]
-fn zkrp_prove_mul(x_bytes: [u8; 32], rx_prime_bytes: [u8; 32], ry_prime_bytes: [u8; 32]) -> PYResult<[u8; 32]> {
+fn zkrp_prove_mul(x_v: u64, rx_prime_bytes: [u8; 32], ry_prime_bytes: [u8; 32]) -> PYResult<[u8; 32]> {
     let pc_gens = PedersenGens::default();
 
-    let x = Scalar::from_bytes_mod_order(x_bytes);
+    let x = Scalar::from(x_v);
     let rx_prime = Scalar::from_bytes_mod_order(rx_prime_bytes);
     let ry_prime = Scalar::from_bytes_mod_order(ry_prime_bytes);
 
@@ -220,5 +220,7 @@ fn zkrp_pyo3(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(zkrp_prove, m)?)?;
     m.add_function(wrap_pyfunction!(zkrp_verify, m)?)?;
     m.add_function(wrap_pyfunction!(gen_random_value, m)?)?;
+    m.add_function(wrap_pyfunction!(zkrp_prove_mul, m)?)?;
+    m.add_function(wrap_pyfunction!(zkrp_verify_mul, m)?)?;
     Ok(())
 }

@@ -7,7 +7,7 @@ import re
 
 from gmpy import binary, mpz
 from gmpy2 import mpz_from_old_binary
-from zkrp_pyo3 import pedersen_aggregate, pedersen_commit, zkrp_verify, zkrp_prove
+from zkrp_pyo3 import pedersen_aggregate, pedersen_commit, zkrp_verify, zkrp_prove, zkrp_prove_mul, zkrp_verify_mul
 
 INPUTMASK_SHARES_DIR = os.getenv(
     'INPUTMASK_SHARES', '/opt/hbswap/inputmask-shares',

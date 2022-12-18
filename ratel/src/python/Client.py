@@ -4,7 +4,7 @@ import json
 
 from aiohttp import ClientSession
 from ratel.src.python.utils import http_port, http_host, get_inverse, prime, sign_and_send
-from zkrp_pyo3 import gen_random_value, pedersen_commit
+from zkrp_pyo3 import zkrp_prove_mul, zkrp_verify_mul
 
 
 def reserveInput(web3, appContract, num, account):
@@ -109,12 +109,15 @@ async def get_zkrp_blinding_info(players, num, threshold):
     return blinding_prime, comm_res
 
 async def generate_zkrp_mul(players, threshold):
-    print('generating zkrp with multiplication')
-
-    blinding_prime_list, bliding_comm_list = await get_zkrp_blinding_info(players, 2, threshold)
-
-    random_val_list = gen_random_value(6)
+    blinding_prime_list, blinding_comm_list = await get_zkrp_blinding_info(players, 2, threshold)
 
     print('blinding prime list:', blinding_prime_list)
-    print('blinding com list:', bliding_comm_list)
-    print('random val list:',random_val_list)
+    print('blinding com list:', blinding_comm_list)
+
+    rx_prime_bytes, ry_prime_bytes = blinding_prime_list[0], blinding_prime_list[1]
+    cx_bytes, cy_bytes = blinding_comm_list[0], blinding_comm_list[1]
+
+    x = 100
+    c = zkrp_prove_mul(x, rx_prime_bytes,ry_prime_bytes)
+
+    print('c:',c)
