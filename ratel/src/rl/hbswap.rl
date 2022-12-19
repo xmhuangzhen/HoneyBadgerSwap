@@ -309,14 +309,8 @@ contract hbswap {
 
             times.append(time.perf_counter())
 
-            mpcInput(sfix amtA, sfix amtB)
-            
-            productAB = amtA * amtB
-
-            mpcOutput(sfix productAB)
-
             ### TODO: realize by ZKP
-            assert(zkrp(productAB < 0))
+            assert(zkrp((amtA * amtB) < 0))
             assert(zkrp((-totalA) <= balanceA))
             assert(zkrp((-totalB) <= balanceB))
 

@@ -685,12 +685,18 @@ void zkrp(){
     string pfExp = pfstr.substr(0,pospf);
     string zkpstmtName = "zkpstmt" + to_string(cntZkrp-1);
 
-    bool hasMul = false;
+    string hasMul = "False";
+    int posMul = 0;
+    string expL, expR;
     for(int i = 0;i < pfExp.length();++i){
         if(pfExp[i] == '*'){
-            hasMul = true;
+            hasMul = "True";
+            posMul = i;
         }
     }
+
+    textFuncLower += "    tmpMul = False\n";
+    textFuncLower += "    tmpMulR = 0\n";
 
     if(pfstr[pospf] == '>' && pfstr[pospf+1] == '=') {
         string rangeName = pfstr.substr(pospf+2);
@@ -698,6 +704,14 @@ void zkrp(){
 
         // secret_value >= r <==> secret_value - r >= 0
         textFuncLower += "    " + pfVarName + " = " + pfExp + " - tmpRange\n";
+
+
+        textFuncLower += "    if tmpRange == 0:\n";
+        textFuncLower += "        tmpMul = " + hasMul + "\n";
+        textFuncLower += "        if tmpMul:\n";
+        textFuncLower += "            " + pfVarName " = " + pfExp.substr(0,posMul) + ")\n";
+        textFuncLower += "            tmpMulR = (" + pfExp.substr(posMul+1) + ":\n";
+        
     } else if(pfstr[pospf] == '>' && pfstr[pospf+1] != '=') {
         string rangeName = pfstr.substr(pospf+1);
         textFuncLower += "    tmpRange = " + rangeName + "\n";
@@ -760,7 +774,7 @@ void zkrpStmt(){
 
     string zkpstmtName = "zkpstmt" + to_string(cntZkrp);
 
-    textLine += "await verify_proof(server, " + pfVarName + ", " + zkpstmtName + "," + to_string(cntZkrp) + " )";
+    textLine += "await verify_proof(server, " + pfVarName + ", " + zkpstmtName + "," + to_string(cntZkrp) + " , tmpMul, tmpMulR)";
 }
 
 
@@ -1061,11 +1075,11 @@ int main(int argc, char **argv) {
     fprintf(recoverFp, "%s", textRecover.c_str());
     fclose(recoverFp);
 
-    FILE *tmpFp;
-    string tmpFile = "tmp.txt";
-    tmpFp = fopen(tmpFile.c_str(), "a");
-    fprintf(tmpFp, "%s", to_string(sumZkrp).c_str());
-    fclose(tmpFp);
+//    FILE *tmpFp;
+//    string tmpFile = "tmp.txt";
+//    tmpFp = fopen(tmpFile.c_str(), "a");
+//    fprintf(tmpFp, "%s", to_string(sumZkrp).c_str());
+//    fclose(tmpFp);
 
 	return 0;
 }

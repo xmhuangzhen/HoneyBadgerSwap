@@ -18,7 +18,6 @@ if __name__ == '__main__':
     init_threshold = int(sys.argv[3])
     concurrency = int(sys.argv[4])
     test = bool(sys.argv[5])
-    zkrp_cnt = int(sys.argv[6])
 
     web3 = Web3(Web3.WebsocketProvider(url))
 
@@ -35,10 +34,10 @@ if __name__ == '__main__':
         init_threshold,
         concurrency,
         recover,
-        zkrp_cnt,
         # test,
     )
 
     server.loop.run_until_complete(server.init(rockPaperScissors.monitor(server)))
-
+    # server.loop.run_until_complete(server.preprocess_zkrp_blinding())
+    print('111')
     time.sleep(10)

@@ -21,7 +21,7 @@ from ratel.src.python.utils import key_inputmask_index, key_serverval_index, key
 
 
 class Server:
-    def __init__(self, serverID, web3, contract, init_players, init_threshold, concurrency, recover, zkrp_cnt = 0):#, test=False):
+    def __init__(self, serverID, web3, contract, init_players, init_threshold, concurrency, recover):#, test=False):
         self.serverID = serverID
 
         self.db = openDB(location_db(serverID))
@@ -53,8 +53,9 @@ class Server:
 
         self.local_input_mask_cnt = 0
         self.local_zkrp_blinding_share_cnt = 0
-        self.zkrp_cnt = zkrp_cnt
+        self.local_zkrp_blinding_com_cnt = 0
         self.used_zkrp_blinding_share = 0
+        self.used_zkrp_blinding_com = 0
 
         self.zkrp_blinding_commitment = []
 
@@ -162,6 +163,7 @@ class Server:
             data = {
                 "zkrp_blinding_shares": res,
             }
+            self.used_zkrp_blinding_share += need_num
             print(f"s{self.serverID} response: {res}")
             return web.json_response(data)
 
@@ -203,16 +205,20 @@ class Server:
         async def handler_zkrp_blinding_info_2(request):
             print(f"s{self.serverID} request: {request}")
             need_num = int(re.split(",", request.match_info.get("mask_idxes"))[0])
-            while self.used_zkrp_blinding_share + need_num > self.local_zkrp_blinding_share_cnt:
+            while self.used_zkrp_blinding_com + need_num > self.local_zkrp_blinding_com_cnt:
                 await asyncio.sleep(1)
+            
+            print('used num:',self.used_zkrp_blinding_com)
+            print('need num:',need_num)
+            print('local blinding:',self.local_zkrp_blinding_com_cnt)
 
             res = ""
             for i in range(need_num):
-                real_idx = self.used_zkrp_blinding_share + i
+                real_idx = self.used_zkrp_blinding_com + i
                 tmp_str = json.loads(self.db.Get(key_zkrp_agg_commitment_index(real_idx)).decode())
                 res += f"{';' if len(res) > 0 else ''}{tmp_str}"
 
-            self.used_zkrp_blinding_share += need_num
+            self.used_zkrp_blinding_com += need_num
             data = {
                 "zkrp_blinding_info_2": res,
             }
@@ -352,9 +358,9 @@ class Server:
             print('waiting for gen zkrp blind share')
 
         ##### (2) interpolate the blinding commitment #####
+        cur_zkrp_com = self.local_zkrp_blinding_com_cnt
         for cur_zkrp_idx in range(50):
-            real_idx = cur_zkrp_idx + origin_cnt
-            request = f"zkrp_blinding_commitment_shares/{real_idx}"
+            request = f"zkrp_blinding_commitment_shares/{cur_zkrp_com}"
             results = await send_requests(self.players, request)
             for i in range(len(results)):
                 tmp_str = results[i]["zkrp_blinding_commitment_shares"]
@@ -364,8 +370,9 @@ class Server:
                     results[i][j] = int(results[i][j])
 
             agg_commitment = pedersen_aggregate(results, [x + 1 for x in list(range(self.players))])
-            self.db.Put(key_zkrp_agg_commitment_index(real_idx), json.dumps(agg_commitment).encode())
-        
+            self.db.Put(key_zkrp_agg_commitment_index(cur_zkrp_com), json.dumps(agg_commitment).encode())
+            cur_zkrp_com = cur_zkrp_com + 1
+        self.local_zkrp_blinding_com_cnt = cur_zkrp_com
         print('zkrp blinding generated!')
 
 

@@ -181,6 +181,9 @@ fn zkrp_prove_mul(x_v: u64, y_v: u64, rx_prime_bytes: [u8; 32], ry_prime_bytes: 
 
     let mut prover_transcript = Transcript::new(b"zkrpmul");
     let mut c_bytes = [0u8; 64];
+    prover_transcript.commit_bytes(b"com_kx",com_kx.as_bytes());
+    prover_transcript.commit_bytes(b"com_ky",com_ky.as_bytes());
+    prover_transcript.commit_bytes(b"com_kz",com_kz.as_bytes());
     prover_transcript.challenge_bytes(b"c", &mut c_bytes);
     let c = Scalar::from_bytes_mod_order_wide(&c_bytes);
     

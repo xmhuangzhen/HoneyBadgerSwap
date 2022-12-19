@@ -108,17 +108,17 @@ async def get_zkrp_blinding_info(players, num, threshold):
 
     return blinding_prime, comm_res
 
-async def generate_zkrp_mul(players, threshold):
+async def generate_zkrp_mul(players, x, y, threshold):
     blinding_prime_list, blinding_comm_list = await get_zkrp_blinding_info(players, 2, threshold)
 
     print('blinding prime list:', blinding_prime_list)
     print('blinding com list:', blinding_comm_list)
 
-    rx_prime_bytes, ry_prime_bytes = blinding_prime_list[0], blinding_prime_list[1]
+    rx_prime, ry_prime = blinding_prime_list[0], blinding_prime_list[1]
     cx_bytes, cy_bytes = blinding_comm_list[0], blinding_comm_list[1]
 
-    x = 100
-    y = 20
-    c = zkrp_prove_mul(x, y, rx_prime_bytes,ry_prime_bytes)
+    rx_prime_bytes =  rx_prime.to_bytes((rx_prime.bit_length() + 7) // 8, 'little')
+    ry_prime_bytes =  ry_prime.to_bytes((ry_prime.bit_length() + 7) // 8, 'little')
 
-    print('c:',c)
+    mx_prime, my_prime, sx, sy_prime,  = zkrp_prove_mul(x, y, rx_prime_bytes,ry_prime_bytes)
+

@@ -21,12 +21,9 @@ log_dir='ratel/log'
 rm -rf $log_dir
 mkdir -p $log_dir
 
-zkrp_cnt=$(python3 -m ratel.src.python.zkrp_deploy 2>&1)
-rm ratel/genfiles/tmp.txt
-
 for id in "${strarr[@]}";
 do
-  python3 -m ratel.src.python.$app.run $id $players $threshold $concurrency $test $zkrp_cnt > $log_dir/server_$id.log 2>&1 &
+  python3 -m ratel.src.python.$app.run $id $players $threshold $concurrency $test > $log_dir/server_$id.log 2>&1 &
 done
 
 sleep 3
