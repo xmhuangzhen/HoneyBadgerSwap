@@ -118,6 +118,7 @@ async def generate_zkrp_mul(players, threshold):
     cx_bytes, cy_bytes = blinding_comm_list[0], blinding_comm_list[1]
 
     x = 100
-    c = zkrp_prove_mul(x, rx_prime_bytes,ry_prime_bytes)
+    y = 20
+    c = zkrp_prove_mul(x, y, rx_prime_bytes,ry_prime_bytes)
 
     print('c:',c)

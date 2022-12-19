@@ -1,6 +1,6 @@
 extern crate rand;
 extern crate curve25519_dalek_ng;
-use curve25519_dalek_ng::scalar::{Scalar, UnpackedScalar};
+use curve25519_dalek_ng::scalar::Scalar;
 use curve25519_dalek_ng::ristretto::CompressedRistretto;
 extern crate merlin;
 use merlin::Transcript;
@@ -156,10 +156,11 @@ fn gen_random_value(value_num: u64) -> PyResult<Vec<[u8; 32]>> {
 
 
 #[pyfunction]
-fn zkrp_prove_mul(x_v: u64, rx_prime_bytes: [u8; 32], ry_prime_bytes: [u8; 32]) -> PYResult<[u8; 32]> {
+fn zkrp_prove_mul(x_v: u64, y_v: u64, rx_prime_bytes: [u8; 32], ry_prime_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
     let pc_gens = PedersenGens::default();
 
     let x = Scalar::from(x_v);
+    let y = Scalar::from(y_v);
     let rx_prime = Scalar::from_bytes_mod_order(rx_prime_bytes);
     let ry_prime = Scalar::from_bytes_mod_order(ry_prime_bytes);
 
@@ -179,7 +180,9 @@ fn zkrp_prove_mul(x_v: u64, rx_prime_bytes: [u8; 32], ry_prime_bytes: [u8; 32]) 
     let com_kz = pc_gens.commit(t1_value, t1_blinding_value).compress();
 
     let mut prover_transcript = Transcript::new(b"zkrpmul");
-    let c = prover_transcript.challenge_scalar(b"c");
+    let mut c_bytes = [0u8; 64];
+    prover_transcript.challenge_bytes(b"c", &mut c_bytes);
+    let c = Scalar::from_bytes_mod_order_wide(&c_bytes);
     
     let sx:Scalar = ((c*x).reduce() + kx).reduce(); // sx = c * x + kx
     let sy:Scalar = ((c*y).reduce() + ky).reduce(); // sy = c * y + ky
@@ -202,9 +205,9 @@ fn zkrp_verify_mul(mx_bytes: [u8; 32], my_bytes: [u8; 32], c_rx_bytes: [u8; 32],
 
     let pc_gens = PedersenGens::default();
 
-    let g_mx = pc_gens.commit(mx,zer).compress();
+    let g_mx = Scalar::from_bytes_mod_order(pc_gens.commit(mx,zer).compress().to_bytes());
     let c_x = (c_rx * (g_mx.invert())).reduce();
-    let g_my = pc_gens.commit(my,zer).compress();
+    let g_my = Scalar::from_bytes_mod_order(pc_gens.commit(my,zer).compress().to_bytes());
     let c_y = (c_ry * (g_my.invert())).reduce();
 
     Ok(())

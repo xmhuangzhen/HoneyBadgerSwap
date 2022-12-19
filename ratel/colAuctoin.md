@@ -88,6 +88,5 @@ python3 -m ratel.src.python.colAuction.interact
 curl https://sh.rustup.rs -sSf | sh
 source "$HOME/.cargo/env"
 pip install maturin
-maturin develop
 pip install .
 ```
