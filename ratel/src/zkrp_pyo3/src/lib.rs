@@ -122,25 +122,31 @@ fn pedersen_commit(secret_value_bytes: [u8; 32], blinding_bytes: [u8; 32]) -> Py
 // }
 
 #[pyfunction]
-fn other_base_commit(g_x_bytes: [u8; 32], y_bytes: [u8; 32], r_bytes: [u8; 32], blinding_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
-    // {secret_value} * h^{blinding}
+fn other_base_commit(g_x_bytes: [u8; 32], y_bytes: [u8; 32], blinding_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
+    // (g^x)^{secret_value} * h^{blinding} * g^{r}
     let g_x = CompressedRistretto(g_x_bytes).decompress().unwrap();
     let y = Scalar::from_bytes_mod_order(y_bytes);
     let r = Scalar::from_bytes_mod_order(r_bytes);
     let blinding = Scalar::from_bytes_mod_order(blinding_bytes);
 
-    // let zer = Scalar::zero();
-
     let pc_gens = PedersenGens::default();
 
     let g_xy_h_rz_com = RistrettoPoint::multiscalar_mul(&[y, blinding], &[g_x, pc_gens.B_blinding]);
 
-    let blinding_com = pc_gens.commit(r, zer);
 
-    let commitment = g_xy_h_rz_com * blinding_com;
-
-    Ok(commitment.compress().to_bytes())
+    Ok(g_xy_h_rz_com.compress().to_bytes())
 }
+
+#[pyfunction]
+fn product_com(x_bytes: [u8; 32], y_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
+    let x = Scalar::from_bytes_mod_order(x_bytes);
+    let y = Scalar::from_bytes_mod_order(y_bytes);
+
+    let product_com = (x * y).reduce();
+    
+    Ok(product_com)
+}
+
 
 #[pyfunction]
 fn pedersen_open(secret_value: u64, blinding: u64, commitment_bytes: [u8; 32]) -> PyResult<bool> {
@@ -319,5 +325,6 @@ fn zkrp_pyo3(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(zkrp_prove_mul, m)?)?;
     m.add_function(wrap_pyfunction!(zkrp_verify_mul, m)?)?;
     m.add_function(wrap_pyfunction!(other_base_commit, m)?)?;
+    m.add_function(wrap_pyfunction!(product_com, m)?)?;
     Ok(())
 }

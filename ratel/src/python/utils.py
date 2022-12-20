@@ -8,7 +8,7 @@ import math
 
 from gmpy import binary, mpz
 from gmpy2 import mpz_from_old_binary
-from zkrp_pyo3 import pedersen_aggregate, pedersen_commit, zkrp_verify, zkrp_prove, zkrp_prove_mul, zkrp_verify_mul, other_base_commit
+from zkrp_pyo3 import pedersen_aggregate, pedersen_commit, zkrp_verify, zkrp_prove, zkrp_prove_mul, zkrp_verify_mul, other_base_commit, product_com
 
 INPUTMASK_SHARES_DIR = os.getenv(
     'INPUTMASK_SHARES', '/opt/hbswap/inputmask-shares',
@@ -319,11 +319,10 @@ async def verify_proof(server, x, zkpstmt, hasMul = False, y = 1, r = 0):
         ############# (2) compute (g^x)^[y] * h^[rz] #############
         rz_bytes = list(blinding.to_bytes(32, byteorder='little'))
         y_bytes = list(y.to_bytes(32, byteorder='little'))
-        r_bytes = list(r.to_bytes(32, byteorder='little'))
         # g_xy = pow(g_x, y, prime)
         # print('g_xy',g_xy)
         # g_xy_bytes = list(g_xy.to_bytes(32, byteorder='little'))
-        g_xy_h_rz_bytes = other_base_commit(g_x_bytes, y_bytes, r_bytes, rz_bytes)
+        g_xy_h_rz_bytes = other_base_commit(g_x_bytes, y_bytes, rz_bytes)
         # h_rz_share = int.from_bytes(h_rz_share_bytes, byteorder='little')
         # g_xy_h_rz = (g_xy_share*h_rz_share) % prime
         # g_xy_h_rz_bytes = list(g_xy_h_rz.to_bytes(32, byteorder='little'))
@@ -331,7 +330,12 @@ async def verify_proof(server, x, zkpstmt, hasMul = False, y = 1, r = 0):
         server.zkrpShares[f'{idxValueBlinding}_{1}'] = g_xy_h_rz_bytes
         results_g_xy_h_rz = await server.get_zkrp_shares(players(server.contract), f'{idxValueBlinding}_{1}')
         print('results_g_xy_h_rz',results_g_xy_h_rz)
-        agg_commitment = pedersen_aggregate(results_g_xy_h_rz, [x + 1 for x in list(range(server.players))])
+        agg_gxyhrz_commitment = pedersen_aggregate(results_g_xy_h_rz, [x + 1 for x in list(range(server.players))])
+        print('agg_commitment',agg_gxyhrz_commitment)
+        r_bytes = list(r.to_bytes(32, byteorder='little'))
+        g_r = pedersen_commit(r_bytes, zer_bytes) 
+        print('g_r', g_r)
+        agg_commitment = product_com(g_r,agg_gxyhrz_commitment)
         print('agg_commitment',agg_commitment)
         print('commitment',commitment)
         return agg_commitment == commitment
