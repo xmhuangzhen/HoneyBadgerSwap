@@ -701,7 +701,7 @@ void zkrp(){
 
     if(pfstr[pospf] == '>' && pfstr[pospf+1] == '=') {
         string rangeName = pfstr.substr(pospf+2);
-        textFuncLower += "    tmpRange = " + rangeName + "\n";
+        textFuncLower += "    tmpRange = int(" + rangeName + ")\n";
 
         // secret_value >= r <==> secret_value - r >= 0
         textFuncLower += "    " + pfVarName + " = " + pfExp + " - tmpRange\n";
@@ -713,7 +713,7 @@ void zkrp(){
         }
     } else if(pfstr[pospf] == '>' && pfstr[pospf+1] != '=') {
         string rangeName = pfstr.substr(pospf+1);
-        textFuncLower += "    tmpRange = " + rangeName + "\n";
+        textFuncLower += "    tmpRange = int(" + rangeName + ")\n";
 
         // secret_value > r <==> secret_value - r - 1 >= 0
         textFuncLower += "    " + pfVarName + " = " + pfExp + " - tmpRange - 1\n";
@@ -726,7 +726,7 @@ void zkrp(){
         }
     } else if(pfstr[pospf] == '<' && pfstr[pospf+1] == '=') { 
         string rangeName = pfstr.substr(pospf+2);
-        textFuncLower += "    tmpRange = " + rangeName + "\n";
+        textFuncLower += "    tmpRange = int(" + rangeName + ")\n";
 
         // secret_value <= r <==> r - secret_value >= 0 
         textFuncLower += "    " + pfVarName + " = tmpRange - " + pfExp + "\n";
@@ -739,7 +739,7 @@ void zkrp(){
         }
     } else if(pfstr[pospf] == '<' && pfstr[pospf+1] != '=') { 
         string rangeName = pfstr.substr(pospf+1);
-        textFuncLower += "    tmpRange = " + rangeName + "\n";
+        textFuncLower += "    tmpRange = int(" + rangeName + ")\n";
 
         // secret_value < r <==> r - secret_value - 1 >= 0
         textFuncLower += "    " + pfVarName + " = tmpRange - " + pfExp + " - 1\n";
@@ -1064,7 +1064,7 @@ SPACE [ \t\r]+
 }
 
 \. {
-    hasFloatPoint = true;
+//    hasFloatPoint = true;
     addText(yytext);
 }
 

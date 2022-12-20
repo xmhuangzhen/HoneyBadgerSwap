@@ -11,6 +11,8 @@ from ratel.src.python.utils import fp, prime, getAccount, sign_and_send, parse_c
 
 
 def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
+    amtA = int(amtA * fp)
+    amtB = int(amtB * fp)
 
     ###############zkrp prove here#############
     serverval_idx1 = f'balance_{tokenA}_{account.address}'
@@ -18,29 +20,23 @@ def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
     
     balanceA, balanceB = asyncio.run(get_serverval(players(appContract), f'{serverval_idx1},{serverval_idx2}', threshold(appContract)))
 
-    balanceA, balanceB = float(balanceA / fp), float(balanceB / fp)
+    # balanceA, balanceB = float(balanceA / fp), float(balanceB / fp)
 
-    feeRate = 0.5
+    feeRate = 0.003
     totalA = (1 + feeRate) * amtA
     totalB = (1 + feeRate) * amtB
 
-            # assert(zkrp((amtA * amtB) < 0))
             # assert(zkrp((-totalA) <= balanceA))
             # assert(zkrp((-totalB) <= balanceB))
-            # balanceA = readDB(f'balance_{tokenA}_{user}', int)
-            # balanceB = readDB(f'balance_{tokenB}_{user}', int)
 
     # print('amtA:', amtA, 'amtB:', amtB)
     print('totalA:', totalA, 'totalB:', totalB)
     print('balanceA:', balanceA, 'balanceB:', balanceB)
 
-    proof1, commitment1, blinding1 = get_zkrp(amtA*amtB, '<=', 0, True)
-    proof2, commitment2, blinding2 = get_zkrp(-totalA, '<=', balanceA, True)
-    proof3, commitment3, blinding3 = get_zkrp(-totalB, '<=', balanceB, True)
+    proof1, commitment1, blinding1 = get_zkrp(amtA*amtB, '<=', 0)
+    proof2, commitment2, blinding2 = get_zkrp(-amtA, '<=', int(balanceA/(1+feeRate)))
+    proof3, commitment3, blinding3 = get_zkrp(-amtB, '<=', int(balanceB/(1+feeRate)))
     ###############zkrp prove end#############
-
-    amtA = int(amtA * fp)
-    amtB = int(amtB * fp)
     
     idxAmtA, idxAmtB, idxzkp1, idxzkp2, idxzkp3 = reserveInput(web3, appContract, 5, account)
     maskA, maskB, maskzkp1, maskzkp2, maskzkp3 = asyncio.run(get_inputmasks(players(appContract), f'{idxAmtA},{idxAmtB},{idxzkp1},{idxzkp2},{idxzkp3}', threshold(appContract)))

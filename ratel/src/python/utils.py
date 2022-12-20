@@ -277,6 +277,7 @@ async def verify_proof(server, x, zkpstmt, type_Mul = 0, y = 1, r = 0):
         return False
 
     blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
+    x,y,r = int(x), int(y), int(r)
 
     if type_Mul == 0:
         pfval = x % prime

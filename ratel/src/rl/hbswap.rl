@@ -311,8 +311,8 @@ contract hbswap {
 
             ### TODO: realize by ZKP
             assert(zkrp((amtA * amtB) <= 0))
-            assert(zkrp((-totalA) <= balanceA))
-            assert(zkrp((-totalB) <= balanceB))
+            assert(zkrp((-amtA) <= balanceA/(1+feeRate)))
+            assert(zkrp((-amtB) <= balanceB/(1+feeRate)))
 
             times.append(time.perf_counter())
 
