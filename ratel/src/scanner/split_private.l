@@ -722,6 +722,7 @@ void zkrp(){
             textFuncLower += "    " + pfVarName + " = " + pfExp.substr(0,posMul) + ")\n";
             textFuncLower += "    tmpMulR = (" + pfExp.substr(posMul+1) + "\n";
             textFuncLower += "    tmptype_Mul = 2\n";
+            textFuncLower += "    tmpRange = tmpRange + 1\n";
         }
     } else if(pfstr[pospf] == '<' && pfstr[pospf+1] == '=') { 
         string rangeName = pfstr.substr(pospf+2);
@@ -734,6 +735,7 @@ void zkrp(){
             textFuncLower += "    " + pfVarName + " = " + pfExp.substr(0,posMul) + ")\n";
             textFuncLower += "    tmpMulR = (" + pfExp.substr(posMul+1) + "\n";
             textFuncLower += "    tmptype_Mul = 3\n";
+            textFuncLower += "    tmpRange = -tmpRange\n";
         }
     } else if(pfstr[pospf] == '<' && pfstr[pospf+1] != '=') { 
         string rangeName = pfstr.substr(pospf+1);
@@ -746,6 +748,7 @@ void zkrp(){
             textFuncLower += "    " + pfVarName + " = " + pfExp.substr(0,posMul) + ")\n";
             textFuncLower += "    tmpMulR = (" + pfExp.substr(posMul+1) + "\n";
             textFuncLower += "    tmptype_Mul = 4\n";
+            textFuncLower += "    tmpRange = -tmpRange + 1\n";
         }
     } else {
         assert(0);

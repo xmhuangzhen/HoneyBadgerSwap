@@ -268,7 +268,7 @@ def dict_to_bytes(value):
     return bytes(str(value), encoding='utf-8')
 
 
-async def verify_proof(server, x, zkpstmt, type_Mul = 0, y = 1, r = 0):
+async def verify_proof(server, x, zkpstmt, hasMul = False, y = 1, r = 0):
     [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
     # TODO:
     # proof, commitment, blinding_ = zkrp_prove(2022, 32)
@@ -278,7 +278,7 @@ async def verify_proof(server, x, zkpstmt, type_Mul = 0, y = 1, r = 0):
 
     blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
 
-    if type_Mul == 0:
+    if not hasMul:
         pfval = x % prime
         if pfval < 0:
             pfval = (pfval % prime + prime) % prime
@@ -301,7 +301,9 @@ async def verify_proof(server, x, zkpstmt, type_Mul = 0, y = 1, r = 0):
 
         print("agg_commit:", agg_commitment, commitment)
         return agg_commitment == commitment
-    elif type_Mul == 1: ### x * y >= r
+    else: ### x * y >= r
+        r = -r
+        r = (r%prime + prime) % prime
         ############# (1) compute g^[x] #############
         zer = 0
         x_bytes = list(x.to_bytes(32, byteorder='little'))
@@ -317,10 +319,11 @@ async def verify_proof(server, x, zkpstmt, type_Mul = 0, y = 1, r = 0):
         ############# (2) compute (g^x)^[y] * h^[rz] #############
         rz_bytes = list(blinding.to_bytes(32, byteorder='little'))
         y_bytes = list(y.to_bytes(32, byteorder='little'))
+        r_bytes = list(r.to_bytes(32, byteorder='little'))
         # g_xy = pow(g_x, y, prime)
         # print('g_xy',g_xy)
         # g_xy_bytes = list(g_xy.to_bytes(32, byteorder='little'))
-        g_xy_h_rz_bytes = other_base_commit(g_x_bytes, y_bytes ,rz_bytes)
+        g_xy_h_rz_bytes = other_base_commit(g_x_bytes, y_bytes, r_bytes, rz_bytes)
         # h_rz_share = int.from_bytes(h_rz_share_bytes, byteorder='little')
         # g_xy_h_rz = (g_xy_share*h_rz_share) % prime
         # g_xy_h_rz_bytes = list(g_xy_h_rz.to_bytes(32, byteorder='little'))

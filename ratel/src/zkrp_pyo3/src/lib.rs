@@ -122,21 +122,22 @@ fn pedersen_commit(secret_value_bytes: [u8; 32], blinding_bytes: [u8; 32]) -> Py
 // }
 
 #[pyfunction]
-fn other_base_commit(g_x_bytes: [u8; 32], y_bytes: [u8; 32], blinding_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
+fn other_base_commit(g_x_bytes: [u8; 32], y_bytes: [u8; 32], r_bytes: [u8; 32], blinding_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
     // {secret_value} * h^{blinding}
     let g_x = CompressedRistretto(g_x_bytes).decompress().unwrap();
     let y = Scalar::from_bytes_mod_order(y_bytes);
+    let r = Scalar::from_bytes_mod_order(r_bytes);
     let blinding = Scalar::from_bytes_mod_order(blinding_bytes);
 
     // let zer = Scalar::zero();
 
     let pc_gens = PedersenGens::default();
 
-    let commitment = RistrettoPoint::multiscalar_mul(&[y, blinding], &[g_x, pc_gens.B_blinding]);
+    let g_xy_h_rz_com = RistrettoPoint::multiscalar_mul(&[y, blinding], &[g_x, pc_gens.B_blinding]);
 
-    // let blinding_com = pc_gens.commit(zer, blinding);
+    let blinding_com = pc_gens.commit(r, zer);
 
-    // let commitment = secret_value * blinding_com;
+    let commitment = g_xy_h_rz_com * blinding_com;
 
     Ok(commitment.compress().to_bytes())
 }
