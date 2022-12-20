@@ -268,46 +268,11 @@ def dict_to_bytes(value):
     return bytes(str(value), encoding='utf-8')
 
 
-async def verify_proof(server, pfval, zkpstmt):
-    [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
-    # TODO:
-    # proof, commitment, blinding_ = zkrp_prove(2022, 32)
-    if proof is None or commitment is None or not zkrp_verify(proof, commitment, 64):
-        print("[Error]: Committed secret value does not pass range proof verification!")
-        return False
-
-    blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
-
-    pfval = pfval % prime
-
-    print('pfval:',pfval)
-    if pfval < 0:
-        pfval = (pfval % prime + prime) % prime
-    print('pfval2:',pfval)
-    
-    # TODO: where is the blinding mask created? we also need to share it.
-    value1_bytes = list(pfval.to_bytes(64, byteorder='little'))
-    blinding_bytes = list(blinding.to_bytes(64, byteorder='little'))
-
-    share_commitment = pedersen_commit(value1_bytes, blinding_bytes)
-
-    print('share_commitment:',share_commitment)
-    # TODO: create the function to commit to the unmasked secret shares.
-    # TODO: we also need to change the current zkrp interface to allow specifying r and choose range to prove.
-
-    server.zkrpShares[f'{idxValueBlinding}'] = share_commitment
-    results = await server.get_zkrp_shares(players(server.contract), f'{idxValueBlinding}')
-    # print(")))))))", results)
-    agg_commitment = pedersen_aggregate(results, [x + 1 for x in list(range(server.players))])
-
-    print("agg_commit:", agg_commitment, commitment)
-    return agg_commitment == commitment
-
 async def verify_proof(server, x, zkpstmt, isMul = False, y=1):
     [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
     # TODO:
     # proof, commitment, blinding_ = zkrp_prove(2022, 32)
-    if proof is None or commitment is None or not zkrp_verify(proof, commitment, 64):
+    if proof is None or commitment is None or not zkrp_verify(proof, commitment):
         print("[Error]: Committed secret value does not pass range proof verification!")
         return False
 
@@ -320,8 +285,8 @@ async def verify_proof(server, x, zkpstmt, isMul = False, y=1):
         print('pfval2:',pfval)
         
         # TODO: where is the blinding mask created? we also need to share it.
-        value1_bytes = list(pfval.to_bytes(64, byteorder='little'))
-        blinding_bytes = list(blinding.to_bytes(64, byteorder='little'))
+        value1_bytes = list(pfval.to_bytes(32, byteorder='little'))
+        blinding_bytes = list(blinding.to_bytes(32, byteorder='little'))
 
         share_commitment = pedersen_commit(value1_bytes, blinding_bytes)
 
@@ -339,21 +304,28 @@ async def verify_proof(server, x, zkpstmt, isMul = False, y=1):
     else:
         ############# (1) compute g^[x] #############
         zer = 0
-        x_bytes = list(x.to_bytes(64, byteorder='little'))
-        zer_bytes = list(zer.to_bytes(64, byteorder='little'))
+        x_bytes = list(x.to_bytes(32, byteorder='little'))
+        zer_bytes = list(zer.to_bytes(32, byteorder='little'))
         g_x_share = pedersen_commit(x_bytes, zer_bytes) 
         server.zkrpShares[f'{idxValueBlinding}_{0}'] = g_x_share
         results_g_x = await server.get_zkrp_shares(players(server.contract), f'{idxValueBlinding}_{0}')
-        g_x = pedersen_aggregate(results_g_x, [x + 1 for x in list(range(server.players))])
-        print('g_x',g_x)
+        print('results_g_x',results_g_x)
+        g_x_bytes = pedersen_aggregate(results_g_x, [x + 1 for x in list(range(server.players))])
+        g_x = int.from_bytes(g_x_bytes, byteorder='little')
+        # print('g_x',g_x)
 
         ############# (2) compute (g^x)^[y] * h^[rz] #############
-        rz_bytes = list(blinding.to_bytes(64, byteorder='little'))
+        rz_bytes = list(blinding.to_bytes(32, byteorder='little'))
         g_xy_share = pow(g_x,y,prime) 
-        h_rz_share = pedersen_commit(zer_bytes,rz_bytes)
-        server.zkrpShares[f'{idxValueBlinding}_{1}'] = (g_xy_share*h_rz_share) % prime
-        results_g_xy = await server.get_zkrp_shares(players(server.contract), f'{idxValueBlinding}_{1}')
-        agg_commitment = pedersen_aggregate(results_g_xy, [x + 1 for x in list(range(server.players))])
+        h_rz_share_bytes = pedersen_commit(zer_bytes,rz_bytes)
+        h_rz_share = int.from_bytes(h_rz_share_bytes, byteorder='little')
+        g_xy_h_rz = (g_xy_share*h_rz_share) % prime
+        g_xy_h_rz_bytes = list(g_xy_h_rz.to_bytes(32, byteorder='little'))
+        print('g_xy_h_rz_bytes',g_xy_h_rz_bytes)
+        server.zkrpShares[f'{idxValueBlinding}_{1}'] = g_xy_h_rz_bytes
+        results_g_xy_h_rz = await server.get_zkrp_shares(players(server.contract), f'{idxValueBlinding}_{1}')
+        print('results_g_xy_h_rz',results_g_xy_h_rz)
+        agg_commitment = pedersen_aggregate(results_g_xy_h_rz, [x + 1 for x in list(range(server.players))])
         print('agg_commitment',agg_commitment)
 
         return agg_commitment == commitment
@@ -395,8 +367,8 @@ def get_zkrp(secret_value, exp_str, r, isSfix = False):
     #To prove value >= 0
     bits = 32
     proof, commitment, blinding_bytes = zkrp_prove(value, bits)
-
-    return proof, commitment, blinding_bytes
+    blinding = int.from_bytes(blinding_bytes, byteorder='little')
+    return proof, commitment, blinding
 
 leaderHostname = 'mpcnode0'
 

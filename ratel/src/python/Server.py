@@ -289,8 +289,8 @@ class Server:
         tasks = [
             monitor,
             self.http_server(),
-            self.preprocessing(),
-            self.preprocess_zkrp_blinding()
+            # self.preprocess_zkrp_blinding(),
+            self.preprocessing()
         ]
         await asyncio.gather(*tasks)
 

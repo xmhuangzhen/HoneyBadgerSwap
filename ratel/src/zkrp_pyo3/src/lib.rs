@@ -52,6 +52,54 @@ fn pedersen_commit(secret_value_bytes: [u8; 32], blinding_bytes: [u8; 32]) -> Py
     Ok(commitment.compress().to_bytes())
 }
 
+/// Provides an iterator over the powers of a `Scalar`.
+///
+/// This struct is created by the `exp_iter` function.
+pub struct ScalarExp {
+    x: Scalar,
+    next_exp_x: Scalar,
+}
+
+impl Iterator for ScalarExp {
+    type Item = Scalar;
+
+    fn next(&mut self) -> Option<Scalar> {
+        let exp_x = self.next_exp_x;
+        self.next_exp_x *= self.x;
+        Some(exp_x)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (usize::max_value(), None)
+    }
+}
+
+/// Return an iterator of the powers of `x`.
+pub fn exp_iter(x: Scalar) -> ScalarExp {
+    let next_exp_x = Scalar::one();
+    ScalarExp { x, next_exp_x }
+}
+        // z^0 * \vec(2)^n || z^1 * \vec(2)^n || ... || z^(m-1) * \vec(2)^n
+        // let powers_of_2: Vec<Scalar> = util::exp_iter(Scalar::from(2u64)).take(n).collect();
+#[pyfunction]
+fn other_base_commit(cur_base_bytes: [u8; 32], secret_value: u64, blinding_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
+    //cur_base ^ {secret_value_bytes} * h^{blinding_bytes}
+    let cur_base = Scalar::from_bytes_mod_order(cur_base_bytes);
+    // let secret_value = Scalar::from_bytes_mod_order(secret_value_bytes);
+    let blinding = Scalar::from_bytes_mod_order(blinding_bytes);
+
+    let pow_of_cur_base: Vec<Scalar> = exp_iter(cur_base).take(secret_value).collect()
+    let zer = Scalar::zero();
+
+    let pc_gens = PedersenGens::default();
+    let blinding_com = pc_gens.commit(zer, blinding);
+
+    let com = pow_of_cur_base * blinding_com;
+
+    Ok(commitment.compress().to_bytes())
+}
+
+
 #[pyfunction]
 fn pedersen_open(secret_value: u64, blinding: u64, commitment_bytes: [u8; 32]) -> PyResult<bool> {
     let secret_value_scalar = Scalar::from(secret_value);
