@@ -126,7 +126,6 @@ fn other_base_commit(g_x_bytes: [u8; 32], y_bytes: [u8; 32], blinding_bytes: [u8
     // (g^x)^{secret_value} * h^{blinding} * g^{r}
     let g_x = CompressedRistretto(g_x_bytes).decompress().unwrap();
     let y = Scalar::from_bytes_mod_order(y_bytes);
-    let r = Scalar::from_bytes_mod_order(r_bytes);
     let blinding = Scalar::from_bytes_mod_order(blinding_bytes);
 
     let pc_gens = PedersenGens::default();
@@ -139,12 +138,12 @@ fn other_base_commit(g_x_bytes: [u8; 32], y_bytes: [u8; 32], blinding_bytes: [u8
 
 #[pyfunction]
 fn product_com(x_bytes: [u8; 32], y_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
-    let x = Scalar::from_bytes_mod_order(x_bytes);
-    let y = Scalar::from_bytes_mod_order(y_bytes);
+    let x = CompressedRistretto(x_bytes).decompress().unwrap();
+    let y = CompressedRistretto(y_bytes).decompress().unwrap();
 
     let product_com = (x * y).reduce();
     
-    Ok(product_com)
+    Ok(product_com.to_bytes())
 }
 
 

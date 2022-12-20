@@ -34,7 +34,7 @@ def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
     print('totalA:', totalA, 'totalB:', totalB)
     print('balanceA:', balanceA, 'balanceB:', balanceB)
 
-    proof1, commitment1, blinding1 = get_zkrp(amtA*amtB, '<', 0, True)
+    proof1, commitment1, blinding1 = get_zkrp(amtA*amtB, '<=', 0, True)
     proof2, commitment2, blinding2 = get_zkrp(-totalA, '<=', balanceA, True)
     proof3, commitment3, blinding3 = get_zkrp(-totalB, '<=', balanceB, True)
     ###############zkrp prove end#############

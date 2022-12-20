@@ -310,7 +310,7 @@ contract hbswap {
             times.append(time.perf_counter())
 
             ### TODO: realize by ZKP
-            assert(zkrp((amtA * amtB) < 0))
+            assert(zkrp((amtA * amtB) <= 0))
             assert(zkrp((-totalA) <= balanceA))
             assert(zkrp((-totalB) <= balanceB))
 

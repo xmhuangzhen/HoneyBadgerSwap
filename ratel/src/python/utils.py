@@ -268,7 +268,7 @@ def dict_to_bytes(value):
     return bytes(str(value), encoding='utf-8')
 
 
-async def verify_proof(server, x, zkpstmt, hasMul = False, y = 1, r = 0):
+async def verify_proof(server, x, zkpstmt, type_Mul = 0, y = 1, r = 0):
     [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
     # TODO:
     # proof, commitment, blinding_ = zkrp_prove(2022, 32)
@@ -278,7 +278,7 @@ async def verify_proof(server, x, zkpstmt, hasMul = False, y = 1, r = 0):
 
     blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
 
-    if not hasMul:
+    if type_Mul == 0:
         pfval = x % prime
         if pfval < 0:
             pfval = (pfval % prime + prime) % prime
@@ -303,7 +303,10 @@ async def verify_proof(server, x, zkpstmt, hasMul = False, y = 1, r = 0):
         return agg_commitment == commitment
     else: ### x * y >= r
         r = -r
-        r = (r%prime + prime) % prime
+        r = (r % prime + prime) % prime
+        if type_Mul >= 3:
+            x = -x
+            x = (x % prime + prime) % prime
         ############# (1) compute g^[x] #############
         zer = 0
         x_bytes = list(x.to_bytes(32, byteorder='little'))
@@ -332,10 +335,15 @@ async def verify_proof(server, x, zkpstmt, hasMul = False, y = 1, r = 0):
         print('results_g_xy_h_rz',results_g_xy_h_rz)
         agg_gxyhrz_commitment = pedersen_aggregate(results_g_xy_h_rz, [x + 1 for x in list(range(server.players))])
         print('agg_commitment',agg_gxyhrz_commitment)
-        r_bytes = list(r.to_bytes(32, byteorder='little'))
-        g_r = pedersen_commit(r_bytes, zer_bytes) 
-        print('g_r', g_r)
-        agg_commitment = product_com(g_r,agg_gxyhrz_commitment)
+
+        if r != 0:
+            ### fixme!
+            r_bytes = list(r.to_bytes(32, byteorder='little'))
+            g_r = pedersen_commit(r_bytes, zer_bytes) 
+            print('g_r', g_r)
+            agg_commitment = product_com(g_r,agg_gxyhrz_commitment)
+        else:
+            agg_commitment = agg_gxyhrz_commitment
         print('agg_commitment',agg_commitment)
         print('commitment',commitment)
         return agg_commitment == commitment
@@ -369,8 +377,8 @@ def get_zkrp(secret_value, exp_str, r, isSfix = False):
 
 
     value = (value % prime + prime) % prime
-    if value < 0 :
-        value = (value % prime + prime) % prime
+    # if value < 0 :
+    #     value = (value % prime + prime) % prime
 
     print('value:',value)
 
