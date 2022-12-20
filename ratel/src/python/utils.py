@@ -8,7 +8,7 @@ import math
 
 from gmpy import binary, mpz
 from gmpy2 import mpz_from_old_binary
-from zkrp_pyo3 import pedersen_aggregate, pedersen_commit, zkrp_verify, zkrp_prove, zkrp_prove_mul, zkrp_verify_mul
+from zkrp_pyo3 import pedersen_aggregate, pedersen_commit, zkrp_verify, zkrp_prove, zkrp_prove_mul, zkrp_verify_mul, other_base_commit
 
 INPUTMASK_SHARES_DIR = os.getenv(
     'INPUTMASK_SHARES', '/opt/hbswap/inputmask-shares',
@@ -311,16 +311,16 @@ async def verify_proof(server, x, zkpstmt, isMul = False, y=1):
         results_g_x = await server.get_zkrp_shares(players(server.contract), f'{idxValueBlinding}_{0}')
         print('results_g_x',results_g_x)
         g_x_bytes = pedersen_aggregate(results_g_x, [x + 1 for x in list(range(server.players))])
-        g_x = int.from_bytes(g_x_bytes, byteorder='little')
+        # g_x = int.from_bytes(g_x_bytes, byteorder='little')
         # print('g_x',g_x)
 
         ############# (2) compute (g^x)^[y] * h^[rz] #############
         rz_bytes = list(blinding.to_bytes(32, byteorder='little'))
-        g_xy_share = pow(g_x,y,prime) 
-        h_rz_share_bytes = pedersen_commit(zer_bytes,rz_bytes)
-        h_rz_share = int.from_bytes(h_rz_share_bytes, byteorder='little')
-        g_xy_h_rz = (g_xy_share*h_rz_share) % prime
-        g_xy_h_rz_bytes = list(g_xy_h_rz.to_bytes(32, byteorder='little'))
+        # g_xy_share = pow(g_x,y,prime) 
+        g_xy_h_rz_bytes = other_base_commit(g_x_bytes,y,rz_bytes)
+        # h_rz_share = int.from_bytes(h_rz_share_bytes, byteorder='little')
+        # g_xy_h_rz = (g_xy_share*h_rz_share) % prime
+        # g_xy_h_rz_bytes = list(g_xy_h_rz.to_bytes(32, byteorder='little'))
         print('g_xy_h_rz_bytes',g_xy_h_rz_bytes)
         server.zkrpShares[f'{idxValueBlinding}_{1}'] = g_xy_h_rz_bytes
         results_g_xy_h_rz = await server.get_zkrp_shares(players(server.contract), f'{idxValueBlinding}_{1}')

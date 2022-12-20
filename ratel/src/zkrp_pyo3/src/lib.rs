@@ -276,5 +276,6 @@ fn zkrp_pyo3(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(gen_random_value, m)?)?;
     m.add_function(wrap_pyfunction!(zkrp_prove_mul, m)?)?;
     m.add_function(wrap_pyfunction!(zkrp_verify_mul, m)?)?;
+    m.add_function(wrap_pyfunction!(other_base_commit, m)?)?;
     Ok(())
 }
