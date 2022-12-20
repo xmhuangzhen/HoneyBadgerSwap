@@ -268,7 +268,7 @@ def dict_to_bytes(value):
     return bytes(str(value), encoding='utf-8')
 
 
-async def verify_proof(server, x, zkpstmt, isMul = False, y=1):
+async def verify_proof(server, x, zkpstmt, type_Mul = 0, y = 1, r = 0):
     [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
     # TODO:
     # proof, commitment, blinding_ = zkrp_prove(2022, 32)
@@ -278,7 +278,7 @@ async def verify_proof(server, x, zkpstmt, isMul = False, y=1):
 
     blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
 
-    if not isMul:
+    if type_Mul == 0:
         pfval = x % prime
         if pfval < 0:
             pfval = (pfval % prime + prime) % prime
@@ -301,7 +301,7 @@ async def verify_proof(server, x, zkpstmt, isMul = False, y=1):
 
         print("agg_commit:", agg_commitment, commitment)
         return agg_commitment == commitment
-    else:
+    elif type_Mul == 1: ### x * y >= r
         ############# (1) compute g^[x] #############
         zer = 0
         x_bytes = list(x.to_bytes(32, byteorder='little'))
@@ -316,8 +316,11 @@ async def verify_proof(server, x, zkpstmt, isMul = False, y=1):
 
         ############# (2) compute (g^x)^[y] * h^[rz] #############
         rz_bytes = list(blinding.to_bytes(32, byteorder='little'))
-        # g_xy_share = pow(g_x,y,prime) 
-        g_xy_h_rz_bytes = other_base_commit(g_x_bytes,y,rz_bytes)
+        y_bytes = list(y.to_bytes(32, byteorder='little'))
+        # g_xy = pow(g_x, y, prime)
+        # print('g_xy',g_xy)
+        # g_xy_bytes = list(g_xy.to_bytes(32, byteorder='little'))
+        g_xy_h_rz_bytes = other_base_commit(g_x_bytes, y_bytes ,rz_bytes)
         # h_rz_share = int.from_bytes(h_rz_share_bytes, byteorder='little')
         # g_xy_h_rz = (g_xy_share*h_rz_share) % prime
         # g_xy_h_rz_bytes = list(g_xy_h_rz.to_bytes(32, byteorder='little'))
@@ -327,7 +330,7 @@ async def verify_proof(server, x, zkpstmt, isMul = False, y=1):
         print('results_g_xy_h_rz',results_g_xy_h_rz)
         agg_commitment = pedersen_aggregate(results_g_xy_h_rz, [x + 1 for x in list(range(server.players))])
         print('agg_commitment',agg_commitment)
-
+        print('commitment',commitment)
         return agg_commitment == commitment
 
 

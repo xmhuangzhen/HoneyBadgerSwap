@@ -7,6 +7,8 @@ use merlin::Transcript;
 extern crate bulletproofs;
 use bulletproofs::{BulletproofGens, PedersenGens, RangeProof};
 use pyo3::prelude::*;
+use curve25519_dalek_ng::ristretto::RistrettoPoint;
+use curve25519_dalek_ng::traits::MultiscalarMul;
 
 /// Given `data` with `len >= 32`, return the first 32 bytes.
 pub fn read32(data: &[u8]) -> [u8; 32] {
@@ -55,50 +57,89 @@ fn pedersen_commit(secret_value_bytes: [u8; 32], blinding_bytes: [u8; 32]) -> Py
 /// Provides an iterator over the powers of a `Scalar`.
 ///
 /// This struct is created by the `exp_iter` function.
-pub struct ScalarExp {
-    x: Scalar,
-    next_exp_x: Scalar,
-}
+// pub struct ScalarExp {
+//     x: Scalar,
+//     next_exp_x: Scalar,
+// }
 
-impl Iterator for ScalarExp {
-    type Item = Scalar;
+// impl Iterator for ScalarExp {
+//     type Item = Scalar;
 
-    fn next(&mut self) -> Option<Scalar> {
-        let exp_x = self.next_exp_x;
-        self.next_exp_x *= self.x;
-        Some(exp_x)
-    }
+//     fn next(&mut self) -> Option<Scalar> {
+//         let exp_x = self.next_exp_x;
+//         self.next_exp_x *= self.x;
+//         Some(exp_x)
+//     }
 
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (usize::max_value(), None)
-    }
-}
+//     fn size_hint(&self) -> (usize, Option<usize>) {
+//         (usize::max_value(), None)
+//     }
+// }
 
-/// Return an iterator of the powers of `x`.
-pub fn exp_iter(x: Scalar) -> ScalarExp {
-    let next_exp_x = Scalar::one();
-    ScalarExp { x, next_exp_x }
-}
+// /// Return an iterator of the powers of `x`.
+// pub fn exp_iter(x: Scalar) -> ScalarExp {
+//     let next_exp_x = Scalar::one();
+//     ScalarExp { x, next_exp_x }
+// }
+/// Raises `x` to the power `n` using binary exponentiation,
+/// with (1 to 2)*lg(n) scalar multiplications.
+/// TODO: a consttime version of this would be awfully similar to a Montgomery ladder.
+// pub fn scalar_exp_vartime(x: &Scalar, mut n: Scalar) -> Scalar {
+//     let mut result = Scalar::one();
+//     let mut aux = *x; // x, x^2, x^4, x^8, ...
+//     let zer = Scalar::zero();
+//     let on = Scalar::one();
+//     let inv_2 = (Scalar::from(2u64)).invert().reduce();
+//     while n > zer {
+//         let bit = n & on;
+//         if bit == on {
+//             result = result * aux;
+//         }
+//         n = n * inv_2;
+//         aux = aux * aux; // FIXME: one unnecessary mult at the last step here!
+//     }
+//     result
+// }
+
         // z^0 * \vec(2)^n || z^1 * \vec(2)^n || ... || z^(m-1) * \vec(2)^n
         // let powers_of_2: Vec<Scalar> = util::exp_iter(Scalar::from(2u64)).take(n).collect();
+// #[pyfunction]
+// fn other_base_commit(cur_base_bytes: [u8; 32], secret_value_bytes: [u8; 32], blinding_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
+//     //cur_base ^ {secret_value_bytes} * h^{blinding_bytes}
+//     let cur_base = Scalar::from_bytes_mod_order(cur_base_bytes);
+//     let secret_value = Scalar::from_bytes_mod_order(secret_value_bytes);
+//     let blinding = Scalar::from_bytes_mod_order(blinding_bytes);
+
+//     let pow_of_cur_base: Scalar = scalar_exp_vartime(&cur_base, secret_value);
+//     let zer = Scalar::zero();
+
+//     let pc_gens = PedersenGens::default();
+//     let blinding_com = pc_gens.commit(zer, blinding);
+
+//     let commitment = pow_of_cur_base * blinding_com;
+
+//     Ok(commitment.compress().to_bytes())
+// }
+
 #[pyfunction]
-fn other_base_commit(cur_base_bytes: [u8; 32], secret_value: u64, blinding_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
-    //cur_base ^ {secret_value_bytes} * h^{blinding_bytes}
-    let cur_base = Scalar::from_bytes_mod_order(cur_base_bytes);
-    // let secret_value = Scalar::from_bytes_mod_order(secret_value_bytes);
+fn other_base_commit(g_x_bytes: [u8; 32], y_bytes: [u8; 32], blinding_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
+    // {secret_value} * h^{blinding}
+    let g_x = CompressedRistretto(g_x_bytes).decompress().unwrap();
+    let y = Scalar::from_bytes_mod_order(y_bytes);
     let blinding = Scalar::from_bytes_mod_order(blinding_bytes);
 
-    let pow_of_cur_base: Vec<Scalar> = exp_iter(cur_base).take(secret_value).collect()
-    let zer = Scalar::zero();
+    // let zer = Scalar::zero();
 
     let pc_gens = PedersenGens::default();
-    let blinding_com = pc_gens.commit(zer, blinding);
 
-    let com = pow_of_cur_base * blinding_com;
+    let commitment = RistrettoPoint::multiscalar_mul(&[y, blinding], &[g_x, pc_gens.B_blinding]);
+
+    // let blinding_com = pc_gens.commit(zer, blinding);
+
+    // let commitment = secret_value * blinding_com;
 
     Ok(commitment.compress().to_bytes())
 }
-
 
 #[pyfunction]
 fn pedersen_open(secret_value: u64, blinding: u64, commitment_bytes: [u8; 32]) -> PyResult<bool> {

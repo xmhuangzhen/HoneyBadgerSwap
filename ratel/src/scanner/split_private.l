@@ -685,13 +685,11 @@ void zkrp(){
     string pfExp = pfstr.substr(0,pospf);
     string zkpstmtName = "zkpstmt" + to_string(cntZkrp-1);
 
-    string hasMul_str = "False";
     bool hasMul = false;
     int posMul = 0;
     string expL, expR;
     for(int i = 0;i < pfExp.length();++i){
         if(pfExp[i] == '*'){
-            hasMul_str = "True";
             hasMul = true;
             posMul = i;
         }
@@ -699,6 +697,7 @@ void zkrp(){
 
     textFuncLower += "    tmpMul = False\n";
     textFuncLower += "    tmpMulR = 0\n";
+    textFuncLower += "    tmptype_Mul = 0\n";
 
     if(pfstr[pospf] == '>' && pfstr[pospf+1] == '=') {
         string rangeName = pfstr.substr(pospf+2);
@@ -708,11 +707,9 @@ void zkrp(){
         textFuncLower += "    " + pfVarName + " = " + pfExp + " - tmpRange\n";
 
         if(hasMul){
-            textFuncLower += "    if tmpRange == 0:\n";
-            textFuncLower += "        tmpMul = " + hasMul_str + "\n";
-            textFuncLower += "        if tmpMul:\n";
-            textFuncLower += "            " + pfVarName + " = " + pfExp.substr(0,posMul) + ")\n";
-            textFuncLower += "            tmpMulR = (" + pfExp.substr(posMul+1) + "\n";
+            textFuncLower += "    " + pfVarName + " = " + pfExp.substr(0,posMul) + ")\n";
+            textFuncLower += "    tmpMulR = (" + pfExp.substr(posMul+1) + "\n";
+            textFuncLower += "    tmptype_Mul = 1\n";
         }
     } else if(pfstr[pospf] == '>' && pfstr[pospf+1] != '=') {
         string rangeName = pfstr.substr(pospf+1);
@@ -720,18 +717,36 @@ void zkrp(){
 
         // secret_value > r <==> secret_value - r - 1 >= 0
         textFuncLower += "    " + pfVarName + " = " + pfExp + " - tmpRange - 1\n";
+
+        if(hasMul){
+            textFuncLower += "    " + pfVarName + " = " + pfExp.substr(0,posMul) + ")\n";
+            textFuncLower += "    tmpMulR = (" + pfExp.substr(posMul+1) + "\n";
+            textFuncLower += "    tmptype_Mul = 2\n";
+        }
     } else if(pfstr[pospf] == '<' && pfstr[pospf+1] == '=') { 
         string rangeName = pfstr.substr(pospf+2);
         textFuncLower += "    tmpRange = " + rangeName + "\n";
 
         // secret_value <= r <==> r - secret_value >= 0 
         textFuncLower += "    " + pfVarName + " = tmpRange - " + pfExp + "\n";
+
+        if(hasMul){
+            textFuncLower += "    " + pfVarName + " = " + pfExp.substr(0,posMul) + ")\n";
+            textFuncLower += "    tmpMulR = (" + pfExp.substr(posMul+1) + "\n";
+            textFuncLower += "    tmptype_Mul = 3\n";
+        }
     } else if(pfstr[pospf] == '<' && pfstr[pospf+1] != '=') { 
         string rangeName = pfstr.substr(pospf+1);
         textFuncLower += "    tmpRange = " + rangeName + "\n";
 
         // secret_value < r <==> r - secret_value - 1 >= 0
         textFuncLower += "    " + pfVarName + " = tmpRange - " + pfExp + " - 1\n";
+
+        if(hasMul){
+            textFuncLower += "    " + pfVarName + " = " + pfExp.substr(0,posMul) + ")\n";
+            textFuncLower += "    tmpMulR = (" + pfExp.substr(posMul+1) + "\n";
+            textFuncLower += "    tmptype_Mul = 4\n";
+        }
     } else {
         assert(0);
     }
@@ -776,7 +791,7 @@ void zkrpStmt(){
 
     string zkpstmtName = "zkpstmt" + to_string(cntZkrp);
 
-    textLine += "await verify_proof(server, " + pfVarName + ", " + zkpstmtName + " , tmpMul, tmpMulR)";
+    textLine += "await verify_proof(server, " + pfVarName + ", " + zkpstmtName + " , tmptype_Mul, tmpMulR, tmpRange)";
 }
 
 
