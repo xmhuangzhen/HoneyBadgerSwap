@@ -302,22 +302,15 @@ contract hbswap {
             times.append(time.perf_counter())
 
 
-            feeRate = 0.003
+            feeRate = 1
 
             totalA = (1 + feeRate) * amtA
             totalB = (1 + feeRate) * amtB
 
-
             times.append(time.perf_counter())
 
-            mpcInput(sfix amtA, sfix amtB)
-            
-            productAB = amtA * amtB
-
-            mpcOutput(sfix productAB)
-
             ### TODO: realize by ZKP
-            assert(zkrp(productAB < 0))
+            assert(zkrp((amtA * amtB) <= 0))
             assert(zkrp((-totalA) <= balanceA))
             assert(zkrp((-totalB) <= balanceB))
 
@@ -349,8 +342,8 @@ contract hbswap {
             orderSucceed = flagBuyA + flagBuyB
             totalCnt += orderSucceed
 
-            #print_ln('**** balanceA %s', balanceA.reveal())
-            #print_ln('**** balanceB %s', balanceB.reveal())
+            print_ln('**** balanceA %s', balanceA.reveal())
+            print_ln('**** balanceB %s', balanceB.reveal())
             #print_ln('**** poolA %s', poolA.reveal())
             #print_ln('**** poolB %s', poolB.reveal())
 
@@ -371,7 +364,7 @@ contract hbswap {
 
             times.append(time.perf_counter())
 
-            with open(f'ratel/benchmark/data/latency_{server.serverID}.csv', 'a') as f:
+            with open(f'ratel/benchmark/data/latency_zkrp_{server.serverID}.csv', 'a') as f:
                 for op, t in enumerate(times):
                     f.write(f'trade\t'
                             f'seq\t{seqTrade}\t'
