@@ -5,8 +5,8 @@ import json
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
 
-from ratel.src.python.Client import get_inputmasks, reserveInput
-from ratel.src.python.deploy import http_uri, app_addr
+from ratel.src.python.Client import get_inputmasks, reserveInput, generate_zkrp_mul
+from ratel.src.python.deploy import url, app_addr
 from ratel.src.python.utils import (
     parse_contract,
     getAccount,
@@ -38,8 +38,8 @@ def createGame(appContract, value1, account, web3):
     zkps = json.dumps([zkp1,zkp2])
 
     web3.eth.defaultAccount = account.address
-    tx = appContract.functions.createGame(idx, maskedValue, bidx, maskedBlinding, proof, commitment).buildTransaction({
-        'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount),
+    tx = appContract.functions.createGame(idx1, maskedvalue1, zkps).buildTransaction({
+        'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)
     })
     receipt = sign_and_send(tx, web3, account)
 
@@ -103,9 +103,9 @@ if __name__ == "__main__":
     client_1 = getAccount(web3, f"/opt/poa/keystore/client_1/")
     client_2 = getAccount(web3, f"/opt/poa/keystore/client_2/")
 
-    gameId = createGame(appContract, 1, client_1, web3)
-    joinGame(appContract, gameId, 1, client_2, web3)
-    startRecon(appContract, gameId, client_1, web3)
+    gameId = createGame(appContract, 1, client_1)
+    joinGame(appContract, gameId, 1, client_2)
+    startRecon(appContract, gameId, client_1)
 
     gameId = createGame(appContract, 1, client_1, web3)
     joinGame(appContract, gameId, 2, client_2, web3)
@@ -135,6 +135,6 @@ if __name__ == "__main__":
     joinGame(appContract, gameId, 2, client_2, web3)
     startRecon(appContract, gameId, client_1, web3)
 
-    gameId = createGame(appContract, 3, client_1, web3)
-    joinGame(appContract, gameId, 3, client_2, web3)
-    startRecon(appContract, gameId, client_1, web3)
+    gameId = createGame(appContract, 3, client_1)
+    joinGame(appContract, gameId, 3, client_2)
+    startRecon(appContract, gameId, client_1)

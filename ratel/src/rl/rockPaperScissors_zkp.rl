@@ -25,19 +25,16 @@ contract rockPaperScissors {
         uint gameId = ++gameCnt;
         gamePlayer1[gameId] = player1;
 
-        mpc(uint gameId, address player1, $#uint value1) {
-            mpcInput(sint value1)
-
-            valid = ((value1.greater_equal(1, bit_length=bit_length)) * (value1.less_equal(3, bit_length=bit_length))).reveal()
-
-            mpcOutput(cint valid)
+        mpc(uint gameId, address player1, $uint value1) {
+            assert(zkrp(value1 >= 1))
+            assert(zkrp(value1 <= 3))
 
             print('**** valid', valid)
-            if valid == 1:
-                writeDB(f'game_value1_{gameId}', value1, int)
 
-                curStatus = 1
-                set(status, uint curStatus, uint gameId)
+            writeDB(f'game_value1_{gameId}', value1, int)
+
+            curStatus = 1
+            set(status, uint curStatus, uint gameId)
         }
     }
 
@@ -48,18 +45,15 @@ contract rockPaperScissors {
         gamePlayer2[gameId] = player2;
 
         mpc(uint gameId, address player2, $uint value2) {
-            mpcInput(sint value2)
-
-            valid = ((value2.greater_equal(1, bit_length=bit_length)) * (value2.less_equal(3, bit_length=bit_length))).reveal()
-
-            mpcOutput(cint valid)
+            assert(zkrp(value2 >= 1))
+            assert(zkrp(value2 <= 3))
 
             print('**** valid', valid)
-            if valid == 1:
-                writeDB(f'game_value2_{gameId}', value2, int)
 
-                curStatus = 2
-                set(status, uint curStatus, uint gameId)
+            writeDB(f'game_value2_{gameId}', value2, int)
+
+            curStatus = 2
+            set(status, uint curStatus, uint gameId)
         }
     }
 

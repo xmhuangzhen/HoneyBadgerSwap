@@ -22,7 +22,7 @@ def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
 
     # balanceA, balanceB = float(balanceA / fp), float(balanceB / fp)
 
-    feeRate = 0.003
+    feeRate = 1
     totalA = (1 + feeRate) * amtA
     totalB = (1 + feeRate) * amtB
 
@@ -34,8 +34,8 @@ def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
     print('balanceA:', balanceA, 'balanceB:', balanceB)
 
     proof1, commitment1, blinding1 = get_zkrp(amtA*amtB, '<=', 0)
-    proof2, commitment2, blinding2 = get_zkrp(-amtA, '<=', int(balanceA/(1+feeRate)))
-    proof3, commitment3, blinding3 = get_zkrp(-amtB, '<=', int(balanceB/(1+feeRate)))
+    proof2, commitment2, blinding2 = get_zkrp(-totalA, '<=', balanceA)
+    proof3, commitment3, blinding3 = get_zkrp(-totalB, '<=', balanceB)
     ###############zkrp prove end#############
     
     idxAmtA, idxAmtB, idxzkp1, idxzkp2, idxzkp3 = reserveInput(web3, appContract, 5, account)
@@ -83,5 +83,5 @@ if __name__=='__main__':
 
     for i in range(repetition):
         trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id)
-        # time.sleep(60)
+        time.sleep(30)
         trade(appContract, tokenA, tokenB, amtB, amtA, account, web3, client_id)
