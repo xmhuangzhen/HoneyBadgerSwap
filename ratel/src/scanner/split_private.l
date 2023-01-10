@@ -161,9 +161,10 @@ void checkFloatConstant(){
 
 void initPython() {
     textPythonUpper += "import asyncio\n";
+    textPythonUpper += "import os\n";
     textPythonUpper += "import json\n";
-    textPythonUpper += "from ratel.src.python.utils import location_sharefile, prog, mpcPort, prime, inv_10, sz, int_to_hex, hex_to_int, recover_input, fp, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof\n";
-    textPythonUpper += "from ratel.benchmark.src.test_mpc import run_online\n";
+    textPythonUpper += "from ratel.src.python.utils import location_sharefile, prog, mpcPort, prime, sz, int_to_hex, hex_to_int, recover_input, fp, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof, key_inputmask_index, key_inputmask_version, input_mask_gen_batch_size, key_state_mask, mpc_port, inv_10\n";
+    textPythonUpper += "from ratel.benchmark.src.test_mpc import run_online, run_offline\n";
     textPythonUpper += "\n";
 
     textPythonUpper += "async def monitor(server):\n";
@@ -181,7 +182,11 @@ void finalizePython() {
     textPythonUpper += "            logs = []\n";
     textPythonUpper += "\n";
 
-    events.push_back("GenInputMask");
+    events.push_back("InitGenInputMask");
+    events.push_back("GenStateMask");
+    events.push_back("FinalizeGenInputMask");
+    events.push_back("RemoveServer");
+    events.push_back("AddServer");
 
     if (finalizeOnChain) {
         events.push_back("Finalization");
@@ -208,20 +213,78 @@ void finalizePython() {
     if (finalizeOnChain) {
         textPythonUpper += "async def runFinalization(server, log):\n";
         textPythonUpper += "    seq = log['args']['seq']\n";
+        textPythonUpper += "    finalization_seq = log['args']['finalizationSeq']\n";
         textPythonUpper += "    from ratel.genfiles.python." + fileName + "Recover import recover\n";
         textPythonUpper += "    keys = recover(server.contract, seq, 'allSet')\n";
         textPythonUpper += "    for key in keys:\n";
         textPythonUpper += "        server.dbLock[key.lower()].release()\n";
-        textPythonUpper += "    mark_finish(server, seq)\n";
+        textPythonUpper += "    mark_finish(server, finalization_seq)\n";
         textPythonUpper += "\n\n";
     }
 
-    textPythonUpper += "async def runGenInputMask(server, log):\n";
-    textPythonUpper += "    input_mask_cnt = log['args']['inputMaskCnt']\n";
-    textPythonUpper += "    input_mask_version = log['args']['inputMaskVersion']\n";
-    textPythonUpper += "    await server.gen_input_mask(input_mask_cnt, input_mask_version)\n";
+    textPythonUpper += "async def runInitGenInputMask(server, log):\n";
+    textPythonUpper += "    refill = log['args']['refill']\n";
+    textPythonUpper += "    version = log['args']['version']\n";
+    textPythonUpper += "    assert len(server.input_mask_cache) == 0, \"input mask cache is not empty\"\n";
+    textPythonUpper += "    assert server.input_mask_version < version, \"input mask version is too old\"\n";
+    textPythonUpper += "    shares = await server.gen_random_field_elements(input_mask_gen_batch_size)\n";
+    textPythonUpper += "    server.input_mask_cache = shares\n";
+    textPythonUpper += "    server.input_mask_version = version\n";
+    textPythonUpper += "    # TODO: remove the following check & add gen agreement proof\n";
+    textPythonUpper += "    if server.serverID == 0:\n";
+    textPythonUpper += "        tx = server.contract.functions.finalizeGenInputMask(refill, len(server.input_mask_cache)).buildTransaction(\n";
+    textPythonUpper += "            {'from': server.account.address, 'gas': 1000000,\n";
+    textPythonUpper += "            'nonce': server.web3.eth.get_transaction_count(server.account.address)})\n";
+    textPythonUpper += "        sign_and_send(tx, server.web3, server.account)\n";
+    textPythonUpper += "\n";
     textPythonUpper += "\n";
 
+    textPythonUpper += "async def runGenStateMask(server, log):\n";
+    textPythonUpper += "    server_addr = log['args']['server']\n";
+    textPythonUpper += "    init_state_mask_index = log['args']['initStateMaskIndex']\n";
+    textPythonUpper += "    num = log['args']['num']\n";
+    textPythonUpper += "    shares = await server.gen_random_field_elements(num)\n";
+    textPythonUpper += "    for (index, share) in zip(range(init_state_mask_index, init_state_mask_index + num), shares):\n";
+    textPythonUpper += "        server.db.Put(key_state_mask(server_addr, index), share.to_bytes((share.bit_length() + 7) // 8, 'big'))\n";
+    textPythonUpper += "\n";
+    textPythonUpper += "\n";
+
+    textPythonUpper += "async def runFinalizeGenInputMask(server, log):\n";
+    textPythonUpper += "    num_input_mask = log['args']['numInputMask']\n";
+    textPythonUpper += "    last_input_mask_index = log['args']['lastInputMaskIndex']\n";
+    textPythonUpper += "    assert num_input_mask == len(server.input_mask_cache), \"inconsistent input masks\"\n";
+    textPythonUpper += "    for (index, share) in zip(range(last_input_mask_index - num_input_mask, last_input_mask_index), server.input_mask_cache):\n";
+    textPythonUpper += "        server.db.Put(key_inputmask_index(index), share.to_bytes((share.bit_length() + 7) // 8, 'big'))\n";
+    textPythonUpper += "        server.db.Put(key_inputmask_version(index), server.input_mask_version.to_bytes((server.input_mask_version.bit_length() + 7) // 8, 'big'))\n";
+    textPythonUpper += "    server.input_mask_cache = []\n";
+    textPythonUpper += "    server.input_mask_version = 0\n";
+    textPythonUpper += "\n";
+    textPythonUpper += "\n";
+
+    textPythonUpper += "async def runRemoveServer(server, log):\n";
+    textPythonUpper += "    server.players -= 1\n";
+    textPythonUpper += "    print(f'players {server.players}')\n";
+    textPythonUpper += "\n";
+    textPythonUpper += "\n";
+
+    textPythonUpper += "async def runAddServer(server, log):\n";
+    textPythonUpper += "    server.players += 1\n";
+    textPythonUpper += "    print(f'players {server.players}')\n";
+    textPythonUpper += "#    await execute_cmd(f'rm -rf offline_data/s{server.serverID}')\n";
+    textPythonUpper += "#    directory = os.fsencode(f'ratel/genfiles/mpc')\n";
+    textPythonUpper += "#    for file in os.listdir(directory):\n";
+    textPythonUpper += "#        filename = os.fsdecode(file)\n";
+    textPythonUpper += "#        if filename.endswith('.mpc'):\n";
+    textPythonUpper += "#            mpc_prog = filename[:-4]\n";
+    textPythonUpper += "#            await run_offline(server.serverID, mpc_port, server.players, server.threshold, mpc_prog)\n";
+    textPythonUpper += "#            for i in range(1, server.concurrency):\n";
+    textPythonUpper += "#                port = mpc_port + i * 100\n";
+    textPythonUpper += "#                src_dir = f'offline_data/s{server.serverID}/{mpc_prog}_port_{mpc_port}'\n";
+    textPythonUpper += "#                dst_dir = f'offline_data/s{server.serverID}/{mpc_prog}_port_{port}'\n";
+    textPythonUpper += "#                cmd = f'cp -rf {src_dir} {dst_dir}'\n";
+    textPythonUpper += "#                asyncio.run(execute_cmd(cmd))\n";
+
+    textPythonUpper += "\n";
 
     fprintf(pythonFp, "%s", textPythonUpper.c_str());
     fprintf(pythonFp, "%s", textPythonLower.c_str());
@@ -368,8 +431,6 @@ void monitorEvent() {
 void unmaskInput() {
     bool flag = 0;
     bool hasZKP = 0;
-
-//    textFuncUpper += "    liszkp = []\n";
 
     for (int i = 0; i < args.size(); i++) {
         if (args[i][0] == '$') {
@@ -525,6 +586,10 @@ void setRecover() {
                 string maskedVarName = "masked" + varName;
                 parameter += ", " + maskedVarName;
 
+                if (type[1] == '#') {
+                     parameter += ", idx" + varName + "Blinding, masked" + varName + "Blinding, proof" + varName + ", commitment" + varName;
+                }
+
             } else {
                 parameter += ", " + varName;
             }
@@ -668,10 +733,6 @@ void zkrp(){
 
     string pfstr = args[0];
 
-    textFuncLower += "    print(\'" + pfstr +  "\')\n";
-
-    
-
     int pospf = 0;
     for(int i = 0;i < pfstr.length();++i){
         if(pfstr[i] == '<' || pfstr[i] == '>'){
@@ -683,6 +744,8 @@ void zkrp(){
     string pfVarName = "pfVar" + to_string(cntZkrp-1);
 
     string pfExp = pfstr.substr(0,pospf);
+    pfExp[0] = toupper(pfExp[0]);
+    pfExp = "masked" + pfExp;
     string zkpstmtName = "zkpstmt" + to_string(cntZkrp-1);
 
     bool hasMul = false;
@@ -703,7 +766,6 @@ void zkrp(){
         string rangeName = pfstr.substr(pospf+2);
         textFuncLower += "    tmpRange = int(" + rangeName + ")\n";
 
-        // secret_value >= r <==> secret_value - r >= 0
         textFuncLower += "    " + pfVarName + " = " + pfExp + " - tmpRange\n";
 
         if(hasMul){
@@ -715,7 +777,6 @@ void zkrp(){
         string rangeName = pfstr.substr(pospf+1);
         textFuncLower += "    tmpRange = int(" + rangeName + ")\n";
 
-        // secret_value > r <==> secret_value - r - 1 >= 0
         textFuncLower += "    " + pfVarName + " = " + pfExp + " - tmpRange - 1\n";
 
         if(hasMul){
@@ -728,7 +789,6 @@ void zkrp(){
         string rangeName = pfstr.substr(pospf+2);
         textFuncLower += "    tmpRange = int(" + rangeName + ")\n";
 
-        // secret_value <= r <==> r - secret_value >= 0 
         textFuncLower += "    " + pfVarName + " = tmpRange - " + pfExp + "\n";
 
         if(hasMul){
@@ -741,7 +801,6 @@ void zkrp(){
         string rangeName = pfstr.substr(pospf+1);
         textFuncLower += "    tmpRange = int(" + rangeName + ")\n";
 
-        // secret_value < r <==> r - secret_value - 1 >= 0
         textFuncLower += "    " + pfVarName + " = tmpRange - " + pfExp + " - 1\n";
 
         if(hasMul){
@@ -755,9 +814,6 @@ void zkrp(){
     }
 
     textFuncLower += "    " + zkpstmtName + " = lis_zkpstmt[" + to_string(cntZkrp-1) + "]\n";
-//    textFuncLower += "    print(\'cntZkrp:" + to_string(cntZkrp-1) + "\')\n";
-//    textFuncLower += "    print(\'zkpstmt\'," + zkpstmtName + ")\n";
-    textFuncLower += "    print(\'tmpRange:\',tmpRange)\n";
 }
 
 
@@ -779,11 +835,6 @@ void addZkrpArgs(){
         string liszkp_str = "";
         for(int i = 0;i < cntZkrp;++i){
             string postVarName = "zkpstmt" + to_string(i);
-
-            //todos
-            /////////////////////add recover input for zkp/////////////////////
-//            recover_str += "    " + postVarName + " = recover_input(server.db, masked" + postVarName + ", idx" + postVarName + ")\n";
-//            recover_str += "    " + postVarName + "Blinding = recover_input(server.db, masked" + postVarName + "Blinding, idx" + postVarName + "Blinding)\n";
         }
     }
 }
@@ -794,7 +845,7 @@ void zkrpStmt(){
 
     string zkpstmtName = "zkpstmt" + to_string(cntZkrp);
 
-    textLine += "await verify_proof(server, " + pfVarName + ", " + zkpstmtName + " , tmptype_Mul, tmpMulR, tmpRange)";
+    textLine += "await verify_proof(server, " + pfVarName + ", " + zkpstmtName + ", tmptype_Mul, tmpMulR, tmpRange)";
 }
 
 
@@ -1064,7 +1115,6 @@ SPACE [ \t\r]+
 }
 
 \. {
-//    hasFloatPoint = true;
     addText(yytext);
 }
 
@@ -1094,12 +1144,6 @@ int main(int argc, char **argv) {
     recoverFp = fopen(recoverFile.c_str(), "a");
     fprintf(recoverFp, "%s", textRecover.c_str());
     fclose(recoverFp);
-
-//    FILE *tmpFp;
-//    string tmpFile = "tmp.txt";
-//    tmpFp = fopen(tmpFile.c_str(), "a");
-//    fprintf(tmpFp, "%s", to_string(sumZkrp).c_str());
-//    fclose(tmpFp);
 
 	return 0;
 }

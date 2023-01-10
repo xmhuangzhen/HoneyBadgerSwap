@@ -1,5 +1,6 @@
 import ast
 import asyncio
+import glob
 import json
 import leveldb
 import os
@@ -8,7 +9,7 @@ import math
 
 from gmpy import binary, mpz
 from gmpy2 import mpz_from_old_binary
-from zkrp_pyo3 import pedersen_aggregate, pedersen_commit, zkrp_verify, zkrp_prove, zkrp_prove_mul, zkrp_verify_mul, other_base_commit, product_com
+from zkrp_pyo3 import pedersen_aggregate, pedersen_commit, zkrp_verify, zkrp_prove, zkrp_prove_mul, zkrp_verify_mul, other_base_commit, product_com, gen_random_value, recover_commitment
 
 INPUTMASK_SHARES_DIR = os.getenv(
     'INPUTMASK_SHARES', '/opt/hbswap/inputmask-shares',
@@ -93,9 +94,13 @@ def key_zkrp_agg_commitment_index(idx):
     return f'zkrp_agg_commitment_index_{idx}'.encode()
 
 
-def key_serverval_index(idx):
-    idx = idx.lower()
-    return f'{idx}'.encode()
+def encode_key(key):
+    key = key.lower()
+    return f'{key}'.encode()
+
+
+def key_state_mask(server_addr, idx):
+    return f'state_mask_{server_addr}_{idx}'.encode()
 
 
 def location_sharefile(server_id, base_port):
@@ -111,7 +116,9 @@ def location_inputmask(server_id, players):
     inputmask_shares_dir = os.getenv(
         'INPUTMASK_SHARES', '/opt/hbswap/inputmask-shares',
     )
-    return f'{inputmask_shares_dir}/{players}-MSp-{prime_bit_length}/Randoms-MSp-P{server_id}'
+    filepath = f'{inputmask_shares_dir}/{players}*/*P{server_id}'
+    for file in glob.glob(filepath):
+        return file
 
 
 def openDB(location):
@@ -198,13 +205,13 @@ def mark_finish(server, seq):
     server.portLock[port].release()
 
     key = 'execHistory'
-    execHistory = read_db(server, key)
-    execHistory = bytes_to_dict(execHistory)
+    exec_history = read_db(server, key)
+    exec_history = bytes_to_dict(exec_history)
 
-    execHistory[seq] = True
+    exec_history[seq] = True
 
-    execHistory = dict_to_bytes(execHistory)
-    write_db(server, key, execHistory)
+    exec_history = dict_to_bytes(exec_history)
+    write_db(server, key, exec_history)
 
 
 def read_db(server, key, finalize_on_chain=False):
@@ -268,126 +275,23 @@ def dict_to_bytes(value):
     return bytes(str(value), encoding='utf-8')
 
 
-async def verify_proof(server, x, zkpstmt, type_Mul = 0, y = 1, r = 0):
-    [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
+async def verify_proof(server, masked_x, zkpstmt, type_Mul = 0, y = 1, r = 0):
+    [proof, blinding_idx] = zkpstmt
+    C_rx = json.loads(server.db.Get(key_zkrp_agg_commitment_index(blinding_idx)).decode())
+    C_x = recover_commitment(masked_x, C_rx)
+
+    print("C_x", C_x)
+
     # TODO:
-    # proof, commitment, blinding_ = zkrp_prove(2022, 32)
-    if proof is None or commitment is None or not zkrp_verify(proof, commitment):
+    if proof is None or C_x is None or not zkrp_verify(proof, C_x):
         print("[Error]: Committed secret value does not pass range proof verification!")
         return False
 
-    blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
-    x,y,r = int(x), int(y), int(r)
-
-    if type_Mul == 0:
-        pfval = x % prime
-        if pfval < 0:
-            pfval = (pfval % prime + prime) % prime
-        print('pfval2:',pfval)
-        
-        # TODO: where is the blinding mask created? we also need to share it.
-        value1_bytes = list(pfval.to_bytes(32, byteorder='little'))
-        blinding_bytes = list(blinding.to_bytes(32, byteorder='little'))
-
-        share_commitment = pedersen_commit(value1_bytes, blinding_bytes)
-
-        print('share_commitment:',share_commitment)
-        # TODO: create the function to commit to the unmasked secret shares.
-        # TODO: we also need to change the current zkrp interface to allow specifying r and choose range to prove.
-
-        server.zkrpShares[f'{idxValueBlinding}'] = share_commitment
-        results = await server.get_zkrp_shares(players(server.contract), f'{idxValueBlinding}')
-        # print(")))))))", results)
-        agg_commitment = pedersen_aggregate(results, [x + 1 for x in list(range(server.players))])
-
-        print("agg_commit:", agg_commitment, commitment)
-        return agg_commitment == commitment
-    else: ### x * y >= r
-        r = -r
-        r = (r % prime + prime) % prime
-        if type_Mul >= 3:
-            x = -x
-            x = (x % prime + prime) % prime
-        ############# (1) compute g^[x] #############
-        zer = 0
-        x_bytes = list(x.to_bytes(32, byteorder='little'))
-        zer_bytes = list(zer.to_bytes(32, byteorder='little'))
-        g_x_share = pedersen_commit(x_bytes, zer_bytes) 
-        server.zkrpShares[f'{idxValueBlinding}_{0}'] = g_x_share
-        results_g_x = await server.get_zkrp_shares(players(server.contract), f'{idxValueBlinding}_{0}')
-        print('results_g_x',results_g_x)
-        g_x_bytes = pedersen_aggregate(results_g_x, [x + 1 for x in list(range(server.players))])
-        # g_x = int.from_bytes(g_x_bytes, byteorder='little')
-        # print('g_x',g_x)
-
-        ############# (2) compute (g^x)^[y] * h^[rz] #############
-        rz_bytes = list(blinding.to_bytes(32, byteorder='little'))
-        y_bytes = list(y.to_bytes(32, byteorder='little'))
-        # g_xy = pow(g_x, y, prime)
-        # print('g_xy',g_xy)
-        # g_xy_bytes = list(g_xy.to_bytes(32, byteorder='little'))
-        g_xy_h_rz_bytes = other_base_commit(g_x_bytes, y_bytes, rz_bytes)
-        # h_rz_share = int.from_bytes(h_rz_share_bytes, byteorder='little')
-        # g_xy_h_rz = (g_xy_share*h_rz_share) % prime
-        # g_xy_h_rz_bytes = list(g_xy_h_rz.to_bytes(32, byteorder='little'))
-        print('g_xy_h_rz_bytes',g_xy_h_rz_bytes)
-        server.zkrpShares[f'{idxValueBlinding}_{1}'] = g_xy_h_rz_bytes
-        results_g_xy_h_rz = await server.get_zkrp_shares(players(server.contract), f'{idxValueBlinding}_{1}')
-        print('results_g_xy_h_rz',results_g_xy_h_rz)
-        agg_gxyhrz_commitment = pedersen_aggregate(results_g_xy_h_rz, [x + 1 for x in list(range(server.players))])
-        print('agg_commitment',agg_gxyhrz_commitment)
-
-        if r != 0:
-            ### fixme!
-            r_bytes = list(r.to_bytes(32, byteorder='little'))
-            g_r = pedersen_commit(r_bytes, zer_bytes) 
-            print('g_r', g_r)
-            agg_commitment = product_com(g_r,agg_gxyhrz_commitment)
-        else:
-            agg_commitment = agg_gxyhrz_commitment
-        print('agg_commitment',agg_commitment)
-        print('commitment',commitment)
-        return agg_commitment == commitment
+    return True
 
 
 
-def get_zkrp(secret_value, exp_str, r, isSfix = False):
-    value = secret_value
 
-    # if exp_str == '>=':
-    #     value = int((value - r) * fac)
-    # elif exp_str == '>': #secret_value > r <==> secret_value - r -1 >= 0
-    #     value = int((value - r) * fac) - 1
-    # elif exp_str == '<=': # secret_value <= r <==> r - secret_value >= 0 
-    #     value = int((r - value) * fac)
-    # elif exp_str == '<': #secret_value < r <==> r - secret_value - 1 >= 0
-    #     value = int((r - value) * fac) - 1
-
-    if isSfix:
-        value = int(value * fp)
-        r = int(r * fp)
-    
-    if exp_str == '>=':
-        value = value - r
-    elif exp_str == '>': #secret_value > r <==> secret_value - r -1 >= 0
-        value = value - r - 1
-    elif exp_str == '<=': # secret_value <= r <==> r - secret_value >= 0 
-        value = r - value
-    elif exp_str == '<': #secret_value < r <==> r - secret_value - 1 >= 0
-        value = r - value - 1
-
-
-    value = (value % prime + prime) % prime
-    # if value < 0 :
-    #     value = (value % prime + prime) % prime
-
-    print('value:',value)
-
-    #To prove value >= 0
-    bits = 32
-    proof, commitment, blinding_bytes = zkrp_prove(value, bits)
-    blinding = int.from_bytes(blinding_bytes, byteorder='little')
-    return proof, commitment, blinding
 
 leaderHostname = 'mpcnode0'
 
@@ -416,8 +320,8 @@ http_port = 4000
 
 mpc_port = 5000
 
-spareShares = 1000
-shareBatchSize = 10000
+threshold_available_input_masks = 1000
+input_mask_gen_batch_size = 10000
 
 confirmation = 2
 

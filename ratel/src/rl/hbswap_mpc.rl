@@ -309,17 +309,32 @@ contract hbswap {
 
             times.append(time.perf_counter())
 
-            mpcInput(sfix amtA, sfix amtB, sfix balanceA, sfix balanceB, sfix totalA, sfix totalB)
+            mpcInput(sfix amtA, sfix amtB)
 
-            checkA = ((amtA*amtB) <= 0).reveal()
-            checkB = ((-totalA) <= balanceA).reveal()
-            checkC = ((-totalB) <= balanceB).reveal()
+            check_res = ((amtA*amtB) <= 0).reveal()
 
-            mpcOutput(cint checkA, cint checkB, cint checkC)
-            
-            assert(checkA == 1)
-            assert(checkB == 1)
-            assert(checkC == 1)
+            mpcOutput(cint check_res)
+
+            assert(check_res == 1)
+
+
+            mpcInput(sfix totalA, sfix balanceA)
+
+            check_res = ((-totalA) <= balanceA).reveal()
+
+            mpcOutput(cint check_res)
+
+            assert(check_res == 1)
+
+
+            mpcInput(sfix totalB, sfix balanceB)
+
+            check_res = ((-totalB) <= balanceB).reveal()
+
+            mpcOutput(cint check_res)
+
+            assert(check_res == 1)
+
 
             times.append(time.perf_counter())
 
