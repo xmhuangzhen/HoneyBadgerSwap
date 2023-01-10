@@ -250,11 +250,13 @@ fn recover_commitment(mx: u64 , C_rx_bytes: [u8; 32]) -> PyResult< [u8; 32]> {
 
     let zer = Scalar::zero();
 
-    let C_rx_value = CompressedRistretto(read32(&C_rx_bytes));
-    let C_mx = pc_gens.commit(mx, zer);
+    let C_rx_value = Scalar::from_bytes_mod_order(read32(&C_rx_bytes));
+
+    let mx_scalar = Scalar::from(mx);
+    let C_mx = pc_gens.commit(mx_scalar, zer);
 
     let C_x = C_mx * C_rx_value.invert();
-    Ok( C_x.to_bytes())
+    Ok( C_x.compress().to_bytes())
 }
 
 #[pyfunction]
