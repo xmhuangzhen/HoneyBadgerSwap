@@ -3,7 +3,7 @@ import re
 
 from aiohttp import ClientSession
 from ratel.src.python.utils import http_port, http_host, get_inverse, prime, sign_and_send
-from zkrp_pyo3 import zkrp_prove_mul, zkrp_verify_mul
+from zkrp_pyo3 import pedersen_aggregate, pedersen_commit, zkrp_verify, zkrp_prove, zkrp_prove_mul, zkrp_verify_mul, other_base_commit, product_com, gen_random_value
 
 
 def reserveInput(web3, appContract, num, account):
@@ -131,3 +131,47 @@ async def generate_zkrp_mul(players, x, y, threshold):
 
     mx_prime, my_prime, sx, sy_prime,  = zkrp_prove_mul(x, y, rx_prime_bytes,ry_prime_bytes)
 
+async def generate_Crx(players, x_idx, threshold):
+    request_rx_prime = f'zkrp_blinding_shares/{x_idx}'
+    rx_prime_res = await send_requests(players, request_rx_prime)
+
+    for i in range(len(rx_prime_res)):
+        rx_prime_res[i] = re.split(',',rx_prime_res[i]['zkrp_blinding_shares'])
+    rx_prime = batch_interpolate(rx_prime_res, threshold)
+
+    rx_prime_idx = rx_prime_res[0]['zkrp_blinding_share_idx']
+
+    print('rx_prime', rx_prime)
+    print('rx_prime_idx', rx_prime_idx)
+
+    return rx_prime, rx_prime_idx
+
+async def get_zkrp(players, rx_idx, mx, exp_str, r, threshold):
+    print(f'get_zkrp {exp_str} {r} {rx_idx} {mx}')
+
+    ####### （1) generate C_rx = g^{rx}h^{rx'}
+    rx_prime, rx_prime_idx = generate_Crx(players, rx_idx, threshold)
+
+    value = mx
+    
+    if exp_str == '>=':
+        value = value - r
+    elif exp_str == '>': #secret_value > r <==> secret_value - r -1 >= 0
+        value = value - r - 1
+    elif exp_str == '<=': # secret_value <= r <==> r - secret_value >= 0 
+        value = r - value
+    elif exp_str == '<': #secret_value < r <==> r - secret_value - 1 >= 0
+        value = r - value - 1
+
+    value = (value % prime + prime) % prime
+
+    # rx_blinding_bytes = gen_random_value()
+    # rx_blinding = int.from_bytes(rx_blinding_bytes, byteorder='little')
+    
+    bits = 32
+    blinding_x = (prime - rx_prime) % prime
+    blinding_x_bytes = list(blinding_x.to_bytes(32, byteorder='little'))
+    proof, commitment = zkrp_prove(value, blinding_x_bytes, bits)
+    
+    print('commmitment:', commitment)
+    return proof, rx_prime_idx

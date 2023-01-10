@@ -744,6 +744,8 @@ void zkrp(){
     string pfVarName = "pfVar" + to_string(cntZkrp-1);
 
     string pfExp = pfstr.substr(0,pospf);
+    pfExp[0] = toupper(pfExp[0]);
+    pfExp = "masked" + pfExp;
     string zkpstmtName = "zkpstmt" + to_string(cntZkrp-1);
 
     bool hasMul = false;

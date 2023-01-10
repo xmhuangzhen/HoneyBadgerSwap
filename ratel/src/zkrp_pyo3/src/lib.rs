@@ -190,7 +190,7 @@ fn pedersen_compare(recovered_commitment: [u8; 32], onchain_commitment: [u8; 32]
 
 // TODO: return the blinding as bytes using as_bytes (returns &[u8; 32])
 #[pyfunction]
-fn zkrp_prove(secret_value: u64, bits: usize) -> PyResult<(Vec<u8>, [u8; 32], [u8; 32])> {
+fn zkrp_prove(secret_value: u64, blinding_bytes: [u8; 32], bits: usize) -> PyResult<(Vec<u8>, [u8; 32])> {
     // Generators for Pedersen commitments.  These can be selected
     // independently of the Bulletproofs generators.
     let pc_gens = PedersenGens::default();
@@ -200,7 +200,8 @@ fn zkrp_prove(secret_value: u64, bits: usize) -> PyResult<(Vec<u8>, [u8; 32], [u
     let bp_gens = BulletproofGens::new(64, 1);
 
     // The API takes a blinding factor for the commitment.
-    let blinding = Scalar::random(&mut rand::thread_rng());
+    // let blinding = Scalar::random(&mut rand::thread_rng());
+    let blinding = Scalar::from_bytes_mod_order(blinding_bytes);
 
     // The proof can be chained to an existing transcript.
     // Here we create a transcript with a doctest domain separator.
@@ -216,7 +217,7 @@ fn zkrp_prove(secret_value: u64, bits: usize) -> PyResult<(Vec<u8>, [u8; 32], [u
         bits,
     ).expect("A real program could handle errors");
 
-    Ok((proof.to_bytes(), committed_value.to_bytes(), blinding.to_bytes()))
+    Ok((proof.to_bytes(), committed_value.to_bytes()))
 }
 
 #[pyfunction]
@@ -236,19 +237,31 @@ fn zkrp_verify(proof_bytes: Vec<u8>, committed_value_bytes: [u8; 32]) -> PyResul
     Ok(proof.verify_single(&bp_gens, &pc_gens, &mut verifier_transcript, &committed_value, 32).is_ok())
 }
 
+
 #[pyfunction]
-fn gen_random_value(value_num: u64) -> PyResult<Vec<[u8; 32]>> {
-    let mut res_val : Vec<[u8; 32]> = Vec::new();
+fn recover_commitment(mx: u64 , C_rx_bytes: [u8; 32]) -> PyResult< [u8; 32]> {
+    // Generators for Pedersen commitments.  These can be selected
+    // independently of the Bulletproofs generators.
+    let pc_gens = PedersenGens::default();
 
-    let mut i = 0;
+    // Generators for Bulletproofs, valid for proofs up to bitsize 64
+    // and aggregation size up to 1.
+    let bp_gens = BulletproofGens::new(64, 1);
 
-    while i < value_num {
-        let cur_res = Scalar::random(&mut rand::thread_rng());
-        res_val.push(cur_res.to_bytes());
-        i = i + 1;
-    }
+    let zer = Scalar::zero();
 
-    Ok(res_val)
+    let C_rx_value = CompressedRistretto(read32(&C_rx_bytes));
+    let C_mx = pc_gens.commit(mx, zer);
+
+    let C_x = C_mx * C_rx_value.invert();
+    Ok( C_x.to_bytes())
+}
+
+#[pyfunction]
+fn gen_random_value() -> PyResult<[u8; 32]> {
+    let cur_res = Scalar::random(&mut rand::thread_rng());
+
+    Ok(cur_res.to_bytes())
 }
 
 
@@ -327,5 +340,6 @@ fn zkrp_pyo3(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(zkrp_verify_mul, m)?)?;
     m.add_function(wrap_pyfunction!(other_base_commit, m)?)?;
     m.add_function(wrap_pyfunction!(product_com, m)?)?;
+    m.add_function(wrap_pyfunction!(recover_commitment, m)?)?;
     Ok(())
 }
