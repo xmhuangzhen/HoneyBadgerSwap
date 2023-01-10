@@ -1,6 +1,6 @@
 import sys
 
-from ratel.src.python.deploy import url, app_addr, token_addrs
+from ratel.src.python.deploy import ws_provider, app_addr, token_addrs
 from ratel.src.python.utils import fp, getAccount, parse_contract, sign_and_send
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
@@ -18,7 +18,7 @@ if __name__=='__main__':
     amtA = int(sys.argv[4])
     amtB = int(sys.argv[5])
 
-    web3 = Web3(Web3.WebsocketProvider(url))
+    web3 = Web3(ws_provider)
     web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
     abi, bytecode = parse_contract('hbswap')

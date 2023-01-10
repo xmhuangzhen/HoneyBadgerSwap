@@ -23,6 +23,7 @@ compile_flexes() {
 
 
 compile_sol() {
+  rm -rf build
   truffle compile
 }
 

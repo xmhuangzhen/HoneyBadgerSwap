@@ -301,18 +301,18 @@ contract hbswap {
 
             times.append(time.perf_counter())
 
-
-            feeRate = 1
-
+            feeRate = 0
             totalA = (1 + feeRate) * amtA
             totalB = (1 + feeRate) * amtB
 
             times.append(time.perf_counter())
 
-            ### TODO: realize by ZKP
-            assert(zkrp((amtA * amtB) <= 0))
-            assert(zkrp((-totalA) <= balanceA))
-            assert(zkrp((-totalB) <= balanceB))
+            ### invalid orders probably leak information about the direction of trade
+            assert(zkrp((amtA*amtB)<=0))
+
+            assert(zkrp((-totalA)<=balanceA))
+
+            assert(zkrp((-totalB)<=balanceB))
 
             times.append(time.perf_counter())
 

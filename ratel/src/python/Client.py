@@ -1,6 +1,5 @@
 import asyncio
 import re
-import json
 
 from aiohttp import ClientSession
 from ratel.src.python.utils import http_port, http_host, get_inverse, prime, sign_and_send
@@ -68,47 +67,49 @@ async def send_requests(players, request, self_id = -1):
     for server_id in range(players):
         if server_id == self_id:
             continue
-        task = send_request(f"http://{http_host}:{http_port + server_id}/{request}")
+        task = send_request(f'http://{http_host}:{http_port + server_id}/{request}')
         tasks.append(task)
 
     results = await asyncio.gather(*tasks)
     return results
 
 
-async def get_inputmasks(players, inputmask_idxes, threshold):
-    request = f"inputmasks/{inputmask_idxes}"
-    results = await send_requests(players, request)
+def reconstruct_values(results, key, threshold):
     batch_points = []
     for i in range(len(results)):
         if len(results[i]):
-            batch_points.append((i + 1, re.split(",", results[i]["inputmask_shares"])))
+            batch_points.append((i + 1, re.split(',', results[i][key])))
 
-    inputmasks = batch_interpolate(0, batch_points, threshold)
+    values = batch_interpolate(0, batch_points, threshold)
 
-    return inputmasks
+    return values
 
-async def get_serverval(players, server_idxes, threshold):
-    request = f"serverval/{server_idxes}"
+
+
+async def get_inputmasks(players, inputmask_idxes, threshold):
+    request = f'inputmasks/{inputmask_idxes}'
     results = await send_requests(players, request)
-    for i in range(len(results)):
-        results[i] = re.split(",", results[i]["serverval_shares"])
+    return reconstruct_values(results, 'inputmask_shares', threshold)
 
-    inputserverval = batch_interpolate(results, threshold)
 
-    return inputserverval
+async def get_secret_values(players, keys, threshold):
+    request = f'query_secret_values/{keys}'
+    results = await send_requests(players, request)
+    return reconstruct_values(results, 'secret_shares', threshold)
+
 
 async def get_zkrp_blinding_info(players, num, threshold):
-    request_blinding = f"zkrp_blinding_shares/{num}"
+    request_blinding = f'zkrp_blinding_shares/{num}'
     blinding_res = await send_requests(players, request_blinding)
     
     for i in range(len(blinding_res)):
-        blinding_res[i] = re.split(',',blinding_res[i]["zkrp_blinding_shares"])
+        blinding_res[i] = re.split(',',blinding_res[i]['zkrp_blinding_shares'])
     blinding_prime = batch_interpolate(blinding_res, threshold)
 
-    request_agg = f"zkrp_new_agg_com/{num}"
+    request_agg = f'zkrp_new_agg_com/{num}'
     comm_res = await send_requests(players, request_agg)
-    comm_res = comm_res[0]["zkrp_blinding_info_2"]
-    comm_res = re.split(";", comm_res)
+    comm_res = comm_res[0]['zkrp_blinding_info_2']
+    comm_res = re.split(';', comm_res)
     for i in range(len(comm_res)):
         comm_res[i] = re.split(',', comm_res[i][1:-1])
         for j in range(len(comm_res[i])):

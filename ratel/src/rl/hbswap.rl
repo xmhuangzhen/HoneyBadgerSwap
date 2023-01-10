@@ -299,24 +299,18 @@ contract hbswap {
             poolB = readDB(f'pool_{tokenA}_{tokenB}_{tokenB}', int)
             totalCnt = readDB(f'totalCnt_{tokenA}_{tokenB}', int)
 
-            times.append(time.perf_counter())
-
-
-            feeRate = 0.003
-
+            feeRate = 0
             totalA = (1 + feeRate) * amtA
             totalB = (1 + feeRate) * amtB
 
             times.append(time.perf_counter())
 
-            ### TODO: realize by ZKP
-            assert(zkrp((amtA * amtB) <= 0))
-            assert(zkrp((-amtA) <= balanceA/(1+feeRate)))
-            assert(zkrp((-amtB) <= balanceB/(1+feeRate)))
-
-            times.append(time.perf_counter())
-
             mpcInput(sfix balanceA, sfix amtA, sfix balanceB, sfix amtB, sfix poolA, sfix poolB, sint totalCnt, sfix totalA, sfix totalB)
+
+            validOrder = (amtA * amtB <= 0).reveal()
+            enoughA = (-totalA <= balanceA).reveal()
+            enoughB = (-totalB <= balanceB).reveal()
+            earlyQuit = validOrder * enoughA * enoughB
 
             poolProduct = poolA * poolB
 
@@ -328,8 +322,8 @@ contract hbswap {
             acceptB = actualAmtB >= amtB
             buyB = 1 - buyA
 
-            flagBuyA = buyA * acceptA
-            flagBuyB = buyB * acceptB
+            flagBuyA = buyA * acceptA * earlyQuit
+            flagBuyB = buyB * acceptB * earlyQuit
 
             changeA = flagBuyA * actualAmtA + flagBuyB * totalA
             changeB = flagBuyA * totalB + flagBuyB * actualAmtB

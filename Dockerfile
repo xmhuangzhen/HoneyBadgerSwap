@@ -85,37 +85,46 @@ RUN npm install -g npm@7
 RUN npm install -g truffle@5.4.29
 
 RUN pip3 install \
-            aiohttp \
-            aiohttp_cors \
+            aiohttp==3.7.4.post0 \
+            aiohttp_cors==0.7.0 \
             web3==5.24.0 \
-            matplotlib \
-            gmpy \
-            gmpy2 \
-            leveldb \
-            toml \
-            fastapi \
-            pydantic \
-            uvicorn[standard] \
-            # dev
-            ipython \
-            ipdb \
-            aio_eth
+            matplotlib==3.5.2 \
+            gmpy==1.17 \
+            gmpy2==2.1.2 \
+            leveldb==0.201 \
+            toml==0.10.2 \
+            aio_eth==0.0.1
+#            fastapi \
+#            pydantic \
+#            uvicorn[standard] \
+#            ipython \
+#            ipdb \
 
-WORKDIR $HBSWAP_HOME
+#WORKDIR $HBSWAP_HOME
 
-RUN ./setup-ssl.sh 4 /opt/ssl
+# RUN ./setup-ssl.sh 4 /opt/ssl
 
 RUN apt-get update && \
     apt-get install -y curl
 
-WORKDIR /tmp
+#WORKDIR /tmp
 
-RUN curl https://sh.rustup.rs -sSf > rustup.sh
-RUN chmod 755 rustup.sh
-RUN ./rustup.sh -y
-RUN rm /tmp/rustup.sh
+#RUN curl https://sh.rustup.rs -sSf > rustup.sh
+#RUN chmod 755 rustup.sh
+#RUN ./rustup.sh -y
+#RUN rm /tmp/rustup.sh
+#
+#RUN pip install pybulletproofs
 
-RUN ~/.cargo/bin/cargo install mdbook
+
+# Get Rust
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+
+RUN echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
+
+# RUN ~/.cargo/bin/cargo install mdbook
 ENV PATH /root/.cargo/bin:$PATH
 
-RUN pip install pybulletproofs
+COPY ratel/src/zkrp_pyo3 $HBSWAP_HOME/ratel/src/zkrp_pyo3
+WORKDIR $HBSWAP_HOME/ratel/src/zkrp_pyo3
+RUN pip install .

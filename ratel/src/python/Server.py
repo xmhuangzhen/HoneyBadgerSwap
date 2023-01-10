@@ -13,8 +13,8 @@ from ratel.src.python.deploy import http_uri
 from ratel.src.python.utils import key_inputmask_index, threshold_available_input_masks, prime, \
     location_inputmask, http_host, http_port, mpc_port, location_db, openDB, getAccount, \
     confirmation, input_mask_gen_batch_size, list_to_str, INPUTMASK_SHARES_DIR, execute_cmd, \
-    sign_and_send, key_serverval_index, key_zkrp_blinding_index, \
-    key_zkrp_blinding_commitment_index, key_zkrp_agg_commitment_index, spareShares, shareBatchSize,
+    sign_and_send, encode_key, key_zkrp_blinding_index, \
+    key_zkrp_blinding_commitment_index, key_zkrp_agg_commitment_index, \
     key_inputmask_version, key_state_mask, read_db, bytes_to_dict, dict_to_bytes, write_db
 from zkrp_pyo3 import pedersen_aggregate, pedersen_commit, zkrp_verify, zkrp_prove
 
@@ -120,19 +120,17 @@ class Server:
             }
             return web.json_response(data)
 
-        async def handler_serverval(request):
+        async def handler_get_secret_values(request):
             print(f"s{self.serverID} request: {request}")
-            mask_idxes = re.split(",", request.match_info.get("mask_idxes"))
-            print("mask_idxes:",mask_idxes)
+            keys = re.split(",", request.match_info.get("keys"))
 
             res = ""
-            for mask_idx in mask_idxes:
-                t1 = key_serverval_index(mask_idx)
-                print('t1:',t1)
+            for key in keys:
+                t1 = encode_key(key)
                 int.from_bytes(bytes(self.db.Get(t1)), 'big')
-                res += f"{',' if len(res) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_serverval_index(mask_idx))), 'big')}"
+                res += f"{',' if len(res) > 0 else ''}{int.from_bytes(bytes(self.db.Get(encode_key(key))), 'big')}"
             data = {
-                "serverval_shares": res,
+                "secret_shares": res,
             }
             print(f"s{self.serverID} response: {res}")
             return web.json_response(data)
@@ -171,24 +169,6 @@ class Server:
             print(f"s{self.serverID} response: {res}")
             return web.json_response(data)
 
-        # async def handler_zkrp_blinding_info_1(request):
-            # print(f"s{self.serverID} request: {request}")
-            # need_num = int(re.split(",", request.match_info.get("mask_idxes"))[0])
-            # while self.used_zkrp_blinding_share + need_num > self.local_zkrp_blinding_share_cnt:
-                # await asyncio.sleep(1)
-                # await self.gen_zkrp_blinding_shares(100)
-
-            # res = ""
-            # for i in range(need_num):
-                # real_idx = self.used_zkrp_blinding_share + i
-                # tmp_str = json.loads(self.db.Get(key_zkrp_blinding_commitment_index(real_idx)).decode())
-                # res += f"{';' if len(res) > 0 else ''}{tmp_str}"
-
-            # data = {
-                # "zkrp_blinding_info_1": res,
-            # }
-            # print(f"s{self.serverID} response: {res}")
-            # return web.json_response(data)
 
         async def handler_zkrp_blinding_info_2(request):
             print(f"s{self.serverID} request: {request}")
@@ -232,14 +212,12 @@ class Server:
         cors.add(resource.add_route("GET", handler_recover_db))
         resource = cors.add(app.router.add_resource("/zkrp_share_idxes/{mask_idxes}"))
         cors.add(resource.add_route("GET", handler_mpc_verify))
-        resource = cors.add(app.router.add_resource("/serverval/{mask_idxes}"))
-        cors.add(resource.add_route("GET", handler_serverval))
+        resource = cors.add(app.router.add_resource("/query_secret_values/{keys}"))
+        cors.add(resource.add_route("GET", handler_get_secret_values))
         resource = cors.add(app.router.add_resource("/zkrp_blinding_shares/{mask_idxes}"))
         cors.add(resource.add_route("GET", handler_zkrp_blinding_shares))
         resource = cors.add(app.router.add_resource("/zkrp_blinding_commitment_shares/{mask_idxes}"))
         cors.add(resource.add_route("GET", handler_zkrp_blinding_commitment_shares))
-        # resource = cors.add(app.router.add_resource("/zkrp_new_blinding_shares/{mask_idxes}"))
-        # cors.add(resource.add_route("GET", handler_zkrp_blinding_info_1))
         resource = cors.add(app.router.add_resource("/zkrp_new_agg_com/{mask_idxes}"))
         cors.add(resource.add_route("GET", handler_zkrp_blinding_info_2))
 
@@ -281,7 +259,7 @@ class Server:
         return shares
 
 
-    async def gen_zkrp_blinding_shares(self, share_batch_size=shareBatchSize):
+    async def gen_zkrp_blinding_shares(self, share_batch_size=input_mask_gen_batch_size):
         print(f'Generating blinding shares... s-{self.serverID}')
 
         cmd = f'./random-shamir.x -i {self.serverID} -N {self.players} -T {self.threshold} --nshares {share_batch_size} --prep-dir {INPUTMASK_SHARES_DIR} -P {prime}'
@@ -370,14 +348,15 @@ class Server:
                 'nonce': self.web3.eth.get_transaction_count(self.account.address)
             })
             sign_and_send(tx, self.web3, self.account)
-        if not self.test_recover:
-            await self.check_input_mask()
 
-        seq_num_list = self.check_missing_tasks() * repetition
-        print(f'seq_num_list {seq_num_list}')
-        if len(seq_num_list) == 0:
-            return
-        await self.recover_history(seq_num_list, repetition)
+            if not self.test_recover:
+                await self.check_input_mask()
+
+            seq_num_list = self.check_missing_tasks() * repetition
+            print(f'seq_num_list {seq_num_list}')
+            if len(seq_num_list) == 0:
+                return
+            await self.recover_history(seq_num_list, repetition)
 
     async def check_input_mask(self):
         version_input_mask = self.contract.functions.versionInputMask().call()

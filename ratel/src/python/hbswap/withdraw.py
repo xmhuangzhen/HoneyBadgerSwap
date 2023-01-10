@@ -4,7 +4,7 @@ import time
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
 
-from ratel.src.python.deploy import parse_contract, url, app_addr, token_addrs
+from ratel.src.python.deploy import parse_contract, ws_provider, app_addr, token_addrs
 from ratel.src.python.utils import fp, getAccount, sign_and_send
 
 
@@ -37,7 +37,7 @@ if __name__=='__main__':
     withdrawAmt = int(sys.argv[3])
     print('token_id', token_id)
 
-    web3 = Web3(Web3.WebsocketProvider(url))
+    web3 = Web3(ws_provider)
     web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
     abi, bytecode = parse_contract('hbswap')

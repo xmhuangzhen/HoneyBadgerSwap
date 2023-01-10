@@ -163,8 +163,8 @@ void initPython() {
     textPythonUpper += "import asyncio\n";
     textPythonUpper += "import os\n";
     textPythonUpper += "import json\n";
-    textPythonUpper += "from ratel.src.python.utils import location_sharefile, prog, mpcPort, prime, sz, int_to_hex, hex_to_int, recover_input, fp, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof, key_inputmask_index, key_inputmask_version, input_mask_gen_batch_size, key_state_mask, mpc_port\n";
-    textPythonUpper += "from ratel.benchmark.src.test_mpc import run_online, run_offline, inv_10\n";
+    textPythonUpper += "from ratel.src.python.utils import location_sharefile, prog, mpcPort, prime, sz, int_to_hex, hex_to_int, recover_input, fp, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof, key_inputmask_index, key_inputmask_version, input_mask_gen_batch_size, key_state_mask, mpc_port, inv_10\n";
+    textPythonUpper += "from ratel.benchmark.src.test_mpc import run_online, run_offline\n";
     textPythonUpper += "\n";
 
     textPythonUpper += "async def monitor(server):\n";
@@ -431,8 +431,6 @@ void monitorEvent() {
 void unmaskInput() {
     bool flag = 0;
     bool hasZKP = 0;
-
-//    textFuncUpper += "    liszkp = []\n";
 
     for (int i = 0; i < args.size(); i++) {
         if (args[i][0] == '$') {
@@ -735,10 +733,6 @@ void zkrp(){
 
     string pfstr = args[0];
 
-    textFuncLower += "    print(\'" + pfstr +  "\')\n";
-
-    
-
     int pospf = 0;
     for(int i = 0;i < pfstr.length();++i){
         if(pfstr[i] == '<' || pfstr[i] == '>'){
@@ -770,7 +764,6 @@ void zkrp(){
         string rangeName = pfstr.substr(pospf+2);
         textFuncLower += "    tmpRange = int(" + rangeName + ")\n";
 
-        // secret_value >= r <==> secret_value - r >= 0
         textFuncLower += "    " + pfVarName + " = " + pfExp + " - tmpRange\n";
 
         if(hasMul){
@@ -782,7 +775,6 @@ void zkrp(){
         string rangeName = pfstr.substr(pospf+1);
         textFuncLower += "    tmpRange = int(" + rangeName + ")\n";
 
-        // secret_value > r <==> secret_value - r - 1 >= 0
         textFuncLower += "    " + pfVarName + " = " + pfExp + " - tmpRange - 1\n";
 
         if(hasMul){
@@ -795,7 +787,6 @@ void zkrp(){
         string rangeName = pfstr.substr(pospf+2);
         textFuncLower += "    tmpRange = int(" + rangeName + ")\n";
 
-        // secret_value <= r <==> r - secret_value >= 0 
         textFuncLower += "    " + pfVarName + " = tmpRange - " + pfExp + "\n";
 
         if(hasMul){
@@ -808,7 +799,6 @@ void zkrp(){
         string rangeName = pfstr.substr(pospf+1);
         textFuncLower += "    tmpRange = int(" + rangeName + ")\n";
 
-        // secret_value < r <==> r - secret_value - 1 >= 0
         textFuncLower += "    " + pfVarName + " = tmpRange - " + pfExp + " - 1\n";
 
         if(hasMul){
@@ -822,9 +812,6 @@ void zkrp(){
     }
 
     textFuncLower += "    " + zkpstmtName + " = lis_zkpstmt[" + to_string(cntZkrp-1) + "]\n";
-//    textFuncLower += "    print(\'cntZkrp:" + to_string(cntZkrp-1) + "\')\n";
-//    textFuncLower += "    print(\'zkpstmt\'," + zkpstmtName + ")\n";
-    textFuncLower += "    print(\'tmpRange:\',tmpRange)\n";
 }
 
 
@@ -846,11 +833,6 @@ void addZkrpArgs(){
         string liszkp_str = "";
         for(int i = 0;i < cntZkrp;++i){
             string postVarName = "zkpstmt" + to_string(i);
-
-            //todos
-            /////////////////////add recover input for zkp/////////////////////
-//            recover_str += "    " + postVarName + " = recover_input(server.db, masked" + postVarName + ", idx" + postVarName + ")\n";
-//            recover_str += "    " + postVarName + "Blinding = recover_input(server.db, masked" + postVarName + "Blinding, idx" + postVarName + "Blinding)\n";
         }
     }
 }
@@ -861,7 +843,7 @@ void zkrpStmt(){
 
     string zkpstmtName = "zkpstmt" + to_string(cntZkrp);
 
-    textLine += "await verify_proof(server, " + pfVarName + ", " + zkpstmtName + " , tmptype_Mul, tmpMulR, tmpRange)";
+    textLine += "await verify_proof(server, " + pfVarName + ", " + zkpstmtName + ", tmptype_Mul, tmpMulR, tmpRange)";
 }
 
 
@@ -1131,7 +1113,6 @@ SPACE [ \t\r]+
 }
 
 \. {
-//    hasFloatPoint = true;
     addText(yytext);
 }
 
@@ -1161,12 +1142,6 @@ int main(int argc, char **argv) {
     recoverFp = fopen(recoverFile.c_str(), "a");
     fprintf(recoverFp, "%s", textRecover.c_str());
     fclose(recoverFp);
-
-//    FILE *tmpFp;
-//    string tmpFile = "tmp.txt";
-//    tmpFp = fopen(tmpFile.c_str(), "a");
-//    fprintf(tmpFp, "%s", to_string(sumZkrp).c_str());
-//    fclose(tmpFp);
 
 	return 0;
 }

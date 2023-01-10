@@ -8,7 +8,7 @@
 
 `bash setup-ssl.sh 4`
 
-`bash ratel/src/compile.sh hbswap 0 0`
+`bash ratel/src/compile.sh hbswap`
 
 `bash ratel/src/deploy.sh hbswap 1 4 1`
 
