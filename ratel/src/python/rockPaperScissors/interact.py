@@ -23,15 +23,15 @@ contract_name = "rockPaperScissors"
 def createGame(appContract, value1, account, web3):
     print(f'**** CreateGame {value1}')
 
-    idx1 = reserveInput(web3, appContract, 2, account)
-    mask1 = asyncio.run(get_inputmasks(players(appContract), f'{idx1},{idx2}', threshold(appContract)))[0]
-    maskedvalue1,  = (value1 + mask1) % prime, 
+    idx1, idx2 = reserveInput(web3, appContract, 2, account)
+    mask1, mask2 = asyncio.run(get_inputmasks(players(appContract), f'{idx1},{idx2}', threshold(appContract)))
+    maskedvalue1,  maskedProofValue1 = (value1 + mask1) % prime, (value1 + mask2) % prime
     
-    proof1, blinding_idx = asyncio.run(get_zkrp(players(appContract), idx1, value1, '>=', 1, threshold(appContract)))
+    proof1, blinding_idx = asyncio.run(get_zkrp(players(appContract), idx2, value1, '>=', 1, threshold(appContract)))
     
     # proof2, commitment2, blinding2 = get_zkrp(value1*value1,'>=', 0, mask1, mask1)
     
-    zkp1 = [proof1, blinding_idx]
+    zkp1 = [proof1, blinding_idx, maskedProofValue1]
     # zkp2 = [idx3, maskedvalue3, proof2, commitment2]
     zkps = json.dumps([zkp1])
 

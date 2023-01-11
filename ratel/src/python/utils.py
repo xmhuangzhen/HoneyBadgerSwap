@@ -275,8 +275,11 @@ def dict_to_bytes(value):
     return bytes(str(value), encoding='utf-8')
 
 
-async def verify_proof(server, masked_x, zkpstmt, exprType = 0, type_Mul = 0, y = 1, r = 0):
-    [proof, blinding_idx] = zkpstmt
+async def verify_proof(server, pfExpr, masked_x, zkpstmt, exprType = 0, type_Mul = 0, y = 1, r = 0):
+    [proof, blinding_idx, maskedproofValue] = zkpstmt
+    proofValue_share = recover_input(server.db, maskedproofValue, blinding_idx)
+    if proofValue_share != pfExpr:
+        return False
     C_rx = json.loads(server.db.Get(key_zkrp_agg_commitment_index(blinding_idx, exprType)).decode())
     masked_x = (prime + masked_x % prime) % prime
     masked_x_bytes = list(masked_x.to_bytes(32, byteorder='little'))

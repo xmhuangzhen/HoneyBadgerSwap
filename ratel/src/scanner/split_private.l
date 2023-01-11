@@ -743,9 +743,9 @@ void zkrp(){
 
     string pfVarName = "pfVar" + to_string(cntZkrp-1);
 
-    string pfExp = pfstr.substr(0,pospf);
-    pfExp[0] = toupper(pfExp[0]);
-    pfExp = "masked" + pfExp;
+//    string pfExp = pfstr.substr(0,pospf);
+//    pfExp[0] = toupper(pfExp[0]);
+//    pfExp = "masked" + pfExp;
     string zkpstmtName = "zkpstmt" + to_string(cntZkrp-1);
 
     bool hasMul = false;
@@ -761,6 +761,7 @@ void zkrp(){
     textFuncLower += "    tmpMul = False\n";
     textFuncLower += "    tmpMulR = 0\n";
     textFuncLower += "    tmptype_Mul = 0\n";
+    textFuncLower += "    tmpExpr = " + pfExp + "\n";
 
     if(pfstr[pospf] == '>' && pfstr[pospf+1] == '=') {
         string rangeName = pfstr.substr(pospf+2);
@@ -848,7 +849,7 @@ void zkrpStmt(){
 
     string zkpstmtName = "zkpstmt" + to_string(cntZkrp);
 
-    textLine += "await verify_proof(server, " + pfVarName + ", " + zkpstmtName + ", tmpExprType, tmptype_Mul, tmpMulR, tmpRange)";
+    textLine += "await verify_proof(server, tmpExpr, " + pfVarName + ", " + zkpstmtName + ", tmpExprType, tmptype_Mul, tmpMulR, tmpRange)";
 }
 
 
