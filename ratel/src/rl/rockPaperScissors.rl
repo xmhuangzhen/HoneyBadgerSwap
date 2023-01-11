@@ -24,7 +24,6 @@ contract rockPaperScissors {
 
         mpc(uint gameId, address player1, $uint value1) {
             assert(zkrp(value1>=1))
-            assert(zkrp((value1*value1) >= 0))
             game = {
                 'player1': player1,
                 'value1': value1,

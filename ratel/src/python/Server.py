@@ -81,6 +81,7 @@ class Server:
             mask_idxes = re.split(",", request.match_info.get("mask_idxes"))
             res = ""
             for mask_idx in mask_idxes:
+                print('input mask:',mask_idx)
                 res += f"{',' if len(res) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_inputmask_index(mask_idx))), 'big')}"
             data = {
                 "inputmask_shares": res,
@@ -150,50 +151,69 @@ class Server:
             rx_prime_share = int.from_bytes(bytes(self.db.Get(key_zkrp_blinding_index(real_idx))), 'big')
             res += f"{',' if len(res) > 0 else ''}{rx_prime_share}"
 
-            ###############(2) computete [C_rx]=g^[rx]h^[rx']#################
+            ###############(2.1) compute [C_rx]_0=g^[-rx]h^[rx']#################
             rx_share = int.from_bytes(bytes(self.db.Get(key_inputmask_index(rx_idx))), 'big')
+            rx_share_neg = (prime - rx_share) % prime
 
             rx_bytes = list(rx_share.to_bytes(32, byteorder='little'))
+            rx_bytes_neg = list(rx_share_neg.to_bytes(32, byteorder='little'))
             rx_prime_bytes = list(rx_prime_share.to_bytes(32, byteorder='little'))
-            C_rx_share = pedersen_commit(rx_bytes,rx_prime_bytes)
-            self.db.Put(key_zkrp_blinding_commitment_index(real_idx), json.dumps(C_rx_share).encode())
+            C_rx_share_0 = pedersen_commit(rx_bytes_neg,rx_prime_bytes)
+            C_rx_share_1 = pedersen_commit(rx_bytes,rx_prime_bytes)
+            self.db.Put(key_zkrp_blinding_commitment_index(real_idx, 0), json.dumps(C_rx_share_0).encode())
+            self.db.Put(key_zkrp_blinding_commitment_index(real_idx, 1), json.dumps(C_rx_share_1).encode())
 
+            self.used_zkrp_blinding_share = self.used_zkrp_blinding_share + 1
 
             ###############(3) aggregate to get C_rx#################
             request_C_rx = f"zkrp_blinding_commitment_shares/{real_idx}"
             results = await send_requests(self.players, request_C_rx)
+            results0 = []
+            results1 = []
             for i in range(len(results)):
-                tmp_str = results[i]["zkrp_blinding_commitment_shares"]
-                results[i] = re.split(',', tmp_str[1:-1])
-            for i in range(len(results)):
-                for j in range(len(results[i])):
-                    results[i][j] = int(results[i][j])
+                print('i:',results[i])
+                tmp_str = results[i]["zkrp_blinding_commitment_shares_0"]
+                results0.append(re.split(',', tmp_str[1:-1]))
+                tmp_str = results[i]["zkrp_blinding_commitment_shares_1"]
+                results1.append(re.split(',', tmp_str[1:-1]))
+            for i in range(len(results0)):
+                for j in range(len(results0[i])):
+                    results0[i][j] = int(results0[i][j])
+                    results1[i][j] = int(results1[i][j])
 
-            agg_commitment = pedersen_aggregate(results, [x + 1 for x in list(range(self.players))])
-            self.db.Put(key_zkrp_agg_commitment_index(real_idx), json.dumps(agg_commitment).encode())
+            agg_commitment_0 = pedersen_aggregate(results0, [x + 1 for x in list(range(self.players))])
+            agg_commitment_1 = pedersen_aggregate(results1, [x + 1 for x in list(range(self.players))])
+            self.db.Put(key_zkrp_agg_commitment_index(real_idx, 0), json.dumps(agg_commitment_0).encode())
+            self.db.Put(key_zkrp_agg_commitment_index(real_idx, 1), json.dumps(agg_commitment_1).encode())
 
             data = {
                 "zkrp_blinding_shares": res,
                 "zkrp_blinding_share_idx": real_idx,
             }
-            self.used_zkrp_blinding_share = self.used_zkrp_blinding_share + 1
             print(f"s{self.serverID} response: {data}")
             return web.json_response(data)
 
         async def handler_zkrp_blinding_commitment_shares(request):
             print(f"s{self.serverID} request: {request}")
             mask_idxes = re.split(",", request.match_info.get("mask_idxes"))
+            real_idx = int(mask_idxes[0])
 
-            res = ""
+            while self.used_zkrp_blinding_share <= real_idx:
+                await asyncio.sleep(1)
+            
+            res0 = ""
+            res1 = ""
             for mask_idx in mask_idxes:
-                cur_lis = json.loads(self.db.Get(key_zkrp_blinding_commitment_index(mask_idx)).decode())
-                # tmp_str = f'{cur_lis}'
-                res += f"{',' if len(res) > 0 else ''}{cur_lis}"
+                cur_lis = json.loads(self.db.Get(key_zkrp_blinding_commitment_index(mask_idx,0)).decode())
+                res0 += f"{',' if len(res0) > 0 else ''}{cur_lis}"
+                cur_lis = json.loads(self.db.Get(key_zkrp_blinding_commitment_index(mask_idx,1)).decode())
+                res1 += f"{',' if len(res1) > 0 else ''}{cur_lis}"
 
             data = {
-                "zkrp_blinding_commitment_shares": res,
+                "zkrp_blinding_commitment_shares_0": res0,
+                "zkrp_blinding_commitment_shares_1": res1,
             }
-            print(f"s{self.serverID} response: {res}")
+            print(f"s{self.serverID} response: {data}")
             return web.json_response(data)
 
 

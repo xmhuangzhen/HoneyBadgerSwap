@@ -89,3 +89,19 @@ curl https://sh.rustup.rs -sSf | sh
 source "$HOME/.cargo/env"
 pip install .
 ```
+
+sudo docker exec -it honeybadgerswap_dev_1 bash
+
+bash ratel/src/compile.sh rockPaperScissors
+bash ratel/src/deploy.sh rockPaperScissors 0 4 1
+
+python3 -m ratel.src.python.refill server_0 0 \
+& python3 -m ratel.src.python.refill server_1 0 \
+& python3 -m ratel.src.python.refill server_2 0 \
+& python3 -m ratel.src.python.refill server_3 0
+python3 -m ratel.src.python.refill client_1 0 \
+& python3 -m ratel.src.python.refill client_2 0
+
+bash ratel/src/run.sh rockPaperScissors 0,1,2,3 4 1 1 0
+python3 -m ratel.src.python.rockPaperScissors.interact 
+

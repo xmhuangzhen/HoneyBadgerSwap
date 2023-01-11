@@ -89,10 +89,10 @@ string argWithType(string arg, bool isEvent=false) {
         string postVarName = removeType(arg);
         postVarName[0] = toupper(postVarName[0]);
         string tmp = "";
-        string mem = isEvent ? "" : "memory" ;
+        string mem = isEvent ? "" : "memory " ;
         if (varType[0] == '#') {
             varType = varType.substr(1);
-            tmp = ", uint idx" + postVarName + "Blinding, uint masked" + postVarName + "Blinding, uint8[] " + mem + " proof" + postVarName + ", uint8[] " + mem + " commitment" + postVarName;
+            tmp = ", uint idx" + postVarName + "Blinding, uint masked" + postVarName + "Blinding, uint8[] " + mem + "proof" + postVarName + ", uint8[] " + mem + "commitment" + postVarName;
         }
         ret = "uint idx" + postVarName + ", uint masked" + postVarName + tmp;
     } else if(getType(arg) == "zkp_stmt") {
@@ -126,6 +126,22 @@ string argWithoutType(string arg) {
     return ret;
 }
 
+string argWithONLYType(string arg) {
+    string ret;
+    if (arg[0] == '$') {
+        string varType = getType(arg).substr(1);
+        string tmp = "";
+        if (varType[0] == '#') {
+            varType = varType.substr(1);
+            tmp = ",uint,uint,uint8[],uint8[]";
+        }
+        ret = "uint,uint" + tmp;
+    } else {
+        ret = getType(arg);
+    }
+    return ret;
+}
+
 
 void addEventDeclare() {
     textPublicEvents += "    event " + funcName + "(uint seq" + funcName;
@@ -149,7 +165,7 @@ void addEventEmit() {
         textRecover += " = decode_single(\'(";
         for (int i = 0; i < args.size(); i++) {
             if (i > 0) textRecover += ",";
-            textRecover += argWithType(args[i], true);
+            textRecover += argWithONLYType(args[i]);
         }
         textRecover += ")\', opContent)\n";
         textRecover += "        return eval(f'\{op\}" + funcName + "')(opSeq";
@@ -160,7 +176,7 @@ void addEventEmit() {
         textRecover += "\n";
     }
 
-    textPublic += "        uint seq" + funcName + " = opCnt++;\n";
+    textPublic += "        uint seq" + funcName + " = ++taskCnt;\n";
     textPublic += "        opEvent[seq" + funcName + "] = \"" + funcName + "\";\n";
     textPublic += "        opContent[seq" + funcName + "] = abi.encode(";
     for (int i = 0; i < args.size(); i++) {
@@ -731,10 +747,14 @@ int main(int argc, char **argv) {
 
     textRecover += "from eth_abi import decode_single\n";
     textRecover += "\n";
+    textRecover += "\n";
     textRecover += "def recover(contract, opSeq, op):\n";
     textRecover += "    opEvent = contract.functions.opEvent(opSeq).call()\n";
     textRecover += "    opContent = contract.functions.opContent(opSeq).call()\n";
+    textRecover += "    return parse(opEvent, opContent, opSeq, op)\n";
     textRecover += "\n";
+    textRecover += "\n";
+    textRecover += "def parse(opEvent, opContent, opSeq, op):\n";
 
 	yylex();
 

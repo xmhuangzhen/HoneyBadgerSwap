@@ -6,7 +6,7 @@ from web3 import Web3
 from web3.middleware import geth_poa_middleware
 
 from ratel.src.python.Client import get_inputmasks, reserveInput, generate_zkrp_mul, get_zkrp
-from ratel.src.python.deploy import url, app_addr
+from ratel.src.python.deploy import http_uri, app_addr
 from ratel.src.python.utils import (
     parse_contract,
     getAccount,
@@ -23,11 +23,11 @@ contract_name = "rockPaperScissors"
 def createGame(appContract, value1, account, web3):
     print(f'**** CreateGame {value1}')
 
-    idx1 = reserveInput(web3, appContract, 1, account)
-    mask1 = asyncio.run(get_inputmasks(players(appContract), f'{idx1}', threshold(appContract)))
-    maskedvalue1 = (value1 + mask1) % prime
+    idx1 = reserveInput(web3, appContract, 2, account)
+    mask1 = asyncio.run(get_inputmasks(players(appContract), f'{idx1},{idx2}', threshold(appContract)))[0]
+    maskedvalue1,  = (value1 + mask1) % prime, 
     
-    proof1, blinding_idx = asyncio.run(get_zkrp(players(appContract), idx1, maskedvalue1, '>=', 1, threshold(appContract)))
+    proof1, blinding_idx = asyncio.run(get_zkrp(players(appContract), idx1, value1, '>=', 1, threshold(appContract)))
     
     # proof2, commitment2, blinding2 = get_zkrp(value1*value1,'>=', 0, mask1, mask1)
     
@@ -53,15 +53,15 @@ def createGame(appContract, value1, account, web3):
 def joinGame(appContract, gameId, value2, account, web3):
     print(f'**** JoinGame {value2}')
 
-    proof1, commitment1, blinding1 = get_zkrp(value2, '>=', 1)
-    proof2, commitment2, blinding2 = get_zkrp(value2, '<=', 3)
+    idx1 = reserveInput(web3, appContract, 1, account)[0]
+    mask1 = asyncio.run(get_inputmasks(players(appContract), f'{idx1}', threshold(appContract)))[0]
+    maskedvalue1 = (value2 + mask1) % prime
 
-    idx1, idx2, idx3 = reserveInput(web3, appContract, 3, account)
-    mask1, mask2, mask3 = asyncio.run(get_inputmasks(players(appContract), f'{idx1},{idx2},{idx3}', threshold(appContract)))
-    maskedvalue1, maskedvalue2, maskedvalue3 = (value2 + mask1) % prime, (blinding1 + mask2) % prime, (blinding2 + mask3) % prime
+    proof1, blinding_idx1 = asyncio.run(get_zkrp(players(appContract), idx1, value2, '>=', 1, threshold(appContract)))
+    proof2, blinding_idx2 = asyncio.run(get_zkrp(players(appContract), idx1, value2, '<=', 3, threshold(appContract)))
 
-    zkp1 = [idx2,maskedvalue2,proof1,commitment1]
-    zkp2 = [idx3,maskedvalue3,proof2,commitment2]
+    zkp1 = [proof1,blinding_idx1]
+    zkp2 = [proof2,blinding_idx2]
     zkps = json.dumps([zkp1,zkp2])
 
     web3.eth.defaultAccount = account.address
@@ -100,10 +100,6 @@ if __name__ == "__main__":
 
     client_1 = getAccount(web3, f"/opt/poa/keystore/client_1/")
     client_2 = getAccount(web3, f"/opt/poa/keystore/client_2/")
-
-    gameId = createGame(appContract, 1, client_1)
-    joinGame(appContract, gameId, 1, client_2)
-    startRecon(appContract, gameId, client_1)
 
     gameId = createGame(appContract, 1, client_1, web3)
     joinGame(appContract, gameId, 2, client_2, web3)

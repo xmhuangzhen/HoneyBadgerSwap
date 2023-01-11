@@ -765,7 +765,7 @@ void zkrp(){
     if(pfstr[pospf] == '>' && pfstr[pospf+1] == '=') {
         string rangeName = pfstr.substr(pospf+2);
         textFuncLower += "    tmpRange = int(" + rangeName + ")\n";
-
+        textFuncLower += "    tmpExprType = 0\n";
         textFuncLower += "    " + pfVarName + " = " + pfExp + " - tmpRange\n";
 
         if(hasMul){
@@ -776,6 +776,7 @@ void zkrp(){
     } else if(pfstr[pospf] == '>' && pfstr[pospf+1] != '=') {
         string rangeName = pfstr.substr(pospf+1);
         textFuncLower += "    tmpRange = int(" + rangeName + ")\n";
+        textFuncLower += "    tmpExprType = 0\n";
 
         textFuncLower += "    " + pfVarName + " = " + pfExp + " - tmpRange - 1\n";
 
@@ -788,6 +789,7 @@ void zkrp(){
     } else if(pfstr[pospf] == '<' && pfstr[pospf+1] == '=') { 
         string rangeName = pfstr.substr(pospf+2);
         textFuncLower += "    tmpRange = int(" + rangeName + ")\n";
+        textFuncLower += "    tmpExprType = 1\n";
 
         textFuncLower += "    " + pfVarName + " = tmpRange - " + pfExp + "\n";
 
@@ -800,6 +802,7 @@ void zkrp(){
     } else if(pfstr[pospf] == '<' && pfstr[pospf+1] != '=') { 
         string rangeName = pfstr.substr(pospf+1);
         textFuncLower += "    tmpRange = int(" + rangeName + ")\n";
+        textFuncLower += "    tmpExprType = 1\n";
 
         textFuncLower += "    " + pfVarName + " = tmpRange - " + pfExp + " - 1\n";
 
@@ -845,7 +848,7 @@ void zkrpStmt(){
 
     string zkpstmtName = "zkpstmt" + to_string(cntZkrp);
 
-    textLine += "await verify_proof(server, " + pfVarName + ", " + zkpstmtName + ", tmptype_Mul, tmpMulR, tmpRange)";
+    textLine += "await verify_proof(server, " + pfVarName + ", " + zkpstmtName + ", tmpExprType, tmptype_Mul, tmpMulR, tmpRange)";
 }
 
 

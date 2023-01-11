@@ -104,7 +104,7 @@ async def get_zkrp_blinding_info(players, num, threshold):
     
     for i in range(len(blinding_res)):
         blinding_res[i] = re.split(',',blinding_res[i]['zkrp_blinding_shares'])
-    blinding_prime = batch_interpolate(blinding_res, threshold)
+    blinding_prime = batch_interpolate(0, blinding_res, threshold)
 
     request_agg = f'zkrp_new_agg_com/{num}'
     comm_res = await send_requests(players, request_agg)
@@ -133,26 +133,23 @@ async def generate_zkrp_mul(players, x, y, threshold):
 
 async def generate_Crx(players, x_idx, threshold):
     request_rx_prime = f'zkrp_blinding_shares/{x_idx}'
-    rx_prime_res = await send_requests(players, request_rx_prime)
+    results = await send_requests(players, request_rx_prime)
 
-    for i in range(len(rx_prime_res)):
-        rx_prime_res[i] = re.split(',',rx_prime_res[i]['zkrp_blinding_shares'])
-    rx_prime = batch_interpolate(rx_prime_res, threshold)
-
-    rx_prime_idx = rx_prime_res[0]['zkrp_blinding_share_idx']
-
-    print('rx_prime', rx_prime)
-    print('rx_prime_idx', rx_prime_idx)
+    rx_prime = reconstruct_values(results, 'zkrp_blinding_shares', threshold)[0]
+    rx_prime_idx = results[0]['zkrp_blinding_share_idx']
 
     return rx_prime, rx_prime_idx
 
-async def get_zkrp(players, rx_idx, mx, exp_str, r, threshold):
-    print(f'get_zkrp {exp_str} {r} {rx_idx} {mx}')
+async def get_zkrp(players, rx_idx, x, exp_str, r, threshold):
+    print(f'get_zkrp {exp_str} {r} {rx_idx} {x}')
 
     ####### （1) generate C_rx = g^{rx}h^{rx'}
-    rx_prime, rx_prime_idx = generate_Crx(players, rx_idx, threshold)
+    rx_prime, rx_prime_idx = await generate_Crx(players, rx_idx, threshold)
 
-    value = mx
+    print('rx_prime:',rx_prime)
+    print('rx_prime_idx',rx_prime_idx)
+
+    value = x
     
     if exp_str == '>=':
         value = value - r
@@ -169,8 +166,9 @@ async def get_zkrp(players, rx_idx, mx, exp_str, r, threshold):
     # rx_blinding = int.from_bytes(rx_blinding_bytes, byteorder='little')
     
     bits = 32
-    blinding_x = (prime - rx_prime) % prime
+    blinding_x = rx_prime
     blinding_x_bytes = list(blinding_x.to_bytes(32, byteorder='little'))
+    print('blinding bytes',blinding_x_bytes)
     proof, commitment = zkrp_prove(value, blinding_x_bytes, bits)
     
     print('commmitment:', commitment)

@@ -54,76 +54,9 @@ fn pedersen_commit(secret_value_bytes: [u8; 32], blinding_bytes: [u8; 32]) -> Py
     Ok(commitment.compress().to_bytes())
 }
 
-/// Provides an iterator over the powers of a `Scalar`.
-///
-/// This struct is created by the `exp_iter` function.
-// pub struct ScalarExp {
-//     x: Scalar,
-//     next_exp_x: Scalar,
-// }
-
-// impl Iterator for ScalarExp {
-//     type Item = Scalar;
-
-//     fn next(&mut self) -> Option<Scalar> {
-//         let exp_x = self.next_exp_x;
-//         self.next_exp_x *= self.x;
-//         Some(exp_x)
-//     }
-
-//     fn size_hint(&self) -> (usize, Option<usize>) {
-//         (usize::max_value(), None)
-//     }
-// }
-
-// /// Return an iterator of the powers of `x`.
-// pub fn exp_iter(x: Scalar) -> ScalarExp {
-//     let next_exp_x = Scalar::one();
-//     ScalarExp { x, next_exp_x }
-// }
-/// Raises `x` to the power `n` using binary exponentiation,
-/// with (1 to 2)*lg(n) scalar multiplications.
-/// TODO: a consttime version of this would be awfully similar to a Montgomery ladder.
-// pub fn scalar_exp_vartime(x: &Scalar, mut n: Scalar) -> Scalar {
-//     let mut result = Scalar::one();
-//     let mut aux = *x; // x, x^2, x^4, x^8, ...
-//     let zer = Scalar::zero();
-//     let on = Scalar::one();
-//     let inv_2 = (Scalar::from(2u64)).invert().reduce();
-//     while n > zer {
-//         let bit = n & on;
-//         if bit == on {
-//             result = result * aux;
-//         }
-//         n = n * inv_2;
-//         aux = aux * aux; // FIXME: one unnecessary mult at the last step here!
-//     }
-//     result
-// }
-
-        // z^0 * \vec(2)^n || z^1 * \vec(2)^n || ... || z^(m-1) * \vec(2)^n
-        // let powers_of_2: Vec<Scalar> = util::exp_iter(Scalar::from(2u64)).take(n).collect();
-// #[pyfunction]
-// fn other_base_commit(cur_base_bytes: [u8; 32], secret_value_bytes: [u8; 32], blinding_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
-//     //cur_base ^ {secret_value_bytes} * h^{blinding_bytes}
-//     let cur_base = Scalar::from_bytes_mod_order(cur_base_bytes);
-//     let secret_value = Scalar::from_bytes_mod_order(secret_value_bytes);
-//     let blinding = Scalar::from_bytes_mod_order(blinding_bytes);
-
-//     let pow_of_cur_base: Scalar = scalar_exp_vartime(&cur_base, secret_value);
-//     let zer = Scalar::zero();
-
-//     let pc_gens = PedersenGens::default();
-//     let blinding_com = pc_gens.commit(zer, blinding);
-
-//     let commitment = pow_of_cur_base * blinding_com;
-
-//     Ok(commitment.compress().to_bytes())
-// }
-
 #[pyfunction]
 fn other_base_commit(g_x_bytes: [u8; 32], y_bytes: [u8; 32], blinding_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
-    // (g^x)^{secret_value} * h^{blinding} * g^{r}
+    // (g^x)^{y} * h^{blinding}
     let g_x = CompressedRistretto(g_x_bytes).decompress().unwrap();
     let y = Scalar::from_bytes_mod_order(y_bytes);
     let blinding = Scalar::from_bytes_mod_order(blinding_bytes);
@@ -190,7 +123,7 @@ fn pedersen_compare(recovered_commitment: [u8; 32], onchain_commitment: [u8; 32]
 
 // TODO: return the blinding as bytes using as_bytes (returns &[u8; 32])
 #[pyfunction]
-fn zkrp_prove(secret_value: u64, bits: usize) -> PyResult<(Vec<u8>, [u8; 32], [u8; 32])> {
+fn zkrp_prove(secret_value: u64, blinding_bytes: [u8; 32], bits: usize) -> PyResult<(Vec<u8>, [u8; 32])> {
     // Generators for Pedersen commitments.  These can be selected
     // independently of the Bulletproofs generators.
     let pc_gens = PedersenGens::default();
@@ -200,7 +133,8 @@ fn zkrp_prove(secret_value: u64, bits: usize) -> PyResult<(Vec<u8>, [u8; 32], [u
     let bp_gens = BulletproofGens::new(64, 1);
 
     // The API takes a blinding factor for the commitment.
-    let blinding = Scalar::random(&mut rand::thread_rng());
+    // let blinding = Scalar::random(&mut rand::thread_rng());
+    let blinding = Scalar::from_bytes_mod_order(blinding_bytes);
 
     // The proof can be chained to an existing transcript.
     // Here we create a transcript with a doctest domain separator.
@@ -216,7 +150,7 @@ fn zkrp_prove(secret_value: u64, bits: usize) -> PyResult<(Vec<u8>, [u8; 32], [u
         bits,
     ).expect("A real program could handle errors");
 
-    Ok((proof.to_bytes(), committed_value.to_bytes(), blinding.to_bytes()))
+    Ok((proof.to_bytes(), committed_value.to_bytes()))
 }
 
 #[pyfunction]
@@ -236,19 +170,34 @@ fn zkrp_verify(proof_bytes: Vec<u8>, committed_value_bytes: [u8; 32]) -> PyResul
     Ok(proof.verify_single(&bp_gens, &pc_gens, &mut verifier_transcript, &committed_value, 32).is_ok())
 }
 
+
 #[pyfunction]
-fn gen_random_value(value_num: u64) -> PyResult<Vec<[u8; 32]>> {
-    let mut res_val : Vec<[u8; 32]> = Vec::new();
+fn recover_commitment(mx_bytes: [u8; 32] , C_rx_bytes: [u8; 32]) -> PyResult< [u8; 32]> {
+    // Generators for Pedersen commitments.  These can be selected
+    // independently of the Bulletproofs generators.
+    let pc_gens = PedersenGens::default();
 
-    let mut i = 0;
+    // Generators for Bulletproofs, valid for proofs up to bitsize 64
+    // and aggregation size up to 1.
+    let bp_gens = BulletproofGens::new(64, 1);
 
-    while i < value_num {
-        let cur_res = Scalar::random(&mut rand::thread_rng());
-        res_val.push(cur_res.to_bytes());
-        i = i + 1;
-    }
+    let zer = Scalar::zero();
+    let one = Scalar::one();
 
-    Ok(res_val)
+    let C_rx_value = CompressedRistretto(read32(&C_rx_bytes)).decompress().unwrap();
+
+    let mx_scalar = Scalar::from_bytes_mod_order(mx_bytes);
+    let C_mx = pc_gens.commit(mx_scalar, zer);
+
+    let C_x = RistrettoPoint::multiscalar_mul(&[one, one], &[C_mx, C_rx_value]);
+    Ok( C_x.compress().to_bytes())
+}
+
+#[pyfunction]
+fn gen_random_value() -> PyResult<[u8; 32]> {
+    let cur_res = Scalar::random(&mut rand::thread_rng());
+
+    Ok(cur_res.to_bytes())
 }
 
 
@@ -327,5 +276,6 @@ fn zkrp_pyo3(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(zkrp_verify_mul, m)?)?;
     m.add_function(wrap_pyfunction!(other_base_commit, m)?)?;
     m.add_function(wrap_pyfunction!(product_com, m)?)?;
+    m.add_function(wrap_pyfunction!(recover_commitment, m)?)?;
     Ok(())
 }

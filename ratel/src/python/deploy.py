@@ -4,7 +4,13 @@ from web3 import Web3
 from web3.middleware import geth_poa_middleware
 from ratel.src.python.utils import getAccount, parse_contract
 
-url = 'ws://0.0.0.0:8546'
+web3_timeout = 30
+
+ws_uri = 'ws://0.0.0.0:8546'
+ws_provider = Web3.WebsocketProvider(ws_uri, websocket_timeout=web3_timeout)
+
+http_uri = 'http://127.0.0.1:8545'
+http_provider = Web3.HTTPProvider(http_uri, request_kwargs={'timeout': web3_timeout})
 
 app_addr = '0xA0072d34984CC8de81b48923DE7d32e2AbC23265'
 
@@ -38,7 +44,7 @@ if __name__=='__main__':
     init_players = int(sys.argv[3])
     init_threshold = int(sys.argv[4])
 
-    web3 = Web3(Web3.WebsocketProvider(url))
+    web3 = Web3(Web3.WebsocketProvider(ws_uri))
     web3.eth.defaultAccount = web3.eth.accounts[0]
     web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
