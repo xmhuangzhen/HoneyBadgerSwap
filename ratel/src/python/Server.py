@@ -73,12 +73,16 @@ class Server:
 
     async def get_zkrp_shares(self, players, inputmask_idxes):
         request = f"zkrp_share_idxes/{inputmask_idxes}"
-        results = await send_requests(players, request)
-        parsed_results = []
+        results_list = await send_requests(players, request)
+        
+        results = []
+        for i in range(len(results_list)):
+            results.append( re.split(",", results_list[i]["zkrp_share_idx"]) )
         for i in range(len(results)):
-            parsed_results.append(json.loads(results[i]["zkrp_share_idx"]))
+            for j in range(len(results[i])):
+                results[i][j] = json.loads(results[i][j])
 
-        return parsed_results
+        return results
 
     async def http_server(self):
         async def handler_inputmask(request):
@@ -122,14 +126,20 @@ class Server:
 
         async def handler_mpc_verify(request):
             print(f"s{self.serverID} request: s{request} request from {request.remote}")
-            mask_idx = re.split(',', request.match_info.get("mask_idxes"))[0]
+            mask_idxes = re.split(',', request.match_info.get("mask_idxes"))
 
-            while mask_idx not in self.zkrpShares.keys():
-                await asyncio.sleep(1)
+            for mask_idx in mask_idxes:
+                while mask_idx not in self.zkrpShares.keys():
+                    await asyncio.sleep(1)
+
+            res = ""
+            for mask_idx in mask_idxes:
+                res += f"{',' if len(res) > 0 else ''}{json.dumps(self.zkrpShares[mask_idx])}"
 
             data = {
-                "zkrp_share_idx": json.dumps(self.zkrpShares[mask_idx]),
+                "zkrp_share_idx": res,
             }
+            print(f"s{self.serverID} response: {res}")
             return web.json_response(data)
 
         async def handler_serverval(request):
