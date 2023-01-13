@@ -145,7 +145,7 @@ fn product_com(x_bytes: [u8; 32], y_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
 
     let product_com = RistrettoPoint::multiscalar_mul(&[one, one], &[x, y]);
     
-    Ok(product_com.to_bytes())
+    Ok(product_com.compress().to_bytes())
 }
 
 

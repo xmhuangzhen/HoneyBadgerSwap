@@ -27,7 +27,7 @@ def createGame(appContract, value1, account):
     tmp = 123
     proof1, commitment1, blinding1 = get_zkrp(value1, '>=', 1)
     
-    proof2, commitment2, blinding2 = get_zkrp(value1*value1,'>=',0)
+    proof2, commitment2, blinding2 = get_zkrp(value1,'<=',3)
 
     idx1, idx2, idx3 = reserveInput(web3, appContract, 3, account)
     mask1, mask2, mask3 = asyncio.run(get_inputmasks(players(appContract), f'{idx1},{idx2},{idx3}', threshold(appContract)))

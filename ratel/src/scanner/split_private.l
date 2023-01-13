@@ -667,20 +667,26 @@ void zkrp(){
     }
 
     string pfstr_list = args[0];
-    textFuncLower += "    print(\'" + pfstr_list +  "\')\n";
+//    textFuncLower += "    print(\'" + pfstr_list +  "\')\n";
     textFuncLower += "    pflist = []\n";
 
     int pos_comma = 0;
     int i = 0;
-    for(;pos_comma <= pfstr_list.length(); ++pos_comma){
+    for(;pos_comma < pfstr_list.length(); ++pos_comma){
         int pos_l = pos_comma, pos_r = pos_comma;
         for(; pos_r <= pfstr_list.length(); ++pos_r){
-            if(pfstr_list[pos_r] == ','){
+            if(pfstr_list[pos_r] == ';'){
                 break;
             }
         }
 
-        string pfstr = pfstr_list.substr(pos_l,pos_r);
+        pos_comma = pos_r+1;
+
+        int len_str = pos_r-pos_l;
+        string pfstr = pfstr_list.substr(pos_l,len_str);
+//        textFuncLower += "    print(\'pfstr:" + pfstr + "\')\n";
+//        textFuncLower += "    print(\'pos_l:" + to_string(pos_l) + "\')\n";
+//        textFuncLower += "    print(\'pos_r:" + to_string(pos_r) + "\')\n";
 
 
         int pospf = 0;
@@ -691,10 +697,10 @@ void zkrp(){
             }
         }
 
-        string pfVarName = "pfVar" + to_string(cntZkrp-1);
+        string pfVarName = "pfVar" + to_string(i);
 
         string pfExp = pfstr.substr(0,pospf);
-        string zkpstmtName = "zkpstmt" + to_string(cntZkrp-1);
+        string zkpstmtName = "zkpstmt" + to_string(i);
 
         bool hasMul = false;
         int posMul = 0;
@@ -765,17 +771,10 @@ void zkrp(){
             assert(0);
         }
 
-        textFuncLower += "    " + zkpstmtName + " = lis_zkpstmt[" + to_string(cntZkrp-1) + "]\n";
-    //    textFuncLower += "    print(\'cntZkrp:" + to_string(cntZkrp-1) + "\')\n";
-    //    textFuncLower += "    print(\'zkpstmt\'," + zkpstmtName + ")\n";
-        textFuncLower += "    print(\'tmpRange:\',tmpRange)\n";
+        textFuncLower += "    " + zkpstmtName + " = lis_zkpstmt[" + to_string(i) + "]\n";
+//        textFuncLower += "    print(\'tmpRange:\',tmpRange)\n";
 
-
-//    string pfVarName = "pfVar" + to_string(cntZkrp);
-
-//    string zkpstmtName = "zkpstmt" + to_string(cntZkrp);
-
-    textLine += "pflist.append([" + pfVarName + ", " + zkpstmtName + " , tmptype_Mul, tmpMulR, tmpRange])";
+        textFuncLower += "    pflist.append([" + pfVarName + ", " + zkpstmtName + " , tmptype_Mul, tmpMulR, tmpRange])\n";
 
         i = i + 1;
     }
@@ -811,9 +810,9 @@ void addZkrpArgs(){
 
 
 void zkrpStmt(){
-    string pfVarName = "pfVar" + to_string(cntZkrp);
+//    string pfVarName = "pfVar" + to_string(cntZkrp);
 
-    string zkpstmtName = "zkpstmt" + to_string(cntZkrp);
+//    string zkpstmtName = "zkpstmt" + to_string(cntZkrp);
 
 //    textLine += "await verify_proof(server, " + pfVarName + ", " + zkpstmtName + " , tmptype_Mul, tmpMulR, tmpRange)";
     textLine += "await verify_proof(server, pflist)";

@@ -14,6 +14,8 @@ def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
     amtA = int(amtA * fp)
     amtB = int(amtB * fp)
 
+    times = []
+    times.append(time.perf_counter())
     ###############zkrp prove here#############
     serverval_idx1 = f'balance_{tokenA}_{account.address}'
     serverval_idx2 = f'balance_{tokenB}_{account.address}'
@@ -22,7 +24,7 @@ def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
 
     # balanceA, balanceB = float(balanceA / fp), float(balanceB / fp)
 
-    feeRate = 0.003
+    feeRate = 0
     totalA = (1 + feeRate) * amtA
     totalB = (1 + feeRate) * amtB
 
@@ -30,13 +32,19 @@ def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
             # assert(zkrp((-totalB) <= balanceB))
 
     # print('amtA:', amtA, 'amtB:', amtB)
-    print('totalA:', totalA, 'totalB:', totalB)
-    print('balanceA:', balanceA, 'balanceB:', balanceB)
+    # print('totalA:', totalA, 'totalB:', totalB)
+    # print('balanceA:', balanceA, 'balanceB:', balanceB)
 
     proof1, commitment1, blinding1 = get_zkrp(amtA*amtB, '<=', 0)
-    proof2, commitment2, blinding2 = get_zkrp(-amtA, '<=', int(balanceA/(1+feeRate)))
-    proof3, commitment3, blinding3 = get_zkrp(-amtB, '<=', int(balanceB/(1+feeRate)))
+    proof2, commitment2, blinding2 = get_zkrp(-totalA, '<=', balanceA)
+    proof3, commitment3, blinding3 = get_zkrp(-totalB, '<=', balanceB)
     ###############zkrp prove end#############
+    times.append(time.perf_counter())
+    with open(f'ratel/benchmark/data/latency_client.csv', 'a') as f:
+        for op, t in enumerate(times):
+            f.write(f'trade\t'
+                    f'op\t{op + 1}\t'
+                    f'cur_time\t{t}\n')
     
     idxAmtA, idxAmtB, idxzkp1, idxzkp2, idxzkp3 = reserveInput(web3, appContract, 5, account)
     maskA, maskB, maskzkp1, maskzkp2, maskzkp3 = asyncio.run(get_inputmasks(players(appContract), f'{idxAmtA},{idxAmtB},{idxzkp1},{idxzkp2},{idxzkp3}', threshold(appContract)))
@@ -83,5 +91,6 @@ if __name__=='__main__':
 
     for i in range(repetition):
         trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id)
-        # time.sleep(60)
+        time.sleep(60)
         trade(appContract, tokenA, tokenB, amtB, amtA, account, web3, client_id)
+        time.sleep(60)

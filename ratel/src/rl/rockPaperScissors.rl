@@ -23,7 +23,7 @@ contract rockPaperScissors {
         uint gameId = ++gameCnt;
 
         mpc(uint gameId, address player1, $uint value1) {
-            assert(zkrp(value1>=1, value1<=3))
+            assert(zkrp(value1>=1; value1<=3))
             game = {
                 'player1': player1,
                 'value1': value1,
@@ -43,8 +43,7 @@ contract rockPaperScissors {
 
         mpc(uint gameId, address player2, $uint value2) {
 
-            assert(zkrp(value2 >= 1))
-            assert(zkrp(value2 <= 3))
+            assert(zkrp(value2 >= 1; value2 <= 3))
 
             game = readDB(f'gameBoard_{gameId}', dict)
 

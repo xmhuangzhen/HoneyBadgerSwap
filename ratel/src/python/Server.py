@@ -74,13 +74,18 @@ class Server:
     async def get_zkrp_shares(self, players, inputmask_idxes):
         request = f"zkrp_share_idxes/{inputmask_idxes}"
         results_list = await send_requests(players, request)
-        
-        results = []
+
         for i in range(len(results_list)):
-            results.append( re.split(",", results_list[i]["zkrp_share_idx"]) )
-        for i in range(len(results)):
-            for j in range(len(results[i])):
-                results[i][j] = json.loads(results[i][j])
+            tmp_str = results_list[i]["zkrp_share_idx"]
+            results_list[i] = re.split(";", tmp_str) 
+
+        results = []
+        num = len(results_list[0])
+        for j in range(num):
+            tmp_res = []
+            for i in range(len(results_list)):
+                tmp_res.append(json.loads(results_list[i][j]))
+            results.append(tmp_res)
 
         return results
 
@@ -125,27 +130,27 @@ class Server:
         #     return web.json_response(data)
 
         async def handler_mpc_verify(request):
-            print(f"s{self.serverID} request: s{request} request from {request.remote}")
+            # print(f"s{self.serverID} request: s{request} request from {request.remote}")
             mask_idxes = re.split(',', request.match_info.get("mask_idxes"))
 
             for mask_idx in mask_idxes:
                 while mask_idx not in self.zkrpShares.keys():
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(0.01)
 
             res = ""
             for mask_idx in mask_idxes:
-                res += f"{',' if len(res) > 0 else ''}{json.dumps(self.zkrpShares[mask_idx])}"
+                res += f"{';' if len(res) > 0 else ''}{json.dumps(self.zkrpShares[mask_idx])}"
 
             data = {
                 "zkrp_share_idx": res,
             }
-            print(f"s{self.serverID} response: {res}")
+            # print(f"s{self.serverID} response: {res}")
             return web.json_response(data)
 
         async def handler_serverval(request):
-            print(f"s{self.serverID} request: {request}")
+            # print(f"s{self.serverID} request: {request}")
             mask_idxes = re.split(",", request.match_info.get("mask_idxes"))
-            print("mask_idxes:",mask_idxes)
+            # print("mask_idxes:",mask_idxes)
 
             res = ""
             for mask_idx in mask_idxes:
@@ -156,7 +161,7 @@ class Server:
             data = {
                 "serverval_shares": res,
             }
-            print(f"s{self.serverID} response: {res}")
+            # print(f"s{self.serverID} response: {res}")
             return web.json_response(data)
 
         async def handler_zkrp_blinding_shares(request):

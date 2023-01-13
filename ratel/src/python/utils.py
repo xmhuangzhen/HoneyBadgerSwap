@@ -5,6 +5,7 @@ import leveldb
 import os
 import re
 import math
+import time
 
 from gmpy import binary, mpz
 from gmpy2 import mpz_from_old_binary
@@ -271,6 +272,9 @@ def dict_to_bytes(value):
 async def verify_proof(server, pflist):
 
     blinding_idx_request = ""
+    times = []
+    times.append(time.perf_counter())
+
 
     for pfexp in pflist:
         [x, zkpstmt, type_Mul , y, r ] = pfexp
@@ -294,7 +298,7 @@ async def verify_proof(server, pflist):
 
             share_commitment = pedersen_commit(value1_bytes, blinding_bytes)
 
-            print('share_commitment:',share_commitment)
+            # print('share_commitment:',json.dumps(share_commitment))
 
             server.zkrpShares[f'{idxValueBlinding}'] = share_commitment
 
@@ -307,33 +311,35 @@ async def verify_proof(server, pflist):
                 x = -x
                 x = (x % prime + prime) % prime
             ############# (1) compute g^[x] #############
-            zer = 0
             x_bytes = list(x.to_bytes(32, byteorder='little'))
-            zer_bytes = list(zer.to_bytes(32, byteorder='little'))
             g_x_share = pedersen_commit(x_bytes, zer_bytes) 
             server.zkrpShares[f'{idxValueBlinding}_{0}'] = g_x_share
             if len(blinding_idx_request):
                 blinding_idx_request += ","
             blinding_idx_request += f"{idxValueBlinding}_{0}"
 
+    times.append(time.perf_counter())
     results_list = await server.get_zkrp_shares(players(server.contract), blinding_idx_request)
+    times.append(time.perf_counter())
 
-    for i in len(pflist):
+    blindingy_idx_request = ""
+    for i in range(len(pflist)):
         results, pfexp = results_list[i], pflist[i]
+        # print('results:',results)
 
         [x, zkpstmt, type_Mul , y, r ] = pfexp
         [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
+        blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
+        x,y,r = int(x), int(y), int(r)
 
         if type_Mul == 0:
             agg_commitment = pedersen_aggregate(results, [x + 1 for x in list(range(server.players))])
+            # print("agg_com:",agg_commitment)
+            # print("com:",commitment)
 
             if agg_commitment != commitment:
                 return False
         else: ### x * y >= r
-            if type_Mul <= 2:
-                r = -r
-                r = (r % prime + prime) % prime
-
             results_g_x = results
             g_x_bytes = pedersen_aggregate(results_g_x, [x + 1 for x in list(range(server.players))])
 
@@ -342,17 +348,48 @@ async def verify_proof(server, pflist):
             y_bytes = list(y.to_bytes(32, byteorder='little'))
             g_xy_h_rz_bytes = other_base_commit(g_x_bytes, y_bytes, rz_bytes)
             server.zkrpShares[f'{idxValueBlinding}_{1}'] = g_xy_h_rz_bytes
-            results_g_xy_h_rz = await server.get_zkrp_shares(players(server.contract), f'{idxValueBlinding}_{1}')
-            agg_gxyhrz_commitment = pedersen_aggregate(results_g_xy_h_rz, [x + 1 for x in list(range(server.players))])
 
-            r_bytes = list(r.to_bytes(32, byteorder='little'))
-            g_r = pedersen_commit(r_bytes, zer_bytes) 
+            if len(blindingy_idx_request):
+                blindingy_idx_request += ","
+            blindingy_idx_request += f"{idxValueBlinding}_{1}"
 
-            agg_commitment = product_com(g_r,agg_gxyhrz_commitment)
-            print('agg_commitment',agg_commitment)
-            print('commitment',commitment)
-            if agg_commitment != commitment:
-                return False
+    times.append(time.perf_counter())
+
+    if len(blindingy_idx_request):
+        resultsy_list = await server.get_zkrp_shares(players(server.contract), blindingy_idx_request)
+        times.append(time.perf_counter())
+    
+        idx_y = 0
+        for i in range(len(pflist)):
+            pfexp = pflist[i]
+
+            [x, zkpstmt, type_Mul , y, r ] = pfexp
+            [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
+
+            if type_Mul != 0:
+                r = -r
+                r = (r % prime + prime) % prime
+
+                results_g_xy_h_rz = resultsy_list[idx_y]
+                agg_gxyhrz_commitment = pedersen_aggregate(results_g_xy_h_rz, [x + 1 for x in list(range(server.players))])
+
+                r_bytes = list(r.to_bytes(32, byteorder='little'))
+                g_r = pedersen_commit(r_bytes, zer_bytes) 
+
+                agg_commitment = product_com(g_r,agg_gxyhrz_commitment)
+                # agg_commitment = agg_gxyhrz_commitment
+                # print('agg_commitment',agg_commitment)
+                # print('commitment',commitment)
+                if agg_commitment != commitment:
+                    return False
+
+                idx_y = idx_y + 1
+    times.append(time.perf_counter())
+    with open(f'ratel/benchmark/data/latency_zkrp_verify_{server.serverID}.csv', 'a') as f:
+        for op, t in enumerate(times):
+            f.write(f'trade\t'
+                    f'op\t{op + 1}\t'
+                    f'cur_time\t{t}\n')
 
     return True
 
@@ -386,7 +423,7 @@ def get_zkrp(secret_value, exp_str, r, isSfix = False):
     # if value < 0 :
     #     value = (value % prime + prime) % prime
 
-    print('value:',value)
+    # print('value:',value)
 
     #To prove value >= 0
     bits = 32
@@ -411,6 +448,10 @@ prime_bit_length = 253
 inverse_R = get_inverse(R)
 
 inv_10 = 723700557733226221397318656304299424085711635937990760600195093828545425099
+zer = 0
+zer_bytes = list(zer.to_bytes(32, byteorder='little'))
+
+
 
 fp = 2 ** 16
 decimal = 10 ** 15

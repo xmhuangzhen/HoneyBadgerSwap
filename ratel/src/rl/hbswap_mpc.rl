@@ -299,31 +299,18 @@ contract hbswap {
             poolB = readDB(f'pool_{tokenA}_{tokenB}_{tokenB}', int)
             totalCnt = readDB(f'totalCnt_{tokenA}_{tokenB}', int)
 
-            times.append(time.perf_counter())
-
-
-            feeRate = 1
-
+            feeRate = 0
             totalA = (1 + feeRate) * amtA
             totalB = (1 + feeRate) * amtB
 
             times.append(time.perf_counter())
 
-            mpcInput(sfix amtA, sfix amtB, sfix balanceA, sfix balanceB, sfix totalA, sfix totalB)
-
-            checkA = ((amtA*amtB) <= 0).reveal()
-            checkB = ((-totalA) <= balanceA).reveal()
-            checkC = ((-totalB) <= balanceB).reveal()
-
-            mpcOutput(cint checkA, cint checkB, cint checkC)
-            
-            assert(checkA == 1)
-            assert(checkB == 1)
-            assert(checkC == 1)
-
-            times.append(time.perf_counter())
-
             mpcInput(sfix balanceA, sfix amtA, sfix balanceB, sfix amtB, sfix poolA, sfix poolB, sint totalCnt, sfix totalA, sfix totalB)
+
+            validOrder = (amtA * amtB <= 0).reveal()
+            enoughA = (-totalA <= balanceA).reveal()
+            enoughB = (-totalB <= balanceB).reveal()
+            earlyQuit = validOrder * enoughA * enoughB
 
             poolProduct = poolA * poolB
 
@@ -335,8 +322,8 @@ contract hbswap {
             acceptB = actualAmtB >= amtB
             buyB = 1 - buyA
 
-            flagBuyA = buyA * acceptA
-            flagBuyB = buyB * acceptB
+            flagBuyA = buyA * acceptA * earlyQuit
+            flagBuyB = buyB * acceptB * earlyQuit
 
             changeA = flagBuyA * actualAmtA + flagBuyB * totalA
             changeB = flagBuyA * totalB + flagBuyB * actualAmtB
@@ -371,7 +358,7 @@ contract hbswap {
 
             times.append(time.perf_counter())
 
-            with open(f'ratel/benchmark/data/latency_mpc_{server.serverID}.csv', 'a') as f:
+            with open(f'ratel/benchmark/data/latency_{server.serverID}.csv', 'a') as f:
                 for op, t in enumerate(times):
                     f.write(f'trade\t'
                             f'seq\t{seqTrade}\t'
