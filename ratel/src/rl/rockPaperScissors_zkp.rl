@@ -29,8 +29,6 @@ contract rockPaperScissors {
             assert(zkrp(value1 >= 1))
             assert(zkrp(value1 <= 3))
 
-            print('**** valid', valid)
-
             writeDB(f'game_value1_{gameId}', value1, int)
 
             curStatus = 1
@@ -48,7 +46,7 @@ contract rockPaperScissors {
             assert(zkrp(value2 >= 1))
             assert(zkrp(value2 <= 3))
 
-            print('**** valid', valid)
+
 
             writeDB(f'game_value2_{gameId}', value2, int)
 

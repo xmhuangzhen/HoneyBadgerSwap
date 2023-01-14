@@ -1,6 +1,7 @@
+### python3 -m ratel.benchmark.src.swap.simulate 86400 345600 traderjoev2_USDC.e_WAVAX
+
 import re
 import sys
-import time
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -32,6 +33,8 @@ def sample():
 def simulate():
     delay_dict = {}
     mpc_time = 0
+    max_delay = 0
+    cnt = 0
     with open(f'ratel/benchmark/src/swap/pool_data/{pool_name}.csv', 'r') as f:
         lines = f.readlines()
         for line in lines[1:]:
@@ -49,35 +52,24 @@ def simulate():
             else:
                 delay = 0
                 mpc_time = timestamp + sample()
-            delay //= interval
-            if delay not in delay_dict.keys():
-                delay_dict[delay] = 0
-            delay_dict[delay] += 1
+
+            if delay > max_delay:
+                max_delay = delay
+
+            if delay <= 60:
+                cnt += 1
+
+            key = (delay // interval) * interval
+            # key = (delay // interval + 1) * interval
+            if key not in delay_dict.keys():
+                delay_dict[key] = 0
+            delay_dict[key] += 1
 
     s = sum(delay_dict.values())
-    # print('sum', s)
 
-    m = max(delay_dict.keys())
-    # print(f'm {m}')
+    delay_portion = {k: v / s for k, v in delay_dict.items()}
 
-    delay_dict = {k * interval: v / s for k, v in delay_dict.items()}
-
-    tot = 0
-    pos = 0
-    for k in sorted(delay_dict.keys()):
-        tot += delay_dict[k]
-        if tot > 0.85:
-            pos = k
-            break
-    # print(f'pos {pos}')
-
-    tot = 0
-    for k in delay_dict.keys():
-        if k <= 25:
-            tot += delay_dict[k]
-    # print(f'tot {tot}')
-
-    return m, pos, tot, delay_dict
+    return max_delay, cnt / s, delay_portion
 
 
 if __name__ == '__main__':
@@ -90,30 +82,41 @@ if __name__ == '__main__':
         pdf = eval(line)
 
     rep = 100
-    lim = 100
-    m, pos, tot = 0, 0, 0
+    lim = 180
+    m = 0
+    cnt = 0
     x = np.arange(0, lim, interval)
     values = np.zeros((rep, lim // interval))
     for i in range(rep):
-        _m, _pos, _tot, _values = simulate()
+        print('iteration', i)
+        _m, _cnt, _values = simulate()
         m += _m
-        pos += _pos
-        tot += _tot
+        cnt += _cnt
         for j, k in enumerate(x):
-            values[i][j] = _values[k]
+            if k in _values.keys():
+                values[i][j] = _values[k]
 
     y = np.mean(values, axis=0)
+    print(sum(y))
+
+    for i in range(1, len(y)):
+        y[i] += y[i - 1]
     err = np.std(values, axis=0)
 
     print(y)
     print(err)
 
+    print('max delay', m / rep)
+    print('percent less than 1min', cnt / rep)
+    print('less than 5s', y[1])
+
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
-    ax1.set_xticks(x[::2])
+    ax1.set_xticks(x[::4])
     ax1.set_xlim(0, lim)
-    ax1.set_ylim(0, 0.5)
+    ax1.set_ylim(0, 1)
     ax1.bar(x + interval / 2, y, width=interval, color='cornflowerblue', yerr=err, ecolor='fuchsia')
+    # ax1.plot(x, y, color='cornflowerblue')
     ax1.set_xlabel('Wait time(s)')
-    ax1.set_ylabel('Probability')
-    plt.show()
+    ax1.set_ylabel('Cumulative Distribution Function')
+    plt.savefig(f'ratel/benchmark/src/swap/sim.pdf')

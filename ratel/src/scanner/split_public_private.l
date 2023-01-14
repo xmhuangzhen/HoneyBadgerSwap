@@ -388,31 +388,7 @@ void addZkrpArgs(){
         string text_addParam_without_type = ", json_lis_zkpstmt";
         string text_addParam_event = ", string json_lis_zkpstmt";
         string text_addParam_recover = "json_lis_zkpstmt, ";
-//        for(int i = 0;i < cntZkrp;++i){
-//            string postVarName = "zkpstmt" + to_string(i);
-//            text_addParam_without_type += ", " + postVarName;
-//            text_addParam_without_type += ", publicRange" + postVarName ;
-//            text_addParam_without_type += ", idx" + postVarName + "Blinding, masked" + postVarName + "Blinding";
-//            text_addParam_without_type += ", proof" + postVarName + ", commitment" + postVarName;
 
-//            text_addParam_with_type += ", string memory " + postVarName;
-//            text_addParam_with_type += ", uint publicRange" + postVarName ;
-//            text_addParam_with_type += ", uint idx" + postVarName + "Blinding, uint masked" + postVarName + "Blinding";
-//            text_addParam_with_type += ", uint8[] memory proof" + postVarName + ", uint8[] memory commitment" + postVarName;
-
-//            text_addParam_event += ", string " + postVarName;
-//            text_addParam_event += ", uint publicRange" + postVarName ;
-//            text_addParam_event += ", uint idx" + postVarName + "Blinding, uint masked" + postVarName + "Blinding";
-//            text_addParam_event += ", uint8[]  proof" + postVarName + ", uint8[]  commitment" + postVarName;
-
-//            if(i != 0) text_addParam_recover += ",";
-//            text_addParam_recover += postVarName;
-//            text_addParam_recover += "publicRange" + postVarName ;
-//            text_addParam_recover += ",idx" + postVarName + "Blinding, masked" + postVarName + "Blinding";
-//            text_addParam_recover += ", proof" + postVarName + ", commitment" + postVarName + ",";
-//        }
-        
-        
         //////////////////add emit param////////////////
         string emit_str = "emit " + funcName;
         for(;pos >= 0;--pos){
@@ -472,16 +448,6 @@ void addZkrpArgs(){
                 break;
             }
         }
-//        string req_str = "";
-//        for(int i = 0;i < cntZkrp;++i){
-//            string postVarName = "zkpstmt" + to_string(i);
-//            req_str += "        require(inputMaskOwner[idx" + postVarName + "] == msg.sender);\n";
-    
-//            req_str += "        tmpzkpstmt = json.loads(" + postVarName + ")\n";
-//            req_str += "        [tmpidxValueBlinding, tmpmaskedValueBlinding, tmpproof, tmpcommitment] = tmpzkpstmt \n";
-//            req_str += "        require(inputMaskOwner[tmpidxValueBlinding] == msg.sender);\n";
-//        }
-//        textPublic.insert(pos+1,req_str);
 
         ////////////add event param////////////
         string event_str = "event " + funcName;

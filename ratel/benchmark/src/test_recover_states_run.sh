@@ -14,13 +14,13 @@ one=1
 
 online_players=$1
 repetion=$2
-lantecy=${3:-0}
+latency=${3:-0}
 
 rm ratel/benchmark/data/recover_states_* || true
 mkdir -p ratel/benchmark/data
 
 ./latency-control.sh stop
-if [[ $lantecy -eq $one ]]; then
+if [[ $latency -eq $one ]]; then
     ./latency-control.sh start 200 50
 fi
 

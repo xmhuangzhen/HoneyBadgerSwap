@@ -26,7 +26,7 @@ def evaluate(x, points):
     return value
 
 
-def interpolate(x, points, t):
+def interpolate(points, x, t):
     assert len(points) > t
     value = evaluate(x, points[:t + 1])
     n = len(points)
@@ -39,17 +39,23 @@ def interpolate(x, points, t):
 
 
 def batch_interpolate(x, batch_points, threshold):
-    res = []
     batch_size = len(batch_points[0][1])
     players = len(batch_points)
+
+    list_points = []
     for i in range(batch_size):
         points = []
         for j in range(players):
             result = int(batch_points[j][1][i])
             if result != 0:
                 points.append((batch_points[j][0], result))
-        res.append(interpolate(x, points, threshold))
-    return res
+        list_points.append(points)
+
+    import multiprocessing
+    from functools import partial
+
+    with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
+        return pool.map(partial(interpolate, x=x, t=threshold), list_points)
 
 
 async def send_request(url):
