@@ -408,3 +408,5 @@ trade_key_num = 7
 repeat_experiment = 1
 
 mpc_failed_retry = 3
+
+sleep_time = 0.01

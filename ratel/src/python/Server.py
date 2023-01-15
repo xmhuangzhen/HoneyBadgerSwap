@@ -15,7 +15,7 @@ from ratel.src.python.utils import key_inputmask_index, threshold_available_inpu
     confirmation, input_mask_gen_batch_size, list_to_str, INPUTMASK_SHARES_DIR, execute_cmd, \
     sign_and_send, encode_key, key_zkrp_blinding_index, \
     key_zkrp_blinding_commitment_index, key_zkrp_agg_commitment_index, \
-    key_inputmask_version, key_state_mask, read_db, bytes_to_dict, dict_to_bytes, write_db
+    key_inputmask_version, key_state_mask, read_db, bytes_to_dict, dict_to_bytes, write_db, sleep_time
 from zkrp_pyo3 import pedersen_aggregate, pedersen_commit, zkrp_verify, zkrp_prove
 
 
@@ -65,13 +65,21 @@ class Server:
 
     async def get_zkrp_shares(self, players, inputmask_idxes):
         request = f"zkrp_share_idxes/{inputmask_idxes}"
-        results = await send_requests(players, request)
+        results = await send_requests(players, request, self.serverID)
         shares = []
         server_indexes = []
         for i in range(len(results)):
             if len(results[i]):
                 shares.append(json.loads(results[i]["zkrp_share_idx"]))
-                server_indexes.append(i + 1)
+                if i < self.serverID:
+                    server_indexes.append(i + 1)
+                else:
+                    server_indexes.append(i + 2)
+
+        print(shares, server_indexes)
+        shares.append(self.zkrpShares[inputmask_idxes])
+        server_indexes.append(self.serverID + 1)
+        print(shares, server_indexes)
 
         return shares, server_indexes
 
@@ -89,23 +97,22 @@ class Server:
             return web.json_response(data)
 
         async def handler_recover_db(request):
-            print(f"s{self.serverID} request: {request}")
+            # print(f"s{self.serverID} request: {request}")
             server_addr = request.match_info.get("server_addr")
             seq_recover_state = int(request.match_info.get("seq_recover_state"))
             seq_num_list = re.split(',', request.match_info.get("list"))
-            print(server_addr)
-            print(seq_recover_state)
-            print(seq_num_list)
+            print(f'num tasks {len(seq_num_list)}')
 
             keys = await self.collect_keys(seq_num_list)
             masked_states = await self.mask_states(server_addr, seq_recover_state, keys)
+            print(f'num states {len(keys)}')
 
             res = list_to_str(masked_states)
 
             data = {
                 "values": res,
             }
-            print(f"s{self.serverID} response: {res}")
+            # print(f"s{self.serverID} response: {res}")
             return web.json_response(data)
 
         async def handler_mpc_verify(request):
@@ -113,7 +120,7 @@ class Server:
             mask_idx = re.split(',', request.match_info.get("mask_idxes"))[0]
 
             while mask_idx not in self.zkrpShares.keys():
-                await asyncio.sleep(1)
+                await asyncio.sleep(sleep_time)
 
             data = {
                 "zkrp_share_idx": json.dumps(self.zkrpShares[mask_idx]),
@@ -139,7 +146,7 @@ class Server:
             print(f"s{self.serverID} request: {request}")
             need_num = int(re.split(",", request.match_info.get("mask_idxes"))[0])
             while self.used_zkrp_blinding_share + need_num > self.local_zkrp_blinding_share_cnt:
-                await asyncio.sleep(1)
+                await asyncio.sleep(sleep_time)
                 await self.gen_zkrp_blinding_shares(100)
 
             res = ""
@@ -174,11 +181,11 @@ class Server:
             print(f"s{self.serverID} request: {request}")
             need_num = int(re.split(",", request.match_info.get("mask_idxes"))[0])
             while self.used_zkrp_blinding_com + need_num > self.local_zkrp_blinding_com_cnt:
-                await asyncio.sleep(1)
+                await asyncio.sleep(sleep_time)
             
-            print('used num:',self.used_zkrp_blinding_com)
-            print('need num:',need_num)
-            print('local blinding:',self.local_zkrp_blinding_com_cnt)
+            print('used num:', self.used_zkrp_blinding_com)
+            print('need num:', need_num)
+            print('local blinding:', self.local_zkrp_blinding_com_cnt)
 
             res = ""
             for i in range(need_num):
@@ -221,7 +228,7 @@ class Server:
         resource = cors.add(app.router.add_resource("/zkrp_new_agg_com/{mask_idxes}"))
         cors.add(resource.add_route("GET", handler_zkrp_blinding_info_2))
 
-        print("Starting http server...")
+        print(f"Starting http server on {self.host}:{self.http_port}...")
         runner = web.AppRunner(app)
         await runner.setup()
         site = web.TCPSite(runner, host=self.host, port=self.http_port)
@@ -295,14 +302,14 @@ class Server:
         ##### (1) generating the zkrp blinding shares #####
         await self.gen_zkrp_blinding_shares(100)
         while origin_cnt == self.local_zkrp_blinding_share_cnt:
-            await asyncio.sleep(1)
+            await asyncio.sleep(sleep_time)
             print('waiting for gen zkrp blind share')
 
         ##### (2) interpolate the blinding commitment #####
         cur_zkrp_com = self.local_zkrp_blinding_com_cnt
         for cur_zkrp_idx in range(50):
             request = f"zkrp_blinding_commitment_shares/{cur_zkrp_com}"
-            results = await send_requests(self.players, request)
+            results = await send_requests(self.players, request, self.serverID)
             for i in range(len(results)):
                 tmp_str = results[i]["zkrp_blinding_commitment_shares"]
                 results[i] = re.split(',', tmp_str[1:-1])
@@ -341,6 +348,7 @@ class Server:
         is_server = self.contract.functions.isServer(self.account.address).call()
         print(f's-{self.serverID} {is_server}')
         if not is_server:
+            print('crash recovering...')
             # TODO: acquire approval from other servers
             tx = self.contract.functions.addServer(self.account.address).buildTransaction({
                 'from': self.account.address,
@@ -389,7 +397,7 @@ class Server:
                         break
                 except:
                     pass
-                await asyncio.sleep(1)
+                await asyncio.sleep(sleep_time)
 
     async def recover_history(self, seq_num_list, repetition):
         ### benchmark
@@ -397,12 +405,17 @@ class Server:
         times.append(time.perf_counter())
 
         keys = await self.collect_keys(seq_num_list)
+        num_states_to_recover = len(keys)
         # print(f'keys {keys}')
 
         ### benchmark
         times.append(time.perf_counter())
 
-        seq_recover_state = await self.reserve_state_mask(len(keys))
+        await self.gen_state_mask(num_states_to_recover)
+
+        ### benchmark
+        times.append(time.perf_counter())
+        seq_recover_state = await self.consume_state_mask(num_states_to_recover)
 
         ### benchmark
         times.append(time.perf_counter())
@@ -503,12 +516,10 @@ class Server:
 
         return keys
 
-    async def reserve_state_mask(self, num):
-        print('reserve_state_mask')
+    async def gen_state_mask(self, num):
         num_total_state_mask = self.contract.functions.numTotalStateMask(self.account.address).call()
         num_used_state_mask = self.contract.functions.numUsedStateMask(self.account.address).call()
         num_to_gen = max(0, num - num_total_state_mask + num_used_state_mask)
-        print(f'num_to_gen {num_to_gen}')
 
         if num_to_gen > 0:
             print(f'generating {num_to_gen} state masks...')
@@ -522,17 +533,14 @@ class Server:
             init_state_mask_index = logs[0]['args']['initStateMaskIndex']
             num = logs[0]['args']['num']
 
-            print(f'init_state_mask_index {init_state_mask_index}')
-            print(f'num {num}')
-
             while True:
                 try:
                     self.db.Get(key_state_mask(self.account.address, init_state_mask_index + num - 1))
                     break
                 except KeyError:
-                    print(f'state mask generation not ready')
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(sleep_time)
 
+    async def consume_state_mask(self, num):
         tx = self.contract.functions.consumeStateMask(num).buildTransaction({
             'from': self.account.address,
             'gas': 1000000,
@@ -542,7 +550,9 @@ class Server:
         logs = self.contract.events.RecoverState().processReceipt(receipt)
         seq_recover_state = logs[0]['args']['seqRecoverState']
 
-        return seq_recover_state
+        while True:
+            if self.web3.eth.get_block_number() - receipt['blockNumber'] > self.confirmation:
+                return seq_recover_state
 
     async def mask_states(self, server_addr, seq_recover_state, keys):
         # TODO: deal with the case that malicious MPC server reuse the same seq_num
@@ -582,7 +592,6 @@ class Server:
         assert len(keys) == len(values)
 
         for key, value in zip(keys, values):
-            # print(f'key {key} value {value}')
             self.db.Put(key.encode(), value.to_bytes((value.bit_length() + 7) // 8, 'big'))
 
         key = 'execHistory'

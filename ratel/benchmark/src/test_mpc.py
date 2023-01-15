@@ -15,7 +15,7 @@ def set_up_share_files(players, concurrency):
 
 
 async def run_online_ONLY(server_id, port, players, threshold, mpcProg):
-    cmd = f'{prog} -N {players} -T {threshold} -p {server_id} -pn {port} -P {prime} -npfs {mpcProg}'
+    cmd = f'{prog} -N {players} -T {threshold} -p {server_id} -pn {port} -P {prime} -ip HOSTS.txt -npfs {mpcProg}'
     await execute_cmd(cmd)
 
 
@@ -30,13 +30,14 @@ async def run_online(server_id, port, players, threshold, mpcProg, seq=0):
     await execute_cmd(cmd)
 
     dir = dst_dir
-    cmd = f'{prog} -N {players} -T {threshold} -p {server_id} -pn {port} -P {prime} -F --prep-dir {dir} -npfs {mpcProg}'
+    cmd = f'{prog} -N {players} -T {threshold} -p {server_id} -pn {port} -P {prime} -ip HOSTS.txt -F --prep-dir {dir} -npfs {mpcProg}'
+
     await execute_cmd(cmd, f'**** task seq {seq}')
 
 
 async def run_offline(server_id, port, players, threshold, mpcProg):
     dir = f'offline_data/s{server_id}/{mpcProg}_port_{port}'
-    cmd = f'{offline_prog} -N {players} -T {threshold} -p {server_id} -pn {port} -P {prime} --prep-dir {dir} -npfs {mpcProg}'
+    cmd = f'{offline_prog} -N {players} -T {threshold} -p {server_id} -pn {port} -P {prime} -ip HOSTS.txt --prep-dir {dir} -npfs {mpcProg}'
     await execute_cmd(cmd)
 
 

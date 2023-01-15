@@ -163,7 +163,7 @@ void initPython() {
     textPythonUpper += "import asyncio\n";
     textPythonUpper += "import os\n";
     textPythonUpper += "import json\n";
-    textPythonUpper += "from ratel.src.python.utils import location_sharefile, prog, mpcPort, prime, sz, int_to_hex, hex_to_int, recover_input, fp, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof, key_inputmask_index, key_inputmask_version, input_mask_gen_batch_size, key_state_mask, mpc_port, inv_10\n";
+    textPythonUpper += "from ratel.src.python.utils import sleep_time, location_sharefile, prog, mpcPort, prime, sz, int_to_hex, hex_to_int, recover_input, fp, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof, key_inputmask_index, key_inputmask_version, input_mask_gen_batch_size, key_state_mask, mpc_port, inv_10\n";
     textPythonUpper += "from ratel.benchmark.src.test_mpc import run_online, run_offline\n";
     textPythonUpper += "\n";
 
@@ -207,7 +207,7 @@ void finalizePython() {
     textPythonUpper += "                server.loop.create_task(eval(f'run{log[2]}')(server, log[3]))\n";
     textPythonUpper += "            blkNum = curBlkNum - server.confirmation + 1\n";
     textPythonUpper += "        else:\n";
-    textPythonUpper += "            await asyncio.sleep(1)\n";
+    textPythonUpper += "            await asyncio.sleep(sleep_time)\n";
     textPythonUpper += "\n\n";
 
     if (finalizeOnChain) {

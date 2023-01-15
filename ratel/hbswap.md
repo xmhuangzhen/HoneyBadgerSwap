@@ -6,7 +6,7 @@
 
 `docker exec -it honeybadgerswap_dev_1 bash`
 
-`bash setup-ssl.sh 4`
+`bash setup-ssl.sh 4 /opt/ssl`
 
 `bash ratel/src/compile.sh hbswap`
 
