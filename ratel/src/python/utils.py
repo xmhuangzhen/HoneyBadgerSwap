@@ -4,8 +4,7 @@ import glob
 import json
 import leveldb
 import os
-import re
-import math
+import time
 
 from gmpy import binary, mpz
 from gmpy2 import mpz_from_old_binary
@@ -275,72 +274,124 @@ def dict_to_bytes(value):
     return bytes(str(value), encoding='utf-8')
 
 
-async def verify_proof(server, x, zkpstmt, type_Mul = 0, y = 1, r = 0):
-    [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
-    # TODO:
-    # proof, commitment, blinding_ = zkrp_prove(2022, 32)
-    if proof is None or commitment is None or not zkrp_verify(proof, commitment):
-        print("[Error]: Committed secret value does not pass range proof verification!")
-        return False
+async def verify_proof(server, pflist):
+    blinding_idx_request = ""
 
-    blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
+    times = []
+    times.append(time.perf_counter())
 
-    x, y, r = int(x), int(y), int(r)
+    for pfexp in pflist:
+        [x, zkpstmt, type_Mul, y, r] = pfexp
+        [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
+        # TODO:
+        # proof, commitment, blinding_ = zkrp_prove(2022, 32)
+        if proof is None or commitment is None or not zkrp_verify(proof, commitment):
+            print("[Error]: Committed secret value does not pass range proof verification!")
+            return False
 
-    if type_Mul == 0:
-        pfval = x % prime
-        if pfval < 0:
-            pfval = (pfval + prime) % prime
-        
-        # TODO: where is the blinding mask created? we also need to share it.
+        blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
+        x, y, r = int(x), int(y), int(r)
 
-        value1_bytes = list(pfval.to_bytes(32, byteorder='little'))
-        blinding_bytes = list(blinding.to_bytes(32, byteorder='little'))
+        if type_Mul == 0:
+            pfval = x % prime
+            if pfval < 0:
+                pfval = (pfval % prime + prime) % prime
 
-        share_commitment = pedersen_commit(value1_bytes, blinding_bytes)
+            value1_bytes = list(pfval.to_bytes(32, byteorder='little'))
+            blinding_bytes = list(blinding.to_bytes(32, byteorder='little'))
 
-        # TODO: create the function to commit to the unmasked secret shares.
-        # TODO: we also need to change the current zkrp interface to allow specifying r and choose range to prove.
+            share_commitment = pedersen_commit(value1_bytes, blinding_bytes)
 
-        server.zkrpShares[f'{idxValueBlinding}'] = share_commitment
-        shares, server_indexes = await server.get_zkrp_shares(players(server.contract), f'{idxValueBlinding}')
-        agg_commitment = pedersen_aggregate(shares, server_indexes)
+            server.zkrpShares[f'{idxValueBlinding}'] = share_commitment
 
-        return agg_commitment == commitment
-    else: ### x * y >= r
-        r = -r
-        r = (r % prime + prime) % prime
-        if type_Mul >= 3:
-            x = -x
-            x = (x % prime + prime) % prime
+            if len(blinding_idx_request):
+                blinding_idx_request += ","
+            blinding_idx_request += f"{idxValueBlinding}"
 
-        ############# (1) compute g^[x] #############
-        zer = 0
-        x_bytes = list(x.to_bytes(32, byteorder='little'))
-        zer_bytes = list(zer.to_bytes(32, byteorder='little'))
-        g_x_share = pedersen_commit(x_bytes, zer_bytes) 
-        server.zkrpShares[f'{idxValueBlinding}_{0}'] = g_x_share
-        shares, server_indexes = await server.get_zkrp_shares(players(server.contract), f'{idxValueBlinding}_{0}')
-        g_x_bytes = pedersen_aggregate(shares, server_indexes)
+        else:  ### x * y >= r
+            if type_Mul >= 3:
+                x = -x
+                x = (x % prime + prime) % prime
+            ############# (1) compute g^[x] #############
+            x_bytes = list(x.to_bytes(32, byteorder='little'))
+            g_x_share = pedersen_commit(x_bytes, zer_bytes)
+            server.zkrpShares[f'{idxValueBlinding}_{0}'] = g_x_share
+            if len(blinding_idx_request):
+                blinding_idx_request += ","
+            blinding_idx_request += f"{idxValueBlinding}_{0}"
 
-        ############# (2) compute (g^x)^[y] * h^[rz] #############
-        rz_bytes = list(blinding.to_bytes(32, byteorder='little'))
-        y_bytes = list(y.to_bytes(32, byteorder='little'))
-        g_xy_h_rz_bytes = other_base_commit(g_x_bytes, y_bytes, rz_bytes)
-        server.zkrpShares[f'{idxValueBlinding}_{1}'] = g_xy_h_rz_bytes
-        shares, server_indexes = await server.get_zkrp_shares(players(server.contract), f'{idxValueBlinding}_{1}')
-        agg_gxyhrz_commitment = pedersen_aggregate(shares, server_indexes)
 
-        if r != 0:
-            ### fixme!
-            r_bytes = list(r.to_bytes(32, byteorder='little'))
-            g_r = pedersen_commit(r_bytes, zer_bytes) 
-            print('g_r', g_r)
-            agg_commitment = product_com(g_r,agg_gxyhrz_commitment)
-        else:
-            agg_commitment = agg_gxyhrz_commitment
-        return agg_commitment == commitment
+    times.append(time.perf_counter())
+    results_list = await server.get_zkrp_shares(players(server.contract), blinding_idx_request)
+    times.append(time.perf_counter())
 
+    blindingy_idx_request = ""
+    for i in range(len(pflist)):
+        results, pfexp = results_list[i], pflist[i]
+
+        [x, zkpstmt, type_Mul, y, r] = pfexp
+        [idxValueBlinding, maskedValueBlinding, _proof, commitment] = zkpstmt
+        blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
+        x, y, r = int(x), int(y), int(r)
+
+        if type_Mul == 0:
+            agg_commitment = pedersen_aggregate(results, [x + 1 for x in list(range(server.players))])
+
+            if agg_commitment != commitment:
+                return False
+
+        else:  ### x * y >= r
+            results_g_x = results
+            g_x_bytes = pedersen_aggregate(results_g_x, [x + 1 for x in list(range(server.players))])
+
+            ############# (2) compute (g^x)^[y] * h^[rz] #############
+            rz_bytes = list(blinding.to_bytes(32, byteorder='little'))
+            y_bytes = list(y.to_bytes(32, byteorder='little'))
+            g_xy_h_rz_bytes = other_base_commit(g_x_bytes, y_bytes, rz_bytes)
+            server.zkrpShares[f'{idxValueBlinding}_{1}'] = g_xy_h_rz_bytes
+
+            if len(blindingy_idx_request):
+                blindingy_idx_request += ","
+            blindingy_idx_request += f"{idxValueBlinding}_{1}"
+
+    times.append(time.perf_counter())
+
+    if len(blindingy_idx_request):
+        resultsy_list = await server.get_zkrp_shares(players(server.contract), blindingy_idx_request)
+        times.append(time.perf_counter())
+
+        idx_y = 0
+        for i in range(len(pflist)):
+            pfexp = pflist[i]
+
+            [x, zkpstmt, type_Mul, y, r] = pfexp
+            [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
+
+            if type_Mul != 0:
+                r = -r
+                r = (r % prime + prime) % prime
+
+                results_g_xy_h_rz = resultsy_list[idx_y]
+                agg_gxyhrz_commitment = pedersen_aggregate(results_g_xy_h_rz,
+                                                           [x + 1 for x in list(range(server.players))])
+
+                r_bytes = list(r.to_bytes(32, byteorder='little'))
+                g_r = pedersen_commit(r_bytes, zer_bytes)
+
+                agg_commitment = product_com(g_r, agg_gxyhrz_commitment)
+                if agg_commitment != commitment:
+                    return False
+
+                idx_y = idx_y + 1
+
+    times.append(time.perf_counter())
+    with open(f'ratel/benchmark/data/latency_zkrp_verify_{server.serverID}.csv', 'a') as f:
+        for op, t in enumerate(times):
+            f.write(f'trade\t'
+                    f'op\t{op + 1}\t'
+                    f'cur_time\t{t}\n')
+
+    return True
 
 
 def get_zkrp(secret_value, exp_str, r, isSfix = False):
@@ -388,6 +439,8 @@ prime_bit_length = 253
 inverse_R = get_inverse(R)
 
 inv_10 = 723700557733226221397318656304299424085711635937990760600195093828545425099
+zer = 0
+zer_bytes = list(zer.to_bytes(32, byteorder='little'))
 
 fp = 2 ** 16
 decimal = 10 ** 15

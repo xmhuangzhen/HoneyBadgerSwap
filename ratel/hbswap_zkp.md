@@ -6,8 +6,6 @@
 
 `docker exec -it honeybadgerswap_dev_1 bash`
 
-`bash setup-ssl.sh 4 /opt/ssl`
-
 ```
 curl https://sh.rustup.rs -sSf | sh  # enter directly
 ```
@@ -18,6 +16,8 @@ cd ratel/src/zkrp_pyo3
 pip install .
 cd ../../..
 ```
+
+`bash setup-ssl.sh 4 /opt/ssl`
 
 `bash ratel/src/compile.sh hbswap_zkp`
 

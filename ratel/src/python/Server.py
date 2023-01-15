@@ -13,14 +13,11 @@ from ratel.src.python.deploy import http_uri
 from ratel.src.python.utils import key_inputmask_index, threshold_available_input_masks, prime, \
     location_inputmask, http_host, http_port, mpc_port, location_db, openDB, getAccount, \
     confirmation, input_mask_gen_batch_size, list_to_str, INPUTMASK_SHARES_DIR, execute_cmd, \
-    sign_and_send, encode_key, key_zkrp_blinding_index, \
-    key_zkrp_blinding_commitment_index, key_zkrp_agg_commitment_index, \
-    key_inputmask_version, key_state_mask, read_db, bytes_to_dict, dict_to_bytes, write_db, sleep_time
-from zkrp_pyo3 import pedersen_aggregate, pedersen_commit, zkrp_verify, zkrp_prove
+    sign_and_send, encode_key, key_inputmask_version, key_state_mask, read_db, bytes_to_dict, dict_to_bytes, write_db, sleep_time
 
 
 class Server:
-    def __init__(self, serverID, web3, contract, init_players, init_threshold, concurrency, recover , test_recover=False):
+    def __init__(self, serverID, web3, contract, init_players, init_threshold, concurrency, recover, test_recover=False):
         self.serverID = serverID
 
         self.db = openDB(location_db(serverID))
@@ -63,26 +60,6 @@ class Server:
 
         self.test_recover = test_recover
 
-    async def get_zkrp_shares(self, players, inputmask_idxes):
-        request = f"zkrp_share_idxes/{inputmask_idxes}"
-        results = await send_requests(players, request, self.serverID)
-        shares = []
-        server_indexes = []
-        for i in range(len(results)):
-            if len(results[i]):
-                shares.append(json.loads(results[i]["zkrp_share_idx"]))
-                if i < self.serverID:
-                    server_indexes.append(i + 1)
-                else:
-                    server_indexes.append(i + 2)
-
-        print(shares, server_indexes)
-        shares.append(self.zkrpShares[inputmask_idxes])
-        server_indexes.append(self.serverID + 1)
-        print(shares, server_indexes)
-
-        return shares, server_indexes
-
     async def http_server(self):
         async def handler_inputmask(request):
             print(f"s{self.serverID} request: {request}")
@@ -115,16 +92,22 @@ class Server:
             # print(f"s{self.serverID} response: {res}")
             return web.json_response(data)
 
-        async def handler_mpc_verify(request):
-            print(f"s{self.serverID} request: s{request} request from {request.remote}")
-            mask_idx = re.split(',', request.match_info.get("mask_idxes"))[0]
+        async def handler_open_commitment(request):
+            # print(f"s{self.serverID} request: s{request} request from {request.remote}")
+            mask_idxes = re.split(',', request.match_info.get("mask_idxes"))
 
-            while mask_idx not in self.zkrpShares.keys():
-                await asyncio.sleep(sleep_time)
+            for mask_idx in mask_idxes:
+                while mask_idx not in self.zkrpShares.keys():
+                    await asyncio.sleep(0.01)
+
+            res = ""
+            for mask_idx in mask_idxes:
+                res += f"{';' if len(res) > 0 else ''}{json.dumps(self.zkrpShares[mask_idx])}"
 
             data = {
-                "zkrp_share_idx": json.dumps(self.zkrpShares[mask_idx]),
+                "zkrp_shares": res,
             }
+            # print(f"s{self.serverID} response: {res}")
             return web.json_response(data)
 
         async def handler_get_secret_values(request):
@@ -142,63 +125,6 @@ class Server:
             print(f"s{self.serverID} response: {res}")
             return web.json_response(data)
 
-        async def handler_zkrp_blinding_shares(request):
-            print(f"s{self.serverID} request: {request}")
-            need_num = int(re.split(",", request.match_info.get("mask_idxes"))[0])
-            while self.used_zkrp_blinding_share + need_num > self.local_zkrp_blinding_share_cnt:
-                await asyncio.sleep(sleep_time)
-                await self.gen_zkrp_blinding_shares(100)
-
-            res = ""
-            for i in range(need_num):
-                real_idx = self.used_zkrp_blinding_share + i
-                res += f"{',' if len(res) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_zkrp_blinding_index(real_idx))), 'big')}"
-            data = {
-                "zkrp_blinding_shares": res,
-            }
-            self.used_zkrp_blinding_share += need_num
-            print(f"s{self.serverID} response: {res}")
-            return web.json_response(data)
-
-        async def handler_zkrp_blinding_commitment_shares(request):
-            print(f"s{self.serverID} request: {request}")
-            mask_idxes = re.split(",", request.match_info.get("mask_idxes"))
-
-            res = ""
-            for mask_idx in mask_idxes:
-                cur_lis = json.loads(self.db.Get(key_zkrp_blinding_commitment_index(mask_idx)).decode())
-                # tmp_str = f'{cur_lis}'
-                res += f"{',' if len(res) > 0 else ''}{cur_lis}"
-
-            data = {
-                "zkrp_blinding_commitment_shares": res,
-            }
-            print(f"s{self.serverID} response: {res}")
-            return web.json_response(data)
-
-
-        async def handler_zkrp_blinding_info_2(request):
-            print(f"s{self.serverID} request: {request}")
-            need_num = int(re.split(",", request.match_info.get("mask_idxes"))[0])
-            while self.used_zkrp_blinding_com + need_num > self.local_zkrp_blinding_com_cnt:
-                await asyncio.sleep(sleep_time)
-            
-            print('used num:', self.used_zkrp_blinding_com)
-            print('need num:', need_num)
-            print('local blinding:', self.local_zkrp_blinding_com_cnt)
-
-            res = ""
-            for i in range(need_num):
-                real_idx = self.used_zkrp_blinding_com + i
-                tmp_str = json.loads(self.db.Get(key_zkrp_agg_commitment_index(real_idx)).decode())
-                res += f"{';' if len(res) > 0 else ''}{tmp_str}"
-
-            self.used_zkrp_blinding_com += need_num
-            data = {
-                "zkrp_blinding_info_2": res,
-            }
-            print(f"s{self.serverID} response: {res}")
-            return web.json_response(data)
 
         app = web.Application()
 
@@ -218,15 +144,9 @@ class Server:
         resource = cors.add(app.router.add_resource("/recoverdb/{server_addr}-{seq_recover_state}-{list}"))
         cors.add(resource.add_route("GET", handler_recover_db))
         resource = cors.add(app.router.add_resource("/zkrp_share_idxes/{mask_idxes}"))
-        cors.add(resource.add_route("GET", handler_mpc_verify))
+        cors.add(resource.add_route("GET", handler_open_commitment))
         resource = cors.add(app.router.add_resource("/query_secret_values/{keys}"))
         cors.add(resource.add_route("GET", handler_get_secret_values))
-        resource = cors.add(app.router.add_resource("/zkrp_blinding_shares/{mask_idxes}"))
-        cors.add(resource.add_route("GET", handler_zkrp_blinding_shares))
-        resource = cors.add(app.router.add_resource("/zkrp_blinding_commitment_shares/{mask_idxes}"))
-        cors.add(resource.add_route("GET", handler_zkrp_blinding_commitment_shares))
-        resource = cors.add(app.router.add_resource("/zkrp_new_agg_com/{mask_idxes}"))
-        cors.add(resource.add_route("GET", handler_zkrp_blinding_info_2))
 
         print(f"Starting http server on {self.host}:{self.http_port}...")
         runner = web.AppRunner(app)
@@ -240,7 +160,6 @@ class Server:
             self.prepare(),
             monitor,
             self.http_server(),
-            # self.preprocess_zkrp_blinding(),
             self.preprocessing()
         ]
         await asyncio.gather(*tasks)
@@ -265,67 +184,43 @@ class Server:
                 shares.append(share)
         return shares
 
+    # async def get_zkrp_shares(self, players, inputmask_idxes):
+    #     request = f"zkrp_share_idxes/{inputmask_idxes}"
+    #     results = await send_requests(players, request, self.serverID)
+    #
+    #     shares = []
+    #     server_indexes = []
+    #     for i in range(len(results)):
+    #         if len(results[i]):
+    #             shares.append(json.loads(results[i]["zkrp_shares"]))
+    #             if i < self.serverID:
+    #                 server_indexes.append(i + 1)
+    #             else:
+    #                 server_indexes.append(i + 2)
+    #
+    #     print(shares, server_indexes)
+    #     shares.append(self.zkrpShares[inputmask_idxes])
+    #     server_indexes.append(self.serverID + 1)
+    #     print(shares, server_indexes)
+    #
+    #     return shares, server_indexes
 
-    async def gen_zkrp_blinding_shares(self, share_batch_size=input_mask_gen_batch_size):
-        print(f'Generating blinding shares... s-{self.serverID}')
+    async def get_zkrp_shares(self, players, inputmask_idxes):
+        request = f"zkrp_share_idxes/{inputmask_idxes}"
+        results_list = await send_requests(players, request)
+        for i in range(len(results_list)):
+            results_list[i] = re.split(";", results_list[i]["zkrp_shares"])
 
-        cmd = f'./random-shamir.x -i {self.serverID} -N {self.players} -T {self.threshold} --nshares {share_batch_size} --prep-dir {INPUTMASK_SHARES_DIR} -P {prime}'
-        await execute_cmd(cmd)
+        results = []
+        num = len(results_list[0])
+        for j in range(num):
+            tmp_res = []
+            for i in range(len(results_list)):
+                tmp_res.append(json.loads(results_list[i][j]))
+            results.append(tmp_res)
 
-        cur_zkrp_blinding_cnt = self.local_zkrp_blinding_share_cnt
-        file = location_inputmask(self.serverID, self.players)
-        with open(file, "r") as f:
-            i = 0
-            for line in f.readlines():
-                if i % 2 == 0:
-                    share = int(line) % prime
-                    self.db.Put(key_zkrp_blinding_index(cur_zkrp_blinding_cnt,0), share.to_bytes((share.bit_length() + 7) // 8, 'big'))
-                else:
-                    share_prime = int(line) % prime
-                    self.db.Put(key_zkrp_blinding_index(cur_zkrp_blinding_cnt,1), share_prime.to_bytes((share_prime.bit_length() + 7) // 8, 'big'))
+        return results
 
-                    value_bytes = list(share.to_bytes(32, byteorder='little'))
-                    blinding_bytes = list(share_prime.to_bytes(32, byteorder='little'))
-                    share_commitment = pedersen_commit(value_bytes,blinding_bytes)
-                    self.db.Put(key_zkrp_blinding_commitment_index(cur_zkrp_blinding_cnt), json.dumps(share_commitment).encode())
-
-                    cur_zkrp_blinding_cnt += 1
-                i = i + 1
-
-        self.local_zkrp_blinding_share_cnt = cur_zkrp_blinding_cnt
-        print(f'Total zkrp blinding shares number: {self.local_zkrp_blinding_share_cnt}\n')
-
-
-    async def gen_batch_zkrp_blinding(self):
-        origin_cnt = self.local_zkrp_blinding_share_cnt
-
-        ##### (1) generating the zkrp blinding shares #####
-        await self.gen_zkrp_blinding_shares(100)
-        while origin_cnt == self.local_zkrp_blinding_share_cnt:
-            await asyncio.sleep(sleep_time)
-            print('waiting for gen zkrp blind share')
-
-        ##### (2) interpolate the blinding commitment #####
-        cur_zkrp_com = self.local_zkrp_blinding_com_cnt
-        for cur_zkrp_idx in range(50):
-            request = f"zkrp_blinding_commitment_shares/{cur_zkrp_com}"
-            results = await send_requests(self.players, request, self.serverID)
-            for i in range(len(results)):
-                tmp_str = results[i]["zkrp_blinding_commitment_shares"]
-                results[i] = re.split(',', tmp_str[1:-1])
-            for i in range(len(results)):
-                for j in range(len(results[i])):
-                    results[i][j] = int(results[i][j])
-
-            agg_commitment = pedersen_aggregate(results, [x + 1 for x in list(range(self.players))])
-            self.db.Put(key_zkrp_agg_commitment_index(cur_zkrp_com), json.dumps(agg_commitment).encode())
-            cur_zkrp_com = cur_zkrp_com + 1
-        self.local_zkrp_blinding_com_cnt = cur_zkrp_com
-        print('zkrp blinding generated!')
-
-
-    async def preprocess_zkrp_blinding(self):
-        await self.gen_batch_zkrp_blinding()
 
     async def preprocessing(self):
         # TODO: remove the following & add generating agreement proof

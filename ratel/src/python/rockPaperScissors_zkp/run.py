@@ -35,4 +35,3 @@ if __name__ == '__main__':
     )
 
     server.loop.run_until_complete(server.init(rockPaperScissors_zkp.monitor(server)))
-    # server.loop.run_until_complete(server.preprocess_zkrp_blinding())

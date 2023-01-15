@@ -102,29 +102,16 @@ RUN pip3 install \
 
 #WORKDIR $HBSWAP_HOME
 
-# RUN ./setup-ssl.sh 4 /opt/ssl
-
 RUN apt-get update && \
     apt-get install -y curl
-
-#WORKDIR /tmp
-
-#RUN curl https://sh.rustup.rs -sSf > rustup.sh
-#RUN chmod 755 rustup.sh
-#RUN ./rustup.sh -y
-#RUN rm /tmp/rustup.sh
-#
-#RUN pip install pybulletproofs
-
 
 # Get Rust
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 
 RUN echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
 
-# RUN ~/.cargo/bin/cargo install mdbook
 ENV PATH /root/.cargo/bin:$PATH
 
-COPY ratel/src/zkrp_pyo3 $HBSWAP_HOME/ratel/src/zkrp_pyo3
+COPY ./ratel/src/zkrp_pyo3 $HBSWAP_HOME/ratel/src/zkrp_pyo3
 WORKDIR $HBSWAP_HOME/ratel/src/zkrp_pyo3
 RUN pip install .

@@ -14,24 +14,31 @@ def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
     amtA = int(amtA * fp)
     amtB = int(amtB * fp)
 
+    times = []
+    times.append(time.perf_counter())
+
     ###############zkrp prove here#############
     key_balance_A = f'balance_{tokenA}_{account.address}'
     key_balance_B = f'balance_{tokenB}_{account.address}'
-    
+
     balanceA, balanceB = asyncio.run(get_secret_values(players(appContract), f'{key_balance_A},{key_balance_B}', threshold(appContract)))
 
     feeRate = 0
     totalA = (1 + feeRate) * amtA
     totalB = (1 + feeRate) * amtB
 
-    print(f'amtA * amtB <= 0')
     proof1, commitment1, blinding1 = get_zkrp(amtA * amtB, '<=', 0)
-    print(f'-totalA <= balanceA')
     proof2, commitment2, blinding2 = get_zkrp(-totalA, '<=', balanceA)
-    print(f'-totalB <= balanceB')
     proof3, commitment3, blinding3 = get_zkrp(-totalB, '<=', balanceB)
 
     ###############zkrp prove end#############
+    times.append(time.perf_counter())
+    with open(f'ratel/benchmark/data/latency_client.csv', 'a') as f:
+        for op, t in enumerate(times):
+            f.write(f'trade\t'
+                    f'op\t{op + 1}\t'
+                    f'cur_time\t{t}\n')
+
     idxAmtA, idxAmtB, idxzkp1, idxzkp2, idxzkp3 = reserveInput(web3, appContract, 5, account)
     maskA, maskB, maskzkp1, maskzkp2, maskzkp3 = asyncio.run(get_inputmasks(players(appContract), f'{idxAmtA},{idxAmtB},{idxzkp1},{idxzkp2},{idxzkp3}', threshold(appContract)))
     maskedAmtA, maskedAmtB, maskedzkp1, maskedzkp2, maskedzkp3 = (amtA + maskA) % prime, (amtB + maskB) % prime, (blinding1 + maskzkp1) % prime, (blinding2 + maskzkp2) % prime, (blinding3 + maskzkp3) % prime
@@ -47,6 +54,7 @@ def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
     receipt = sign_and_send(tx, web3, account)
     log = appContract.events.Trade().processReceipt(receipt)[0]
     seqTrade = log['args']['seqTrade']
+
     with open('ratel/benchmark/data/gas.csv', 'a') as f:
         f.write(f"trade\t{seqTrade}\t"
                 f"client\t{client_id}\t"
@@ -75,5 +83,5 @@ if __name__=='__main__':
 
     for i in range(repetition):
         trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id)
-        time.sleep(30)
+        time.sleep(10)
         trade(appContract, tokenA, tokenB, amtB, amtA, account, web3, client_id)

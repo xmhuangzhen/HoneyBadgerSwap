@@ -138,14 +138,14 @@ fn other_base_commit(g_x_bytes: [u8; 32], y_bytes: [u8; 32], blinding_bytes: [u8
 
 #[pyfunction]
 fn product_com(x_bytes: [u8; 32], y_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
-    // let x = CompressedRistretto(x_bytes).decompress().unwrap();
-    // let y = CompressedRistretto(y_bytes).decompress().unwrap();
-    let x = Scalar::from_bytes_mod_order(x_bytes);
-    let y = Scalar::from_bytes_mod_order(y_bytes);
+    let one = Scalar::one();
 
-    let product_com = (x * y).reduce();
+    let x = CompressedRistretto(read32(&x_bytes)).decompress().unwrap();
+    let y = CompressedRistretto(read32(&y_bytes)).decompress().unwrap();
+
+    let product_com = RistrettoPoint::multiscalar_mul(&[one, one], &[x, y]);
     
-    Ok(product_com.to_bytes())
+    Ok(product_com.compress().to_bytes())
 }
 
 
