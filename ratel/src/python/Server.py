@@ -13,7 +13,8 @@ from ratel.src.python.deploy import http_uri
 from ratel.src.python.utils import key_inputmask_index, threshold_available_input_masks, prime, \
     location_inputmask, http_host, http_port, mpc_port, location_db, openDB, getAccount, \
     confirmation, input_mask_gen_batch_size, list_to_str, INPUTMASK_SHARES_DIR, execute_cmd, \
-    sign_and_send, encode_key, key_inputmask_version, key_state_mask, read_db, bytes_to_dict, dict_to_bytes, write_db, sleep_time
+    sign_and_send, encode_key, key_inputmask_version, key_state_mask, read_db, bytes_to_dict, dict_to_bytes, write_db, \
+    sleep_time
 
 
 class Server:
@@ -24,6 +25,8 @@ class Server:
 
         self.host = http_host
         self.http_port = http_port + serverID
+
+        self.client_session_pool = ClientSession() ### timeout 300sec
 
         self.contract = contract
         self.web3 = web3
@@ -59,6 +62,16 @@ class Server:
         self.recover = recover
 
         self.test_recover = test_recover
+
+    async def init(self, monitor):
+        tasks = [
+            self.prepare(),
+            monitor,
+            self.http_server(),
+            self.preprocessing()
+        ]
+        await asyncio.gather(*tasks)
+
 
     async def http_server(self):
         async def handler_inputmask(request):
@@ -143,10 +156,10 @@ class Server:
         cors.add(resource.add_route("GET", handler_inputmask))
         resource = cors.add(app.router.add_resource("/recoverdb/{server_addr}-{seq_recover_state}-{list}"))
         cors.add(resource.add_route("GET", handler_recover_db))
-        resource = cors.add(app.router.add_resource("/zkrp_share_idxes/{mask_idxes}"))
-        cors.add(resource.add_route("GET", handler_open_commitment))
         resource = cors.add(app.router.add_resource("/query_secret_values/{keys}"))
         cors.add(resource.add_route("GET", handler_get_secret_values))
+        resource = cors.add(app.router.add_resource("/zkrp_share_idxes/{mask_idxes}"))
+        cors.add(resource.add_route("GET", handler_open_commitment))
 
         print(f"Starting http server on {self.host}:{self.http_port}...")
         runner = web.AppRunner(app)
@@ -154,15 +167,6 @@ class Server:
         site = web.TCPSite(runner, host=self.host, port=self.http_port)
         await site.start()
         await asyncio.sleep(100 * 3600)
-
-    async def init(self, monitor):
-        tasks = [
-            self.prepare(),
-            monitor,
-            self.http_server(),
-            self.preprocessing()
-        ]
-        await asyncio.gather(*tasks)
 
     async def request_state_mask(self, num):
         tx = self.contract.functions.genStateMask(num).buildTransaction(
@@ -184,30 +188,10 @@ class Server:
                 shares.append(share)
         return shares
 
-    # async def get_zkrp_shares(self, players, inputmask_idxes):
-    #     request = f"zkrp_share_idxes/{inputmask_idxes}"
-    #     results = await send_requests(players, request, self.serverID)
-    #
-    #     shares = []
-    #     server_indexes = []
-    #     for i in range(len(results)):
-    #         if len(results[i]):
-    #             shares.append(json.loads(results[i]["zkrp_shares"]))
-    #             if i < self.serverID:
-    #                 server_indexes.append(i + 1)
-    #             else:
-    #                 server_indexes.append(i + 2)
-    #
-    #     print(shares, server_indexes)
-    #     shares.append(self.zkrpShares[inputmask_idxes])
-    #     server_indexes.append(self.serverID + 1)
-    #     print(shares, server_indexes)
-    #
-    #     return shares, server_indexes
 
     async def get_zkrp_shares(self, players, inputmask_idxes):
         request = f"zkrp_share_idxes/{inputmask_idxes}"
-        results_list = await send_requests(players, request)
+        results_list = await send_requests(players, request, self.client_session_pool)
         for i in range(len(results_list)):
             results_list[i] = re.split(";", results_list[i]["zkrp_shares"])
 
@@ -318,7 +302,7 @@ class Server:
         request = f'recoverdb/{self.account.address}-{seq_recover_state}-{list_to_str(seq_num_list)}'
         # print(request)
 
-        masked_states = await send_requests(self.players, request, self.serverID)
+        masked_states = await send_requests(self.players, request, self.client_session_pool, self.serverID)
 
         ### benchmark
         times.append(time.perf_counter())

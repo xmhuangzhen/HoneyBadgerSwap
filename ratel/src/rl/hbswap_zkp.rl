@@ -308,11 +308,7 @@ contract hbswap {
             times.append(time.perf_counter())
 
             ### invalid orders probably leak information about the direction of trade
-            assert(zkrp((amtA*amtB)<=0))
-
-            assert(zkrp((-totalA)<=balanceA))
-
-            assert(zkrp((-totalB)<=balanceB))
+            assert(zkrp((amtA * amtB) <= 0; (-totalA) <= balanceA; (-totalB) <= balanceB))
 
             times.append(time.perf_counter())
 
@@ -323,7 +319,7 @@ contract hbswap {
             actualAmtA = poolA - poolProduct / (poolB - amtB)
             actualAmtB = poolB - poolProduct / (poolA - amtA)
 
-            buyA = amtA > 0 ### TODO: could also be replaced by ZKP
+            buyA = amtA > 0
             acceptA = actualAmtA >= amtA
             acceptB = actualAmtB >= amtB
             buyB = 1 - buyA
@@ -342,8 +338,8 @@ contract hbswap {
             orderSucceed = flagBuyA + flagBuyB
             totalCnt += orderSucceed
 
-            print_ln('**** balanceA %s', balanceA.reveal())
-            print_ln('**** balanceB %s', balanceB.reveal())
+            #print_ln('**** balanceA %s', balanceA.reveal())
+            #print_ln('**** balanceB %s', balanceB.reveal())
             #print_ln('**** poolA %s', poolA.reveal())
             #print_ln('**** poolB %s', poolB.reveal())
 
