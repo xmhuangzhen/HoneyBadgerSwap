@@ -10,7 +10,7 @@ from ratel.src.python.deploy import parse_contract, ws_provider, app_addr
 from web3 import Web3
 
 
-contract_name = 'hbswap'
+contract_name = 'hbswap_zkp'
 
 
 if __name__ == '__main__':

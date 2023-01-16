@@ -26,8 +26,7 @@ contract rockPaperScissors {
         gamePlayer1[gameId] = player1;
 
         mpc(uint gameId, address player1, $uint value1) {
-            assert(zkrp(value1 >= 1))
-            assert(zkrp(value1 <= 3))
+            assert(zkrp(value1 >= 1; value1 <= 3))
 
             writeDB(f'game_value1_{gameId}', value1, int)
 
@@ -43,10 +42,7 @@ contract rockPaperScissors {
         gamePlayer2[gameId] = player2;
 
         mpc(uint gameId, address player2, $uint value2) {
-            assert(zkrp(value2 >= 1))
-            assert(zkrp(value2 <= 3))
-
-
+            assert(zkrp(value2 >= 1; value2 <= 3))
 
             writeDB(f'game_value2_{gameId}', value2, int)
 

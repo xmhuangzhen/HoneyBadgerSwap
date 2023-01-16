@@ -4,13 +4,15 @@ import re
 import sys
 
 from matplotlib.ticker import MultipleLocator
-from ratel.benchmark.src.trade_latency import idx_op, idx_time, op_start_mpc, op_end_mpc, \
-    op_end_mpc_chain, op_lock_acquired
+from ratel.benchmark.src.trade_latency import idx_op, idx_time
 
+op_lock_acquired = '1'
+op_start_mpc = '3'
+op_end_mpc = '4'
+op_end_mpc_chain = '5'
 
 interval = 60
 width = 0.1
-
 
 def add(map, key, num=1):
     if key not in map.keys():
@@ -34,14 +36,14 @@ def avg(x):
     return sum(x) / len(x)
 
 
-def scan(dir, serverID=0):
+def scan(path, prog, serverID=0):
     send_request = []
     lock_acquired = []
     start_mpc = []
     end_mpc = []
     end_mpc_chain = []
 
-    file = f'{dir}/latency_{serverID}.csv'
+    file = f'{path}/latency_{prog}_{serverID}.csv'
     with open(file, 'r') as f:
         lines = f.readlines()
         for line in lines:
@@ -60,7 +62,7 @@ def scan(dir, serverID=0):
                 end_mpc_chain.append(time)
 
     init_time = 0
-    file = f'{dir}/gas.csv'
+    file = f'{path}/gas.csv'
     with open(file, 'r') as f:
         lines = f.readlines()
         for line in lines:
@@ -77,6 +79,7 @@ def scan(dir, serverID=0):
     end_mpc_chain = deal(end_mpc_chain, init_time)
     print(end_mpc)
     mean = avg(list(end_mpc.values())[1:-1])
+    print(mean)
 
     return send_request, lock_acquired, start_mpc, end_mpc, end_mpc_chain, mean
 
@@ -112,11 +115,12 @@ def draw(send_request, lock_acquired, start_mpc, end_mpc, end_mpc_chain):
     ax.xaxis.set_major_locator(MultipleLocator(1))
     ax.yaxis.set_major_locator(MultipleLocator(10))
     plt.legend()
-    plt.savefig(f"{dir}/fig.pdf")
+    plt.savefig(f"{path}/fig.pdf")
 
 
 if __name__ == '__main__':
-    dir = sys.argv[1]
+    path = sys.argv[1]
+    prog = sys.argv[2]
 
-    send_request, lock_acquired, start_mpc, end_mpc, end_mpc_chain, _ = scan(dir)
+    send_request, lock_acquired, start_mpc, end_mpc, end_mpc_chain, _ = scan(path, prog)
     draw(send_request, lock_acquired, start_mpc, end_mpc, end_mpc_chain)

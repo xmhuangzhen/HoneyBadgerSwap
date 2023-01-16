@@ -188,7 +188,10 @@ async def execute_cmd(cmd, info=''):
 
         returncode = proc.returncode
         if returncode != 0:
-            print(f'[stderr]\n{stderr.decode()}')
+            print('ERROR!')
+        print(f'[stderr]\n{stderr.decode()}')
+        # if returncode != 0:
+        #     print(f'[stderr]\n{stderr.decode()}')
 
         retry -= 1
 
@@ -277,8 +280,8 @@ def dict_to_bytes(value):
 async def verify_proof(server, pflist):
     blinding_idx_request = ""
 
-    times = []
-    times.append(time.perf_counter())
+    # times = []
+    # times.append(time.perf_counter())
 
     for pfexp in pflist:
         [x, zkpstmt, type_Mul, y, r] = pfexp
@@ -321,9 +324,9 @@ async def verify_proof(server, pflist):
             blinding_idx_request += f"{idxValueBlinding}_{0}"
 
 
-    times.append(time.perf_counter())
+    # times.append(time.perf_counter())
     results_list = await server.get_zkrp_shares(players(server.contract), blinding_idx_request)
-    times.append(time.perf_counter())
+    # times.append(time.perf_counter())
 
     blindingy_idx_request = ""
     for i in range(len(pflist)):
@@ -354,11 +357,11 @@ async def verify_proof(server, pflist):
                 blindingy_idx_request += ","
             blindingy_idx_request += f"{idxValueBlinding}_{1}"
 
-    times.append(time.perf_counter())
+    # times.append(time.perf_counter())
 
     if len(blindingy_idx_request):
         resultsy_list = await server.get_zkrp_shares(players(server.contract), blindingy_idx_request)
-        times.append(time.perf_counter())
+        # times.append(time.perf_counter())
 
         idx_y = 0
         for i in range(len(pflist)):
@@ -384,12 +387,12 @@ async def verify_proof(server, pflist):
 
                 idx_y = idx_y + 1
 
-    times.append(time.perf_counter())
-    with open(f'ratel/benchmark/data/latency_zkrp_verify_{server.serverID}.csv', 'a') as f:
-        for op, t in enumerate(times):
-            f.write(f'trade\t'
-                    f'op\t{op + 1}\t'
-                    f'cur_time\t{t}\n')
+    # times.append(time.perf_counter())
+    # with open(f'ratel/benchmark/data/latency_zkrp_verify_{server.serverID}.csv', 'a') as f:
+    #     for op, t in enumerate(times):
+    #         f.write(f'trade\t'
+    #                 f'op\t{op + 1}\t'
+    #                 f'cur_time\t{t}\n')
 
     return True
 

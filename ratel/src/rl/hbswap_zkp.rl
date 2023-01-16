@@ -4,7 +4,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-contract hbswap {
+contract hbswap_zkp {
     using SafeMath for uint;
     using SafeERC20 for IERC20;
 
@@ -305,8 +305,6 @@ contract hbswap {
             totalA = (1 + feeRate) * amtA
             totalB = (1 + feeRate) * amtB
 
-            times.append(time.perf_counter())
-
             ### invalid orders probably leak information about the direction of trade
             assert(zkrp((amtA * amtB) <= 0; (-totalA) <= balanceA; (-totalB) <= balanceB))
 
@@ -360,7 +358,7 @@ contract hbswap {
 
             times.append(time.perf_counter())
 
-            with open(f'ratel/benchmark/data/latency_zkrp_{server.serverID}.csv', 'a') as f:
+            with open(f'ratel/benchmark/data/latency_hbswap_zkp_{server.serverID}.csv', 'a') as f:
                 for op, t in enumerate(times):
                     f.write(f'trade\t'
                             f'seq\t{seqTrade}\t'

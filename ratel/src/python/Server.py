@@ -83,7 +83,7 @@ class Server:
             data = {
                 "inputmask_shares": res,
             }
-            print(f"s{self.serverID} response: {res}")
+            # print(f"s{self.serverID} response: {res}")
             return web.json_response(data)
 
         async def handler_recover_db(request):

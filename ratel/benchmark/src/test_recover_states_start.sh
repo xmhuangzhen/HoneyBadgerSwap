@@ -15,8 +15,8 @@ prog='rockPaperScissors'
 online_players=$1
 
 bash latency-control.sh stop || true
-
 rm -rf offline_data
+
 bash ratel/src/deploy.sh $prog $token_num $online_players $threshold
 
 refill $(($online_players+1))

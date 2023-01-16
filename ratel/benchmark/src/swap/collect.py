@@ -2,11 +2,13 @@ import re
 import sys
 
 import matplotlib.pyplot as plt
-from ratel.benchmark.src.trade_latency import idx_op, idx_time, idx_seq, op_start_mpc, op_end_mpc
+from ratel.benchmark.src.trade_latency import idx_op, idx_time, idx_seq
+from ratel.benchmark.src.trade_throughput import op_start_mpc, op_end_mpc
 
+prog = 'hbswap'
 
 def scan(data_dir, server_id):
-    with open(f'{data_dir}/latency_{server_id}.csv', 'r') as f:
+    with open(f'{data_dir}/latency_{prog}_{server_id}.csv', 'r') as f:
         lines = f.readlines()
         for line in lines:
             element = re.split('\t|\n', line)

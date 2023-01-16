@@ -21,7 +21,7 @@ def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
     key_balance_A = f'balance_{tokenA}_{account.address}'
     key_balance_B = f'balance_{tokenB}_{account.address}'
 
-    balanceA, balanceB = asyncio.run(get_secret_values(players(appContract), f'{key_balance_A},{key_balance_B}', threshold(appContract)))
+    balanceA, balanceB = get_secret_values(players(appContract), f'{key_balance_A},{key_balance_B}', threshold(appContract))
 
     feeRate = 0
     totalA = (1 + feeRate) * amtA
@@ -40,7 +40,7 @@ def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
                     f'cur_time\t{t}\n')
 
     idxAmtA, idxAmtB, idxzkp1, idxzkp2, idxzkp3 = reserveInput(web3, appContract, 5, account)
-    maskA, maskB, maskzkp1, maskzkp2, maskzkp3 = asyncio.run(get_inputmasks(players(appContract), f'{idxAmtA},{idxAmtB},{idxzkp1},{idxzkp2},{idxzkp3}', threshold(appContract)))
+    maskA, maskB, maskzkp1, maskzkp2, maskzkp3 = get_inputmasks(players(appContract), f'{idxAmtA},{idxAmtB},{idxzkp1},{idxzkp2},{idxzkp3}', threshold(appContract))
     maskedAmtA, maskedAmtB, maskedzkp1, maskedzkp2, maskedzkp3 = (amtA + maskA) % prime, (amtB + maskB) % prime, (blinding1 + maskzkp1) % prime, (blinding2 + maskzkp2) % prime, (blinding3 + maskzkp3) % prime
 
     zkp1 = [idxzkp1, maskedzkp1, proof1, commitment1]
@@ -75,7 +75,7 @@ if __name__=='__main__':
     web3 = Web3(ws_provider)
     web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
-    abi, bytecode = parse_contract('hbswap')
+    abi, bytecode = parse_contract('hbswap_zkp')
     appContract = web3.eth.contract(address=app_addr, abi=abi)
 
     account = getAccount(web3, f'/opt/poa/keystore/client_{client_id}/')
@@ -85,3 +85,4 @@ if __name__=='__main__':
         trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id)
         time.sleep(10)
         trade(appContract, tokenA, tokenB, amtB, amtA, account, web3, client_id)
+        time.sleep(10)

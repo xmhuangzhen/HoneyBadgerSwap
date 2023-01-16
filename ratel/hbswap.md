@@ -36,45 +36,94 @@ python3 -m ratel.src.python.hbswap.deposit 1 1 10000
 
 
 
-Test concurrency:
-```
-bash ratel/src/deploy.sh hbswap 4 1
+[//]: # (Test concurrency:)
 
-bash ratel/src/run.sh hbswap 0,1,2,3 4 1
+[//]: # (```)
 
-python3 -m ratel.src.python.hbswap.deposit 0x0000000000000000000000000000000000000000 1 &
-python3 -m ratel.src.python.hbswap.deposit 0xF74Eb25Ab1785D24306CA6b3CBFf0D0b0817C5E2 1 &
-python3 -m ratel.src.python.hbswap.deposit 0x0000000000000000000000000000000000000000 1 &
-python3 -m ratel.src.python.hbswap.deposit 0xF74Eb25Ab1785D24306CA6b3CBFf0D0b0817C5E2 1 &
+[//]: # (bash ratel/src/deploy.sh hbswap 4 1)
 
-python3 -m ratel.src.python.hbswap.deposit 0x0000000000000000000000000000000000000000 1 &
-python3 -m ratel.src.python.hbswap.deposit 0x0000000000000000000000000000000000000000 1 &
-python3 -m ratel.src.python.hbswap.deposit 0x0000000000000000000000000000000000000000 1 &
+[//]: # ()
+[//]: # (bash ratel/src/run.sh hbswap 0,1,2,3 4 1)
 
-```
+[//]: # ()
+[//]: # (python3 -m ratel.src.python.hbswap.deposit 0x0000000000000000000000000000000000000000 1 &)
+
+[//]: # (python3 -m ratel.src.python.hbswap.deposit 0xF74Eb25Ab1785D24306CA6b3CBFf0D0b0817C5E2 1 &)
+
+[//]: # (python3 -m ratel.src.python.hbswap.deposit 0x0000000000000000000000000000000000000000 1 &)
+
+[//]: # (python3 -m ratel.src.python.hbswap.deposit 0xF74Eb25Ab1785D24306CA6b3CBFf0D0b0817C5E2 1 &)
+
+[//]: # ()
+[//]: # (python3 -m ratel.src.python.hbswap.deposit 0x0000000000000000000000000000000000000000 1 &)
+
+[//]: # (python3 -m ratel.src.python.hbswap.deposit 0x0000000000000000000000000000000000000000 1 &)
+
+[//]: # (python3 -m ratel.src.python.hbswap.deposit 0x0000000000000000000000000000000000000000 1 &)
+
+[//]: # ()
+[//]: # (```)
 
 Introduce latency:
 ```bash
-./latency-control.sh start 200 50
-./latency-control.sh stop
+bash latency-control.sh start [latency] [players] [concurrency] (w/ jitter=5ms)
+bash latency-control.sh start 100ms 4 1
+```
+
+Test
+```bash
+./ratel/benchmark/src/test_concurrent_trade_start.sh [players] [client_num] [concurrency] [app]
+./ratel/benchmark/src/test_concurrent_trade_run.sh [players] [client_num] [concurrency] [rep] [app]
 ```
 
 Test single trade
 ```
-./ratel/benchmark/src/test_concurrent_trade_start.sh 4 1 1
-./ratel/benchmark/src/test_concurrent_trade_run.sh 4 1 1 1
+./ratel/benchmark/src/test_concurrent_trade_start.sh 4 1 1 hbswap
+./ratel/benchmark/src/test_concurrent_trade_run.sh 4 1 1 5 hbswap
 ```
 
 Test concurrent trade
-```
-./latency-control.sh stop
-./ratel/benchmark/src/test_concurrent_trade_start.sh 4 10 10
-./ratel/benchmark/src/test_concurrent_trade_start.sh 4 2 2
+```bash
+./ratel/benchmark/src/test_concurrent_trade_start.sh 4 20 20 hbswap
 
-./latency-control.sh start 200 50
-./ratel/benchmark/src/test_concurrent_trade_run.sh 4 10 10 10
-./ratel/benchmark/src/test_concurrent_trade_run.sh 4 10 5 5
-./ratel/benchmark/src/test_concurrent_trade_run.sh 4 2 2 1
+./ratel/benchmark/src/test_concurrent_trade_run.sh 4 10 1 2 hbswap
+./ratel/benchmark/src/test_concurrent_trade_run.sh 4 10 2 4 hbswap
+./ratel/benchmark/src/test_concurrent_trade_run.sh 4 10 4 8 hbswap
+./ratel/benchmark/src/test_concurrent_trade_run.sh 4 10 8 16 hbswap
+./ratel/benchmark/src/test_concurrent_trade_run.sh 4 20 16 32 hbswap
+```
+Calculate Latency
+```
+python -m ratel.benchmark.src.trade_latency [players] [path] [prog]
+python -m ratel.benchmark.src.trade_latency 4 ratel/benchmark/data hbswap
+```
+Calculate throughput
+```
+python -m ratel.benchmark.src.trade_throughput [path] [prog]
+python -m ratel.benchmark.src.trade_throughput ratel/benchmark/data hbswap
+```
+Plot currency performance (run on local machine)
+```
+python3 -m ratel.benchmark.src.trade_plot
+```
+
+Test Real-world Data
+```
+./ratel/benchmark/src/test_concurrent_trade_start.sh 4 1 1 hbswap
+
+./ratel/benchmark/src/swap/test_real_data_trade_run.sh [players] [duration]
+./ratel/benchmark/src/swap/test_real_data_trade_run.sh 4 60
+./ratel/benchmark/src/swap/test_real_data_trade_run.sh 4 3600
+```
+Calculate running time pdf
+```
+python3 -m ratel.benchmark.src.swap.collect [players] [path]
+python3 -m ratel.benchmark.src.swap.collect 4 ratel/benchmark/data
+```
+Draw performance over real-world data
+```
+python3 -m ratel.benchmark.src.swap.analyze [players] [path]
+python3 -m ratel.benchmark.src.swap.analyze 4 ratel/benchmark/data
 ```
 
 Test MP-SPDZ concurrency
@@ -87,54 +136,3 @@ Test recover states
 ./ratel/benchmark/src/test_recover_states_start.sh 4
 ./ratel/benchmark/src/test_recover_states_run.sh 4 5
 ```
-
-To give the proof zkrp(amtA * amtB < 0)
-
-In server side, idxAmtA, maskedAmtA, idxAmtB, maskedAmtB; 
-
-recover_input: amtA_shares, amtB_shares;
-
-
-
-
-
-
-
-
-
-
-
-# def recover_input(db, masked_value, idx): # return: int
-#     try:
-#         input_mask_share = db.Get(key_inputmask_index(idx))
-#     except KeyError:
-#         input_mask_share = bytes(0)
-#     input_mask_share = int.from_bytes(input_mask_share, 'big')
-#     return (masked_value - input_mask_share) % prime
-
-
-
-----------------------------------------------------------------
-
-prove zkrp(amtA < 0)
-
-client: generate idxAmtA, maskedAmtA,    get_zkrp()->proofValue, commitmentValue, idxBlindingValue, maskedBlindingValue
-
-server:
-
-amtA_share = maskedAmtA - input_mask_share_with_key_idxAmtA : recover_input (idxAmtA,maskedAmtA)
-
-blidingValue_share = maskedBlindingValue - input_mask_share_with_key_idxBlindingValue: recover_input ()
-
-compute g^{amtA_share} * h^{blindingValue_share}
-
-
-
-every server broadcast share of commitment & 
-
-reconstruct commitment Value & 
-
-check whether the aggregate_commitment_from_servers == commitment_given_by_client
-
-
-

@@ -299,6 +299,8 @@ contract hbswap {
             poolB = readDB(f'pool_{tokenA}_{tokenB}_{tokenB}', int)
             totalCnt = readDB(f'totalCnt_{tokenA}_{tokenB}', int)
 
+            times.append(time.perf_counter())
+
             feeRate = 0
             totalA = (1 + feeRate) * amtA
             totalB = (1 + feeRate) * amtB
@@ -358,7 +360,7 @@ contract hbswap {
 
             times.append(time.perf_counter())
 
-            with open(f'ratel/benchmark/data/latency_{server.serverID}.csv', 'a') as f:
+            with open(f'ratel/benchmark/data/latency_hbswap_{server.serverID}.csv', 'a') as f:
                 for op, t in enumerate(times):
                     f.write(f'trade\t'
                             f'seq\t{seqTrade}\t'

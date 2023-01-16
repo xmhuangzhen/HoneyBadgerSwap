@@ -6,17 +6,6 @@
 
 `docker exec -it honeybadgerswap_dev_1 bash`
 
-```
-curl https://sh.rustup.rs -sSf | sh  # enter directly
-```
-
-```
-source "$HOME/.cargo/env"
-cd ratel/src/zkrp_pyo3
-pip install .
-cd ../../..
-```
-
 `bash setup-ssl.sh 4 /opt/ssl`
 
 `bash ratel/src/compile.sh hbswap_zkp`
@@ -42,3 +31,22 @@ python3 -m ratel.src.python.hbswap.deposit 1 1 10000
 `python3 -m ratel.src.python.hbswap.initPool 1 0 1 1000 1000`
 
 `python3 -m ratel.src.python.hbswap_zkp.trade 1 0 1 0.5 -1 1`
+
+
+Test
+```bash
+./ratel/benchmark/src/test_concurrent_trade_start.sh [players] [client_num] [concurrency] [app]
+./ratel/benchmark/src/test_concurrent_trade_run.sh [players] [client_num] [concurrency] [rep] [app]
+```
+
+Test Single Trade
+```bash
+./ratel/benchmark/src/test_concurrent_trade_start.sh 4 1 1 hbswap_zkp
+./ratel/benchmark/src/test_concurrent_trade_run.sh 4 1 1 5 hbswap_zkp
+```
+
+Analyze
+```
+python -m ratel.benchmark.src.trade_latency [players] [dir] [prog]
+python -m ratel.benchmark.src.trade_latency 4 ratel/benchmark/data hbswap_zkp
+```

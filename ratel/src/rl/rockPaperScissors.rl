@@ -26,12 +26,13 @@ contract rockPaperScissors {
         gamePlayer1[gameId] = player1;
 
         mpc(uint gameId, address player1, $uint value1) {
+
             mpcInput(sint value1)
 
             valid = ((value1.greater_equal(1, bit_length=bit_length)) * (value1.less_equal(3, bit_length=bit_length))).reveal()
 
             mpcOutput(cint valid)
-
+            
             print('**** valid', valid)
             if valid == 1:
                 writeDB(f'game_value1_{gameId}', value1, int)

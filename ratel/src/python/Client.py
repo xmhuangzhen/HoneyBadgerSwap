@@ -59,9 +59,11 @@ def batch_interpolate(x, batch_points, threshold):
 
 
 async def send_request(url, session):
+    # start_time = time.perf_counter()
     try:
         async with session.get(url) as resp:
             json_response = await resp.json()
+            # print('¥', time.perf_counter() - start_time)
             return json_response
     except:
         return ''
@@ -90,17 +92,18 @@ def reconstruct_values(results, key, threshold):
     return values
 
 
-async def get_inputmasks(players, inputmask_idxes, threshold):
-    request = f'inputmasks/{inputmask_idxes}'
+async def proxy(players, request):
     session = ClientSession()
     results = await send_requests(players, request, session)
     await session.close()
+    return results
+
+def get_inputmasks(players, inputmask_idxes, threshold):
+    request = f'inputmasks/{inputmask_idxes}'
+    results = asyncio.run(proxy(players, request))
     return reconstruct_values(results, 'inputmask_shares', threshold)
 
-
-async def get_secret_values(players, keys, threshold):
+def get_secret_values(players, keys, threshold):
     request = f'query_secret_values/{keys}'
-    session = ClientSession()
-    results = await send_requests(players, request, session)
-    await session.close()
+    results = asyncio.run(proxy(players, request))
     return reconstruct_values(results, 'secret_shares', threshold)

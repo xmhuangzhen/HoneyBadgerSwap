@@ -30,6 +30,9 @@ set -x
 IF=lo
 # Average to delay packets by
 LATENCY=$2
+# Jitter value for packet delay
+# Packets will be delayed by $LATENCY +/- $JITTER
+JITTER=5ms
 
 players=$3
 concurrency=$4
@@ -53,7 +56,7 @@ start() {
   # Create a priority-based queue.
   tc qdisc add dev $IF root handle 1: prio
   # Delay everything in band 3
-  tc qdisc add dev $IF parent 1:3 handle 30: netem delay $LATENCY
+  tc qdisc add dev $IF parent 1:3 handle 30: netem delay $LATENCY $JITTER
 
   # http server ports
   for (( port = 4000; port < $(($players + 4000)); port++ )) do

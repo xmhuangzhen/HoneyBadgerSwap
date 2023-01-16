@@ -3,8 +3,8 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
-from ratel.benchmark.src.trade_latency import idx_op, idx_time, op_lock_acquired, idx_seq
-
+from ratel.benchmark.src.trade_latency import idx_op, idx_time, idx_seq
+from ratel.benchmark.src.trade_throughput import op_lock_acquired
 
 # Set the default text font size
 plt.rc('font', size=15)
@@ -23,6 +23,7 @@ plt.rc('figure', titlesize=20)
 
 block_time = 15
 
+prog = 'hbswap'
 
 def scan(data_dir, server_id):
 
@@ -38,7 +39,7 @@ def scan(data_dir, server_id):
             wait_time[seq] = -time
             tx_time[seq] = float(element[2])
 
-    with open(f'{data_dir}/latency_{server_id}.csv', 'r') as f:
+    with open(f'{data_dir}/latency_{prog}_{server_id}.csv', 'r') as f:
         lines = f.readlines()
         for line in lines:
             element = re.split('\t|\n', line)

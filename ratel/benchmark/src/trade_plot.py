@@ -22,15 +22,16 @@ plt.rc('figure', titlesize=20)
 
 if __name__ == '__main__':
     pool_num_list = [1, 2, 4, 8, 16]
-    rep = 20
-    players = 3
+    players = 4
+    clients = 10
+    prog = 'hbswap'
 
     throughput_list = []
     for pool_num in pool_num_list:
         throughput = 0
         for server_id in range(players):
-            dir = f'ratel/benchmark/data/{players}_{pool_num}_{pool_num}_{rep}'
-            _, _, _, _, _, mean = trade_throughput.scan(dir, server_id)
+            dir = f'ratel/benchmark/data/{players}_{clients if pool_num < clients else 2 * clients}_{pool_num}_{2 * pool_num}'
+            _, _, _, _, _, mean = trade_throughput.scan(dir, prog, server_id)
             throughput += mean
         throughput /= players
         throughput_list.append(throughput)
@@ -40,8 +41,8 @@ if __name__ == '__main__':
     for pool_num in pool_num_list:
         latency = 0
         for server_id in range(players):
-            dir = f'ratel/benchmark/data/{players}_{pool_num}_{pool_num}_{rep}'
-            _, mean, _ = trade_latency.scan(dir, server_id)
+            dir = f'ratel/benchmark/data/{players}_{clients if pool_num < clients else 2 * clients}_{pool_num}_{2 * pool_num}'
+            mean, _, _ = trade_latency.scan(dir, prog, server_id)
             latency += mean
         latency /= players
         latency_list.append(latency)

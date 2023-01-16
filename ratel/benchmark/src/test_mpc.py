@@ -23,15 +23,9 @@ async def run_online(server_id, port, players, threshold, mpcProg, seq=0):
     src_dir = f'offline_data/s{server_id}/{mpcProg}_port_{port}'
     dst_dir = f'offline_data/s{server_id}/{mpcProg}_port_{port}_copy'
 
-    cmd = f'rm -rf {dst_dir}'
-    await execute_cmd(cmd)
-
-    cmd = f'cp -rf {src_dir} {dst_dir}'
-    await execute_cmd(cmd)
-
-    dir = dst_dir
-    cmd = f'{prog} -N {players} -T {threshold} -p {server_id} -pn {port} -P {prime} -ip HOSTS.txt -F --prep-dir {dir} -npfs {mpcProg}'
-
+    cmd = f'rm -rf {dst_dir} && ' \
+          f'cp -rf {src_dir} {dst_dir} && ' \
+          f'{prog} -N {players} -T {threshold} -p {server_id} -pn {port} -P {prime} -ip HOSTS.txt -F --prep-dir {dst_dir} -npfs {mpcProg}'
     await execute_cmd(cmd, f'**** task seq {seq}')
 
 

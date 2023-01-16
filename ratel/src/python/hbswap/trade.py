@@ -13,7 +13,7 @@ def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
     amtA = int(amtA * fp)
     amtB = int(amtB * fp)
     idxAmtA, idxAmtB = reserveInput(web3, appContract, 2, account)
-    maskA, maskB = asyncio.run(get_inputmasks(players(appContract), f'{idxAmtA},{idxAmtB}', threshold(appContract)))
+    maskA, maskB = get_inputmasks(players(appContract), f'{idxAmtA},{idxAmtB}', threshold(appContract))
     maskedAmtA, maskedAmtB = (amtA + maskA) % prime, (amtB + maskB) % prime
     tx = appContract.functions.trade(tokenA, tokenB, idxAmtA, maskedAmtA, idxAmtB, maskedAmtB).buildTransaction({
         'nonce': web3.eth.get_transaction_count(web3.eth.defaultAccount)

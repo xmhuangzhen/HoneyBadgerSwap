@@ -1,22 +1,35 @@
 import re
 import sys
 
+import numpy
+
 idx_seq = 2
 idx_op = 4
 idx_time = 6
 
-op_lock_acquired = '1'
-op_start_mpc = '2'
-op_end_mpc = '3'
-op_end_mpc_chain = '4'
+names = [
+    'mpc_extension',
+    'zkrp',
+    'mpc',
+]
 
-def scan(dir, serverID):
-    mpc = 0
-    cnt_mpc = 0
-    mpc_chain = 0
-    cnt_mpc_chain = 0
+idx_start = [
+    '1',
+    '2',
+    '3',
+]
 
-    file = f'{dir}/latency_{serverID}.csv'
+idx_end = [
+    '5',
+    '3',
+    '4',
+]
+
+def scan(path, prog, serverID):
+    total_time = numpy.zeros(len(names))
+    total_cnt = numpy.zeros(len(names))
+
+    file = f'./{path}/latency_{prog}_{serverID}.csv'
     with open(file, 'r') as f:
         lines = f.readlines()
         for line in lines:
@@ -25,25 +38,36 @@ def scan(dir, serverID):
             op = element[idx_op]
             time = float(element[idx_time])
 
-            if op == op_lock_acquired:
-                mpc_chain -= time
-                cnt_mpc_chain += 1
-            elif op == op_start_mpc:
-                mpc -= time
-                cnt_mpc += 1
-            elif op == op_end_mpc:
-                mpc += time
-            elif op == op_end_mpc_chain:
-                mpc_chain += time
+            for i, (start, end) in enumerate(zip(idx_start, idx_end)):
+                if op == start:
+                    total_time[i] -= time
+                    total_cnt[i] += 1
+                if op == end:
+                    total_time[i] += time
 
-    avg_mpc = mpc / cnt_mpc
-    avg_mpc_chain = mpc_chain / cnt_mpc_chain
-    return avg_mpc, avg_mpc_chain, avg_mpc_chain - avg_mpc
+    # print(serverID)
+    # for name, time, cnt in zip(names, total_time, total_cnt):
+    #     print(name, time / cnt)
+    print(tuple([time / cnt for time, cnt in zip(total_time, total_cnt)]))
+    return tuple([time / cnt for time, cnt in zip(total_time, total_cnt)])
 
 
 if __name__ == '__main__':
     players = int(sys.argv[1])
-    dir = sys.argv[2]
+    path = sys.argv[2]
+    prog = sys.argv[3]
+
+    times = numpy.zeros(len(names))
 
     for serverID in range(players):
-        print(scan(dir, serverID))
+        times += scan(path, prog, serverID)
+
+    times /= players
+
+    db_time = times[0]-numpy.sum(times[1:])
+
+    print('===========')
+    for name, time in zip(names, times):
+        print(name, time)
+    print('db', db_time)
+
