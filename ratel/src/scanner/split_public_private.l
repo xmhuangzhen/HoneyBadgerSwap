@@ -387,7 +387,8 @@ void addZkrpArgs(){
         string text_addParam_with_type = ", string memory json_lis_zkpstmt";
         string text_addParam_without_type = ", json_lis_zkpstmt";
         string text_addParam_event = ", string json_lis_zkpstmt";
-        string text_addParam_recover = "json_lis_zkpstmt, ";
+//        string text_addParam_recover = "json_lis_zkpstmt, ";
+        string text_addParam_recover = "";
 
         //////////////////add emit param////////////////
         string emit_str = "emit " + funcName;
@@ -412,14 +413,14 @@ void addZkrpArgs(){
                 break;
             }
         }
-        if(pos >= 0){
-            for(;pos < textPublic.length();++pos){
-                if(textPublic[pos]== ')'){
-                    break;
-                }
-            }
-            textPublic.insert(pos,text_addParam_without_type);
-        }
+//        if(pos >= 0){
+//            for(;pos < textPublic.length();++pos){
+//                if(textPublic[pos]== ')'){
+//                    break;
+//                }
+//            }
+//            textPublic.insert(pos,text_addParam_without_type);
+//        }
 
 
         //////////////////add function param/////////////
