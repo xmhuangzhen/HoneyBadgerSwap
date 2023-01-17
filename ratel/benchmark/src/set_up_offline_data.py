@@ -12,7 +12,7 @@ def check_exist(mpc_prog, port, server_id):
 
 
 def duplicate_offline_data(mpc_prog, players, concurrency):
-    for i in range(1, concurrency):
+    for i in range(-1, concurrency):
         port = mpc_port + i * 100
 
         for server_id in range(players):
