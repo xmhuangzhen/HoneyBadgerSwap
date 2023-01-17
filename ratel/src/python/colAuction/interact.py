@@ -161,7 +161,7 @@ if __name__=='__main__':
         cur_time = time.time()
         ti = ti_list[i]
         print(cur_time,start_time,ti)
-        while cur_time - start_time < ti-1740:
+        while cur_time - start_time < ti-1260:
             time.sleep(1)
             cur_time = time.time()
         
