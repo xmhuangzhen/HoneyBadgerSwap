@@ -6,7 +6,7 @@ from web3 import Web3
 from ratel.genfiles.python import colAuction
 from ratel.genfiles.python.colAuctionRecover import recover
 from ratel.src.python.Server import Server
-from ratel.src.python.deploy import url, app_addr
+from ratel.src.python.deploy import ws_uri, app_addr
 from ratel.src.python.utils import parse_contract
 
 contract_name = 'colAuction'
@@ -18,7 +18,7 @@ if __name__ == '__main__':
     concurrency = int(sys.argv[4])
     test = bool(sys.argv[5])
 
-    web3 = Web3(Web3.WebsocketProvider(url))
+    web3 = Web3(Web3.WebsocketProvider(ws_uri))
 
     ### App contract
     abi, bytecode = parse_contract(contract_name)
