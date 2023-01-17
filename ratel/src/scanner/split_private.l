@@ -687,7 +687,11 @@ void mpcInput() {
 
     /* python */
     string mpcName = mpcFile.substr(4, mpcFile.length() - 8);
-    textFuncLower += indent + "await run_online(server.serverID, port, server.players, server.threshold, \'" + mpcName + "\', seq" + funcName + ")\n";
+    textFuncLower += indent + "await run_online(server.serverID, port, server.players, server.threshold, \'" + mpcName + "\'";
+    if (!inPureMpc) {
+        textFuncLower += ", seq" + funcName;
+    }
+    textFuncLower += ")\n";
     textFuncLower += "\n";
 }
 
