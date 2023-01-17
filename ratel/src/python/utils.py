@@ -280,9 +280,11 @@ def dict_to_bytes(value):
 async def verify_proof(server, pflist):
     blinding_idx_request = ""
 
-    # times = []
-    # times.append(time.perf_counter())
+    import time
+    times = []
+    times.append(time.perf_counter())
 
+    tmp_i = 0
     for pfexp in pflist:
         [x, zkpstmt, type_Mul, y, r] = pfexp
         [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
@@ -291,6 +293,9 @@ async def verify_proof(server, pflist):
         if proof is None or commitment is None or not zkrp_verify(proof, commitment):
             print("[Error]: Committed secret value does not pass range proof verification!")
             return False
+        tmp_i = tmp_i + 1
+        if tmp_i == 1:
+            times.append(time.perf_counter())
 
         blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
         x, y, r = int(x), int(y), int(r)
@@ -322,13 +327,16 @@ async def verify_proof(server, pflist):
             if len(blinding_idx_request):
                 blinding_idx_request += ","
             blinding_idx_request += f"{idxValueBlinding}_{0}"
+        if tmp_i == 1:
+            times.append(time.perf_counter())
 
 
-    # times.append(time.perf_counter())
+    times.append(time.perf_counter())
     results_list = await server.get_zkrp_shares(players(server.contract), blinding_idx_request)
-    # times.append(time.perf_counter())
+    times.append(time.perf_counter())
 
     blindingy_idx_request = ""
+    tmp_i = 0
     for i in range(len(pflist)):
         results, pfexp = results_list[i], pflist[i]
 
@@ -336,10 +344,10 @@ async def verify_proof(server, pflist):
         [idxValueBlinding, maskedValueBlinding, _proof, commitment] = zkpstmt
         blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
         x, y, r = int(x), int(y), int(r)
-
+        tmp_i = tmp_i + 1
         if type_Mul == 0:
             agg_commitment = pedersen_aggregate(results, [x + 1 for x in list(range(server.players))])
-
+            times.append(time.perf_counter())
             if agg_commitment != commitment:
                 return False
 
@@ -357,7 +365,7 @@ async def verify_proof(server, pflist):
                 blindingy_idx_request += ","
             blindingy_idx_request += f"{idxValueBlinding}_{1}"
 
-    # times.append(time.perf_counter())
+    times.append(time.perf_counter())
 
     if len(blindingy_idx_request):
         resultsy_list = await server.get_zkrp_shares(players(server.contract), blindingy_idx_request)
@@ -387,17 +395,20 @@ async def verify_proof(server, pflist):
 
                 idx_y = idx_y + 1
 
-    # times.append(time.perf_counter())
-    # with open(f'ratel/benchmark/data/latency_zkrp_verify_{server.serverID}.csv', 'a') as f:
-    #     for op, t in enumerate(times):
-    #         f.write(f'trade\t'
-    #                 f'op\t{op + 1}\t'
-    #                 f'cur_time\t{t}\n')
+    times.append(time.perf_counter())
+    with open(f'ratel/benchmark/data/latency_zkrp_verify_{server.serverID}.csv', 'a') as f:
+        for op, t in enumerate(times):
+            f.write(f'trade\t'
+                    f'op\t{op + 1}\t'
+                    f'cur_time\t{t}\n')
 
     return True
 
 
 def get_zkrp(secret_value, exp_str, r, isSfix = False):
+    import time
+    times = []
+    times.append(time.perf_counter())
     print(f'get_zkrp {secret_value} {exp_str} {r}')
 
     value = secret_value
@@ -422,6 +433,12 @@ def get_zkrp(secret_value, exp_str, r, isSfix = False):
     bits = 32
     proof, commitment, blinding_bytes = zkrp_prove(value, bits)
     blinding = int.from_bytes(blinding_bytes, byteorder='little')
+    times.append(time.perf_counter())
+    with open(f'ratel/benchmark/data/latency_zkrp_generation.csv', 'a') as f:
+        for op, t in enumerate(times):
+            f.write(f'trade\t'
+                    f'op\t{op + 1}\t'
+                    f'cur_time\t{t}\n')
     return proof, commitment, blinding
 
 
