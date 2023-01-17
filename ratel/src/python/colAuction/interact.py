@@ -157,7 +157,7 @@ if __name__=='__main__':
 
 
     cur_pos_t = 0
-    for i in range(cnt):
+    for i in range(cnt-1):
         cur_time = time.time()
         ti = ti_list[i]
         print(cur_time,start_time,ti)
