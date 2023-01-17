@@ -52,7 +52,7 @@ def submitBids_pre(appContract,colAuctionId,price,amt,bidder_addr,account):
 
 
     idx1, idx2 = reserveInput(web3, appContract, 2, account)
-    mask1, mask2 = asyncio.run(get_inputmasks(players(appContract), f'{idx1},{idx2}', threshold(appContract)))
+    mask1, mask2 = get_inputmasks(players(appContract), f'{idx1},{idx2}', threshold(appContract))
     maskedP, maskedAmt = (price + mask1) % prime, (amt + mask2) % prime
 
     data_list.append((idx1,maskedP,idx2,maskedAmt,bidder_addr,account))
