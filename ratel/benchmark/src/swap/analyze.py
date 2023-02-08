@@ -69,6 +69,7 @@ if __name__ == '__main__':
         y.append(wait_time[k])
 
     print(x, y)
+    print(max(wait_time.values()))
 
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
@@ -99,4 +100,7 @@ if __name__ == '__main__':
     ax1.set_zorder(ax2.get_zorder() + 1)
     ax1.set_frame_on(False)
 
-    plt.show()
+    # plt.show()
+    plt.subplots_adjust(left=0.12, bottom=0.13, right=0.9, top=0.96, wspace=0, hspace=0)
+    save_file = f'ratel/benchmark/data/real_data.pdf'
+    plt.savefig(save_file)

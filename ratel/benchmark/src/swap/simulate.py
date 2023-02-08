@@ -27,7 +27,7 @@ interval = 5
 
 
 def sample():
-    return np.random.choice(list(pdf.keys()), p=list(pdf.values())) / 10
+    return np.random.choice(list(pdf.keys()), p=list(pdf.values()))
 
 
 def simulate():
@@ -115,8 +115,9 @@ if __name__ == '__main__':
     ax1.set_xticks(x[::4])
     ax1.set_xlim(0, lim)
     ax1.set_ylim(0, 1)
-    ax1.bar(x + interval / 2, y, width=interval, color='cornflowerblue', yerr=err, ecolor='fuchsia')
-    # ax1.plot(x, y, color='cornflowerblue')
+    # ax1.bar(x + interval / 2, y, width=interval, color='cornflowerblue', yerr=err, ecolor='fuchsia')
+    ax1.plot(x, y, color='cornflowerblue')
     ax1.set_xlabel('Wait time(s)')
     ax1.set_ylabel('Cumulative Distribution Function')
+    plt.subplots_adjust(left=0.12, bottom=0.13, right=0.95, top=0.96, wspace=0, hspace=0)
     plt.savefig(f'ratel/benchmark/src/swap/sim.pdf')

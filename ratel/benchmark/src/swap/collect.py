@@ -7,6 +7,8 @@ from ratel.benchmark.src.trade_throughput import op_start_mpc, op_end_mpc
 
 prog = 'hbswap'
 
+interval = 0.01
+
 def scan(data_dir, server_id):
     with open(f'{data_dir}/latency_{prog}_{server_id}.csv', 'r') as f:
         lines = f.readlines()
@@ -33,7 +35,7 @@ if __name__ == '__main__':
 
     pdf = {}
     for v in mpc_time.values():
-        v = int(v // 0.1)
+        v = int(v // interval) * interval
         if v not in pdf.keys():
             pdf[v] = 0
         pdf[v] += 1
@@ -44,5 +46,5 @@ if __name__ == '__main__':
         f.write(str(pdf))
 
     plt.figure(figsize=(13, 4))
-    plt.bar(pdf.keys(), pdf.values())
+    plt.bar(pdf.keys(), pdf.values(), width=interval)
     plt.show()

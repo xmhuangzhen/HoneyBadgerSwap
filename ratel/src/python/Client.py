@@ -63,6 +63,7 @@ async def send_request(url, session):
     try:
         async with session.get(url) as resp:
             json_response = await resp.json()
+            print(resp)
             # print('¥', time.perf_counter() - start_time)
             return json_response
     except:

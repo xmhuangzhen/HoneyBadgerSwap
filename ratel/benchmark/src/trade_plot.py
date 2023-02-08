@@ -51,7 +51,7 @@ if __name__ == '__main__':
     colors = list(mcolors.TABLEAU_COLORS.keys())
 
     fig = plt.figure()
-    ax1 = fig.add_subplot(111)
+    ax1 = fig.add_subplot()
     ax2 = ax1.twinx()
 
     ax1.plot(pool_num_list, latency_list, color='teal', marker='v', label=f'latency')
@@ -66,6 +66,7 @@ if __name__ == '__main__':
     ax1.legend(loc='upper left')
     ax2.legend(loc='upper right')
     ax1.set_xticks(np.arange(0, 17, step=2))
-    plt.show()
-    # save_file = f'{fig_dir}/scale_chain_num_{max_chain_num}_val_num_{sys.argv[1]}.pdf'
-    # plt.savefig(save_file)
+    # plt.show()
+    plt.subplots_adjust(left=0.08, bottom=0.13, right=0.88, top=0.95, wspace=0, hspace=0)
+    save_file = f'ratel/benchmark/data/concurrent.pdf'
+    plt.savefig(save_file)

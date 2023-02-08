@@ -103,6 +103,7 @@ class Server:
                 "values": res,
             }
             # print(f"s{self.serverID} response: {res}")
+            # print(len(res.encode('utf-8')))
             return web.json_response(data)
 
         async def handler_open_commitment(request):
@@ -243,6 +244,10 @@ class Server:
             print(f'seq_num_list {seq_num_list}')
             if len(seq_num_list) == 0:
                 return
+
+            ### TODO: delete this for crash recovery benchmark
+            await self.gen_state_mask(repetition)
+
             await self.recover_history(seq_num_list, repetition)
 
     async def check_input_mask(self):
@@ -279,17 +284,18 @@ class Server:
                 await asyncio.sleep(sleep_time)
 
     async def recover_history(self, seq_num_list, repetition):
+        print(f'start benchmarking recover_history...')
         ### benchmark
         times = []
         times.append(time.perf_counter())
 
         keys = await self.collect_keys(seq_num_list)
-        num_states_to_recover = len(keys)
         # print(f'keys {keys}')
 
         ### benchmark
         times.append(time.perf_counter())
 
+        num_states_to_recover = len(keys)
         await self.gen_state_mask(num_states_to_recover)
 
         ### benchmark
@@ -301,8 +307,10 @@ class Server:
 
         request = f'recoverdb/{self.account.address}-{seq_recover_state}-{list_to_str(seq_num_list)}'
         # print(request)
+        # print(len(request.encode('utf-8')))
 
         masked_states = await send_requests(self.players, request, self.client_session_pool, self.serverID)
+        # print(masked_states)
 
         ### benchmark
         times.append(time.perf_counter())
@@ -355,6 +363,9 @@ class Server:
         # for seq_num in seq_num_list:
         #     keys.extend(self.recover(self.contract, int(seq_num), 'writeSet'))
 
+        times = []
+        times.append(time.perf_counter())
+
         async with aio_eth.EthAioAPI(http_uri, max_tasks=2 * len(seq_num_list)) as api:
             for seq_num in seq_num_list:
                 data = self.contract.encodeABI(fn_name='opEvent', args=[int(seq_num)])
@@ -384,11 +395,31 @@ class Server:
             results = await api.exec_tasks_batch()
             # results = await api.exec_tasks_async()
 
-            keys = []
-            for seq_num, res_op_event, res_op_content in zip(seq_num_list, results[0::2], results[1::2]):
-                op_event = eth_abi.decode_abi(['string'], HexBytes(res_op_event['result']))[0]
-                op_content = eth_abi.decode_abi(['bytes'], HexBytes(res_op_content['result']))[0]
-                keys.extend(self.recover.parse(op_event, op_content, seq_num, 'writeSet'))
+        # times.append(time.perf_counter())
+        #
+        # list_op_event = []
+        # lsit_op_content = []
+        # for seq_num, res_op_event, res_op_content in zip(seq_num_list, results[0::2], results[1::2]):
+        #     op_event = eth_abi.decode_abi(['string'], HexBytes(res_op_event['result']))[0]
+        #     op_content = eth_abi.decode_abi(['bytes'], HexBytes(res_op_content['result']))[0]
+        #     list_op_event.append(op_event)
+        #     lsit_op_content.append(op_content)
+        #
+        # times.append(time.perf_counter())
+        #
+        # keys = []
+        # for seq_num, op_event, op_content in zip(seq_num_list, list_op_event, lsit_op_content):
+        #     keys.extend(self.recover.parse(op_event, op_content, seq_num, 'writeSet'))
+        #
+        # times.append(time.perf_counter())
+        # for i in range(1, len(times)):
+        #     print('!', times[i] - times[i - 1])
+
+        keys = []
+        for seq_num, res_op_event, res_op_content in zip(seq_num_list, results[0::2], results[1::2]):
+            op_event = eth_abi.decode_abi(['string'], HexBytes(res_op_event['result']))[0]
+            op_content = eth_abi.decode_abi(['bytes'], HexBytes(res_op_content['result']))[0]
+            keys.extend(self.recover.parse(op_event, op_content, seq_num, 'writeSet'))
 
         if not self.test_recover:
             keys = list(set(keys))
