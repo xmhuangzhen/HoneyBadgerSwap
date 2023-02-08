@@ -11,13 +11,14 @@ services:
       - NET_ADMIN
     volumes:
       - ./ratel:/usr/src/hbswap/ratel
-      - ./scripts/chain-latest.sh:/usr/src/hbswap/chain-latest.sh
+      - ./ratel/src/chain-latest.sh:/usr/src/hbswap/chain-latest.sh
       - ./ratel/src/latency-control.sh:/usr/src/hbswap/latency-control.sh
-#      - ./scripts/latency-control.sh:/usr/src/hbswap/latency-control.sh
       - ./poa:/opt/poa
       - ./ratel/genfiles/mpc:/usr/src/hbswap/Programs/Source
       - ./malicious-shamir-party.x:/usr/src/hbswap/malicious-shamir-party.x
       - ./malicious-shamir-party.x:/usr/local/bin/malicious-shamir-party.x
+      - ./random-triples.x:/usr/src/hbswap/random-triples.x
+      - ./random-bits.x:/usr/src/hbswap/random-bits.x
       - ./libSPDZ.so:/usr/src/MP-SPDZ/libSPDZ.so
       - ./HOSTS.txt:/usr/src/hbswap/HOSTS.txt
     working_dir: /usr/src/hbswap
