@@ -18,4 +18,4 @@ bash chain-latest.sh
 
 python3 -m ratel.src.python.deploy $app $token_num $players $threshold
 
-python3 -m ratel.benchmark.src.set_up_offline_data $players $threshold $concurrency
+#python3 -m ratel.benchmark.src.set_up_offline_data $players $threshold $concurrency

@@ -94,13 +94,6 @@ RUN pip3 install \
             leveldb==0.201 \
             toml==0.10.2 \
             aio_eth==0.0.1
-#            fastapi \
-#            pydantic \
-#            uvicorn[standard] \
-#            ipython \
-#            ipdb \
-
-#WORKDIR $HBSWAP_HOME
 
 RUN apt-get update && \
     apt-get install -y curl

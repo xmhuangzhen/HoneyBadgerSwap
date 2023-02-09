@@ -2,17 +2,16 @@ import ast
 import asyncio
 import glob
 import json
+from enum import IntEnum
+
 import leveldb
 import os
 import time
 
 from gmpy import binary, mpz
 from gmpy2 import mpz_from_old_binary
-from zkrp_pyo3 import pedersen_aggregate, pedersen_commit, zkrp_verify, zkrp_prove, zkrp_prove_mul, zkrp_verify_mul, other_base_commit, product_com
-
-INPUTMASK_SHARES_DIR = os.getenv(
-    'INPUTMASK_SHARES', '/opt/hbswap/inputmask-shares',
-)
+from zkrp_pyo3 import pedersen_aggregate, pedersen_commit, zkrp_verify, zkrp_prove, zkrp_prove_mul, zkrp_verify_mul, \
+    other_base_commit, product_com
 
 
 def parse_contract(name):
@@ -46,7 +45,6 @@ class MultiAcquire(asyncio.Task):
         for l in self._locks:
             l.release = self._notify(l.release)
 
-
     async def _task_coro(self):
         while True:
             # Create task to acquire all locks and break on success:
@@ -60,12 +58,12 @@ class MultiAcquire(asyncio.Task):
         # Wait for task:
         return await task
 
-
     def _notify(self, func):
         def wrapper(*args, **kwargs):
             type(self)._release_event.set()
             type(self)._release_event.clear()
             return func(*args, **kwargs)
+
         return wrapper
 
 
@@ -76,18 +74,21 @@ def mpcPort(seq, concurrency):
         return mpc_port + seq * 100
 
 
-def key_inputmask_index(idx):
-    return f'inputmask_index_{idx}'.encode()
+def key_preprocessed_element_data(element_type, idx):
+    return f'data_{element_type}_{idx}'.encode()
 
 
-def key_inputmask_version(idx):
-    return f'inputmask_version_{idx}'.encode()
+def key_preprocessed_element_version(element_type, idx):
+    return f'version_{element_type}_{idx}'.encode()
 
-def key_zkrp_blinding_index(idx, num = 1):
+
+def key_zkrp_blinding_index(idx, num=1):
     return f'zkrp_blinding_index_{idx}_{num}'.encode()
+
 
 def key_zkrp_blinding_commitment_index(idx):
     return f'zkrp_blinding_commitment_index_{idx}'.encode()
+
 
 def key_zkrp_agg_commitment_index(idx):
     return f'zkrp_agg_commitment_index_{idx}'.encode()
@@ -111,13 +112,14 @@ def location_db(server_id):
     return f'{db_path}/server-{server_id}'
 
 
-def location_inputmask(server_id, players):
-    inputmask_shares_dir = os.getenv(
-        'INPUTMASK_SHARES', '/opt/hbswap/inputmask-shares',
-    )
-    filepath = f'{inputmask_shares_dir}/{players}*/*P{server_id}'
+def location_prep_file(element_type, server_id, players):
+    filepath = f'{prep_dir(element_type)}/{players}*/*P{server_id}'
     for file in glob.glob(filepath):
         return file
+
+
+def prep_dir(element_type):
+    return f'./preprocessing/{str(element_type)}'
 
 
 def openDB(location):
@@ -148,7 +150,7 @@ def get_inverse(a):
     return ret
 
 
-def recover_input(db, masked_value, idx): # return: int
+def recover_input(db, masked_value, idx):  # return: int
     try:
         input_mask_share = db.Get(key_inputmask_index(idx))
     except KeyError:
@@ -177,7 +179,8 @@ def list_to_str(list):
 async def execute_cmd(cmd, info=''):
     retry = mpc_failed_retry
     while True:
-        proc = await asyncio.create_subprocess_shell(cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        proc = await asyncio.create_subprocess_shell(cmd, stdout=asyncio.subprocess.PIPE,
+                                                     stderr=asyncio.subprocess.PIPE)
         stdout, stderr = await proc.communicate()
 
         print(f'[{cmd!r} exited with {proc.returncode}]')
@@ -323,7 +326,6 @@ async def verify_proof(server, pflist):
                 blinding_idx_request += ","
             blinding_idx_request += f"{idxValueBlinding}_{0}"
 
-
     # times.append(time.perf_counter())
     results_list = await server.get_zkrp_shares(players(server.contract), blinding_idx_request)
     # times.append(time.perf_counter())
@@ -397,7 +399,7 @@ async def verify_proof(server, pflist):
     return True
 
 
-def get_zkrp(secret_value, exp_str, r, isSfix = False):
+def get_zkrp(secret_value, exp_str, r, isSfix=False):
     print(f'get_zkrp {secret_value} {exp_str} {r}')
 
     value = secret_value
@@ -405,30 +407,36 @@ def get_zkrp(secret_value, exp_str, r, isSfix = False):
     if isSfix:
         value = int(value * fp)
         r = int(r * fp)
-    
+
     if exp_str == '>=':
         value = value - r
-    elif exp_str == '>': #secret_value > r <==> secret_value - r -1 >= 0
+    elif exp_str == '>':  # secret_value > r <==> secret_value - r -1 >= 0
         value = value - r - 1
-    elif exp_str == '<=': # secret_value <= r <==> r - secret_value >= 0 
+    elif exp_str == '<=':  # secret_value <= r <==> r - secret_value >= 0
         value = r - value
-    elif exp_str == '<': #secret_value < r <==> r - secret_value - 1 >= 0
+    elif exp_str == '<':  # secret_value < r <==> r - secret_value - 1 >= 0
         value = r - value - 1
-
 
     value = (value % prime + prime) % prime
 
-    #To prove value >= 0
+    # To prove value >= 0
     bits = 32
     proof, commitment, blinding_bytes = zkrp_prove(value, bits)
     blinding = int.from_bytes(blinding_bytes, byteorder='little')
     return proof, commitment, blinding
 
 
-leaderHostname = 'mpcnode0'
+class PreprocessedElement(IntEnum):
+    INT = 0
+    BIT = 1
+    TRIPLE = 2
+
 
 prog = './malicious-shamir-party.x'
 offline_prog = './mal-shamir-offline.x'
+random_int_prog = './random-shamir.x'
+random_bit_prog = './random-bits.x'
+random_triple_prog = './random-triples.x'
 
 ### blsPrime
 # prime = 52435875175126190479447740508185965837690552500527637822603658699938581184513
@@ -454,8 +462,16 @@ http_port = 4000
 
 mpc_port = 5000
 
-threshold_available_input_masks = 1000
-input_mask_gen_batch_size = 10000
+threshold_available_preprocessed_elements = 1000
+preprocessed_element_gen_batch_size = 10000
+
+BUFFER_SIZE = 100
+bit_size = 32
+chunk_size = {
+    PreprocessedElement.INT: 1,
+    PreprocessedElement.BIT: BUFFER_SIZE,
+    PreprocessedElement.TRIPLE: BUFFER_SIZE,
+}
 
 confirmation = 2
 

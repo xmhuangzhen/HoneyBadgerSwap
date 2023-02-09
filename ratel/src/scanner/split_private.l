@@ -163,7 +163,7 @@ void initPython() {
     textPythonUpper += "import asyncio\n";
     textPythonUpper += "import os\n";
     textPythonUpper += "import json\n";
-    textPythonUpper += "from ratel.src.python.utils import sleep_time, location_sharefile, prog, mpcPort, prime, sz, int_to_hex, hex_to_int, recover_input, fp, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof, key_inputmask_index, key_inputmask_version, input_mask_gen_batch_size, key_state_mask, mpc_port, inv_10\n";
+    textPythonUpper += "from ratel.src.python.utils import chunk_size, preprocessed_element_gen_batch_size, BUFFER_SIZE, key_preprocessed_element_data, key_preprocessed_element_version, PreprocessedElement, sleep_time, location_sharefile, mpcPort, prime, sz, int_to_hex, hex_to_int, recover_input, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof, key_state_mask, mpc_port, inv_10\n";
     textPythonUpper += "from ratel.benchmark.src.test_mpc import run_online, run_offline\n";
     textPythonUpper += "\n";
 
@@ -182,9 +182,9 @@ void finalizePython() {
     textPythonUpper += "            logs = []\n";
     textPythonUpper += "\n";
 
-    events.push_back("InitGenInputMask");
+    events.push_back("InitGenPreprocessedElement");
+    events.push_back("FinalizeGenPreprocessedElement");
     events.push_back("GenStateMask");
-    events.push_back("FinalizeGenInputMask");
     events.push_back("RemoveServer");
     events.push_back("AddServer");
 
@@ -222,22 +222,48 @@ void finalizePython() {
         textPythonUpper += "\n\n";
     }
 
-    textPythonUpper += "async def runInitGenInputMask(server, log):\n";
+
+    textPythonUpper += "async def runInitGenPreprocessedElement(server, log):\n";
+    textPythonUpper += "    element_type = PreprocessedElement(log['args']['elementType'])\n";
     textPythonUpper += "    refill = log['args']['refill']\n";
     textPythonUpper += "    version = log['args']['version']\n";
-    textPythonUpper += "    assert len(server.input_mask_cache) == 0, \"input mask cache is not empty\"\n";
-    textPythonUpper += "    assert server.input_mask_version < version, \"input mask version is too old\"\n";
-    textPythonUpper += "    shares = await server.gen_random_field_elements(input_mask_gen_batch_size)\n";
-    textPythonUpper += "    server.input_mask_cache = shares\n";
-    textPythonUpper += "    server.input_mask_version = version\n";
+    textPythonUpper += "    assert len(server.preprocessed_element_cache[element_type]) == 0, f'{element_type} cache is not empty'\n";
+    textPythonUpper += "    assert server.preprocessed_element_version[element_type] < version, f'{element_type} version is too old'\n";
+    textPythonUpper += "    port = mpcPort(-1, server.concurrency)\n";
+    textPythonUpper += "    await server.portLock[port].acquire()\n";
+    textPythonUpper += "    chunks = await server.gen_preprocessed_elements(element_type)\n";
+    textPythonUpper += "    server.portLock[port].release()\n";
+    textPythonUpper += "    server.preprocessed_element_cache[element_type] = chunks\n";
+    textPythonUpper += "    server.preprocessed_element_version[element_type] = version\n";
     textPythonUpper += "    # TODO: remove the following check & add gen agreement proof\n";
     textPythonUpper += "    if server.serverID == 0:\n";
-    textPythonUpper += "        tx = server.contract.functions.finalizeGenInputMask(refill, len(server.input_mask_cache)).buildTransaction(\n";
+    textPythonUpper += "        tx = server.contract.functions.finalizeGenPreprocessedElement(element_type, refill, preprocessed_element_gen_batch_size).buildTransaction(\n";
     textPythonUpper += "            {'from': server.account.address, 'gas': 1000000,\n";
     textPythonUpper += "            'nonce': server.web3.eth.get_transaction_count(server.account.address)})\n";
     textPythonUpper += "        sign_and_send(tx, server.web3, server.account)\n";
     textPythonUpper += "\n";
     textPythonUpper += "\n";
+
+
+    textPythonUpper += "async def runFinalizeGenPreprocessedElement(server, log):\n";
+    textPythonUpper += "    element_type = PreprocessedElement(log['args']['elementType'])\n";
+    textPythonUpper += "    num_preprocessed_element = log['args']['numPreprocessedElement']\n";
+    textPythonUpper += "    last_preprocessed_element_index = log['args']['lastPreprocessedElementIndex']\n";
+    textPythonUpper += "    assert num_preprocessed_element == len(server.preprocessed_element_cache[element_type]) * chunk_size[element_type], f'inconsistent {element_type}'\n";
+    textPythonUpper += "    version_bytes = server.preprocessed_element_version[element_type].to_bytes((server.preprocessed_element_version[element_type].bit_length() + 7) // 8, 'big')\n";
+    textPythonUpper += "    for (index, chunk) in zip(range(last_preprocessed_element_index - num_preprocessed_element, last_preprocessed_element_index, BUFFER_SIZE), server.preprocessed_element_cache[element_type]):\n";
+    textPythonUpper += "        if element_type == PreprocessedElement.INT:\n";
+    textPythonUpper += "            server.db.Put(key_preprocessed_element_data(element_type, index), chunk.to_bytes((chunk.bit_length() + 7) //\n";
+    textPythonUpper += "                                                                                        8, 'big'))\n";
+    textPythonUpper += "            server.db.Put(key_preprocessed_element_version(element_type, index), version_bytes)\n";
+    textPythonUpper += "        else:\n";
+    textPythonUpper += "            server.db.Put(key_preprocessed_element_data(element_type, index), chunk)\n";
+    textPythonUpper += "            server.db.Put(key_preprocessed_element_version(element_type, index), version_bytes)\n";
+    textPythonUpper += "    server.preprocessed_element_cache[element_type] = []\n";
+    textPythonUpper += "    server.preprocessed_element_version[element_type] = 0\n";
+    textPythonUpper += "\n";
+    textPythonUpper += "\n";
+
 
     textPythonUpper += "async def runGenStateMask(server, log):\n";
     textPythonUpper += "    server_addr = log['args']['server']\n";
@@ -246,18 +272,6 @@ void finalizePython() {
     textPythonUpper += "    shares = await server.gen_random_field_elements(num)\n";
     textPythonUpper += "    for (index, share) in zip(range(init_state_mask_index, init_state_mask_index + num), shares):\n";
     textPythonUpper += "        server.db.Put(key_state_mask(server_addr, index), share.to_bytes((share.bit_length() + 7) // 8, 'big'))\n";
-    textPythonUpper += "\n";
-    textPythonUpper += "\n";
-
-    textPythonUpper += "async def runFinalizeGenInputMask(server, log):\n";
-    textPythonUpper += "    num_input_mask = log['args']['numInputMask']\n";
-    textPythonUpper += "    last_input_mask_index = log['args']['lastInputMaskIndex']\n";
-    textPythonUpper += "    assert num_input_mask == len(server.input_mask_cache), \"inconsistent input masks\"\n";
-    textPythonUpper += "    for (index, share) in zip(range(last_input_mask_index - num_input_mask, last_input_mask_index), server.input_mask_cache):\n";
-    textPythonUpper += "        server.db.Put(key_inputmask_index(index), share.to_bytes((share.bit_length() + 7) // 8, 'big'))\n";
-    textPythonUpper += "        server.db.Put(key_inputmask_version(index), server.input_mask_version.to_bytes((server.input_mask_version.bit_length() + 7) // 8, 'big'))\n";
-    textPythonUpper += "    server.input_mask_cache = []\n";
-    textPythonUpper += "    server.input_mask_version = 0\n";
     textPythonUpper += "\n";
     textPythonUpper += "\n";
 

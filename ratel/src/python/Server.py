@@ -10,11 +10,13 @@ from aiohttp import web, ClientSession
 from hexbytes import HexBytes
 from ratel.src.python.Client import send_requests, batch_interpolate
 from ratel.src.python.deploy import http_uri
-from ratel.src.python.utils import key_inputmask_index, threshold_available_input_masks, prime, \
-    location_inputmask, http_host, http_port, mpc_port, location_db, openDB, getAccount, \
-    confirmation, input_mask_gen_batch_size, list_to_str, INPUTMASK_SHARES_DIR, execute_cmd, \
-    sign_and_send, encode_key, key_inputmask_version, key_state_mask, read_db, bytes_to_dict, dict_to_bytes, write_db, \
-    sleep_time
+from ratel.src.python.utils import threshold_available_preprocessed_elements, prime, \
+    http_host, http_port, mpc_port, location_db, openDB, getAccount, \
+    confirmation, preprocessed_element_gen_batch_size, list_to_str, execute_cmd, \
+    sign_and_send, encode_key, key_state_mask, read_db, bytes_to_dict, dict_to_bytes, write_db, \
+    sleep_time, PreprocessedElement, random_int_prog, random_bit_prog, random_triple_prog, \
+    key_preprocessed_element_data, key_preprocessed_element_version, prep_dir, location_prep_file, BUFFER_SIZE, \
+    bit_size, chunk_size
 
 
 class Server:
@@ -56,8 +58,11 @@ class Server:
         self.used_zkrp_blinding_com = 0
         self.zkrp_blinding_commitment = []
 
-        self.input_mask_cache = []
-        self.input_mask_version = 0
+        self.preprocessed_element_cache = {}
+        self.preprocessed_element_version = {}
+        for element_type in PreprocessedElement:
+            self.preprocessed_element_cache[element_type] = []
+            self.preprocessed_element_version[element_type] = 0
 
         self.recover = recover
 
@@ -79,7 +84,7 @@ class Server:
             mask_idxes = re.split(",", request.match_info.get("mask_idxes"))
             res = ""
             for mask_idx in mask_idxes:
-                res += f"{',' if len(res) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_inputmask_index(mask_idx))), 'big')}"
+                res += f"{',' if len(res) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_preprocessed_element_data(mask_idx))), 'big')}"
             data = {
                 "inputmask_shares": res,
             }
@@ -175,19 +180,64 @@ class Server:
              'nonce': self.web3.eth.get_transaction_count(self.account.address)})
         sign_and_send(tx, self.web3, self.account)
 
-    async def gen_random_field_elements(self, batch_size=input_mask_gen_batch_size):
-        print(f'Generating {batch_size} random field elements... s-{self.serverID}')
+    # async def gen_random_field_elements(self, batch_size=preprocessed_element_gen_batch_size):
+    #     print(f'Generating {batch_size} random field elements... s-{self.serverID}')
+    #
+    #     cmd = f'./random-shamir.x -i {self.serverID} -N {self.players} -T {self.threshold} --nshares {batch_size} --prep-dir {INPUTMASK_SHARES_DIR} -P {prime}'
+    #     await execute_cmd(cmd)
+    #
+    #     file = location_inputmask(self.serverID, self.players)
+    #     shares = []
+    #     with open(file, "r") as f:
+    #         for line in f.readlines():
+    #             share = int(line) % prime
+    #             shares.append(share)
+    #     return shares
 
-        cmd = f'./random-shamir.x -i {self.serverID} -N {self.players} -T {self.threshold} --nshares {batch_size} --prep-dir {INPUTMASK_SHARES_DIR} -P {prime}'
-        await execute_cmd(cmd)
+    async def gen_preprocessed_elements(self, element_type, batch_size=preprocessed_element_gen_batch_size):
+        print(f'Generating {batch_size} {str(element_type)}... s-{self.serverID}')
 
-        file = location_inputmask(self.serverID, self.players)
-        shares = []
-        with open(file, "r") as f:
-            for line in f.readlines():
-                share = int(line) % prime
-                shares.append(share)
-        return shares
+        if element_type == PreprocessedElement.INT:
+            cmd = f'{random_int_prog} -i {self.serverID} -N {self.players} -T {self.threshold} ' \
+                  f'--nshares {batch_size} --prep-dir ' \
+                  f'{prep_dir(element_type)} -P {prime}'
+            await execute_cmd(cmd)
+
+            file = location_prep_file(element_type, self.serverID, self.players)
+            shares = []
+            with open(file, "r") as f:
+                for line in f.readlines():
+                    share = int(line) % prime
+                    shares.append(share)
+            return shares
+
+        elif element_type == PreprocessedElement.BIT:
+            cmd = f'{random_bit_prog} -i {self.serverID} -N {self.players} -T {self.threshold} ' \
+                  f'-s {batch_size} --prep-dir {prep_dir(element_type)} -P {prime}'
+            await execute_cmd(cmd)
+
+            file = location_prep_file(element_type, self.serverID, self.players)
+            chunks = []
+            with open(file, "rb") as f:
+                data = f.read()
+                for i in range(batch_size // BUFFER_SIZE):
+                    chunks.append(data[bit_size * chunk_size[element_type] * i:
+                                       bit_size * chunk_size[element_type] * (i + 1)])
+            return chunks
+
+        elif element_type == PreprocessedElement.TRIPLE:
+            cmd = f'{random_triple_prog} -i {self.serverID} -N {self.players} -T {self.threshold} ' \
+                  f'-s {batch_size} --prep-dir {prep_dir(element_type)} -P {prime}'
+            await execute_cmd(cmd)
+
+            file = location_prep_file(element_type, self.serverID, self.players)
+            chunks = []
+            with open(file, "rb") as f:
+                data = f.read()
+                for i in range(batch_size // BUFFER_SIZE):
+                    chunks.append(data[3 * bit_size * chunk_size[element_type] * i:
+                                       3 * bit_size * chunk_size[element_type] * (i + 1)])
+            return chunks
 
 
     async def get_zkrp_shares(self, players, inputmask_idxes):
@@ -213,14 +263,24 @@ class Server:
             return
 
         while True:
-            num_used_input_mask = self.contract.functions.numUsedInputMask().call()
-            num_total_input_mask = self.contract.functions.numTotalInputMask().call()
-            if num_total_input_mask - num_used_input_mask < threshold_available_input_masks:
-                print(f'Initialize input mask generation process....')
-                tx = self.contract.functions.initGenInputMask(True).buildTransaction(
-                    {'from': self.account.address, 'gas': 1000000,
-                     'nonce': self.web3.eth.get_transaction_count(self.account.address)})
-                sign_and_send(tx, self.web3, self.account)
+            for element_type in PreprocessedElement:
+                num_used = self.contract.functions.numUsedPreprocessedElement(element_type).call()
+                num_total = self.contract.functions.numTotalPreprocessedElement(element_type).call()
+                if num_total - num_used < threshold_available_preprocessed_elements:
+                    print(f'Initialize {str(element_type)} generation process....')
+                    tx = self.contract.functions.initGenPreprocessedElement(element_type, True).buildTransaction(
+                        {'from': self.account.address, 'gas': 1000000,
+                         'nonce': self.web3.eth.get_transaction_count(self.account.address)})
+                    sign_and_send(tx, self.web3, self.account)
+                # num_used_input_mask = self.contract.functions.numUsedInputMask().call()
+                # num_total_input_mask = self.contract.functions.numTotalInputMask().call()
+                # if num_total_input_mask - num_used_input_mask < threshold_available_input_masks:
+                #     print(f'Initialize input mask generation process....')
+                #     tx = self.contract.functions.initGenInputMask(True).buildTransaction(
+                #         {'from': self.account.address, 'gas': 1000000,
+                #          'nonce': self.web3.eth.get_transaction_count(self.account.address)})
+                #     sign_and_send(tx, self.web3, self.account)
+
             await asyncio.sleep(600)
 
     async def prepare(self, repetition=1):
@@ -258,7 +318,7 @@ class Server:
 
         out_of_date = False
         try:
-            local_version = int.from_bytes(bytes(self.db.Get(key_inputmask_version(num_total_input_mask - 1))), 'big')
+            local_version = int.from_bytes(bytes(self.db.Get(key_preprocessed_element_version(num_total_input_mask - 1))), 'big')
             if local_version < version_input_mask:
                 out_of_date = True
         except KeyError:
@@ -275,7 +335,7 @@ class Server:
             while True:
                 try:
                     print(f'idx {num_total_input_mask - 1}')
-                    local_version = int.from_bytes(bytes(self.db.Get(key_inputmask_version(num_total_input_mask - 1))), 'big')
+                    local_version = int.from_bytes(bytes(self.db.Get(key_preprocessed_element_version(num_total_input_mask - 1))), 'big')
                     print(f'local_version {local_version}')
                     if local_version > version_input_mask:
                         break

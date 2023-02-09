@@ -192,14 +192,38 @@ SPACE [ \t\r]*
             textPublic += "\n\n";
         }
 
+
+        textPublic += "    enum PreprocessedElementType { INT, BIT, TRIPLE }\n";
+        textPublic += "    event InitGenPreprocessedElement(PreprocessedElementType elementType, bool refill, uint version);\n";
+        textPublic += "    event FinalizeGenPreprocessedElement(PreprocessedElementType elementType, uint numPreprocessedElement, uint lastPreprocessedElementIndex);\n";
+        textPublic += "    mapping(uint8 => uint) public versionPreprocessedElement;\n";
+        textPublic += "    mapping(uint8 => uint) public numUsedPreprocessedElement;\n";
+        textPublic += "    mapping(uint8 => uint) public numTotalPreprocessedElement;\n";
+        textPublic += "    function initGenPreprocessedElement(PreprocessedElementType elementType, bool refill) public onlyServer {\n";
+        textPublic += "        // TODO: provide & verify agreement proof of majority of servers\n";
+        textPublic += "        emit InitGenPreprocessedElement(elementType, refill, ++versionPreprocessedElement[uint8(elementType)]);\n";
+        textPublic += "    }\n";
+        textPublic += "    function finalizeGenPreprocessedElement(PreprocessedElementType elementType, bool refill, uint num) public onlyServer{\n";
+        textPublic += "        // TODO: provide & verify agreement proof of majority of servers\n";
+        textPublic += "        if (!refill) {\n";
+        textPublic += "            numTotalPreprocessedElement[uint8(elementType)] += num;\n";
+        textPublic += "        } else {\n";
+        textPublic += "            numTotalPreprocessedElement[uint8(elementType)] = numUsedPreprocessedElement[uint8(elementType)] + num;\n";
+        textPublic += "        }\n";
+        textPublic += "        emit FinalizeGenPreprocessedElement(elementType, num, numTotalPreprocessedElement[uint8(elementType)]);\n";
+        textPublic += "    }\n";
+        textPublic += "\n";
+        textPublic += "\n";
+
+
         textPublic += "    event ReserveInputMask(uint[] inputMaskIndexes);\n";
         textPublic += "    mapping (uint => address) public inputMaskOwner;\n";
         textPublic += "    function reserveInput(uint num) public {\n";
-        textPublic += "        require(numTotalInputMask - numUsedInputMask >= num, \"Shortage of available input masks. Retry later!\");\n";
+        textPublic += "        require(numTotalPreprocessedElement[uint8(PreprocessedElementType.INT)] - numUsedPreprocessedElement[uint8(PreprocessedElementType.INT)] >= num, \"Shortage of available input masks. Retry later!\");\n";
         textPublic += "        address user = msg.sender;\n";
         textPublic += "        uint[] memory inputMaskIndexes = new uint[](num);\n";
         textPublic += "        for (uint i = 0; i < num; i++) {\n";
-        textPublic += "            uint inputMaskIdx = ++numUsedInputMask;\n";
+        textPublic += "            uint inputMaskIdx = ++numUsedPreprocessedElement[uint8(PreprocessedElementType.INT)];\n";
         textPublic += "            inputMaskOwner[inputMaskIdx] = user;\n";
         textPublic += "            inputMaskIndexes[i] = inputMaskIdx;\n";
         textPublic += "        }\n";
@@ -208,28 +232,6 @@ SPACE [ \t\r]*
         textPublic += "\n";
         textPublic += "\n";
 
-        textPublic += "    event InitGenInputMask(bool refill, uint version);\n";
-        textPublic += "    event FinalizeGenInputMask(uint numInputMask, uint lastInputMaskIndex);\n";
-        textPublic += "    uint public versionInputMask;\n";
-        textPublic += "    uint public numUsedInputMask;\n";
-        textPublic += "    uint public numTotalInputMask;\n";
-        textPublic += "    function initGenInputMask(bool refill) public onlyServer {\n";
-        textPublic += "        // TODO: provide & verify agreement proof of majority of servers\n";
-        textPublic += "        emit InitGenInputMask(refill, ++versionInputMask);\n";
-        textPublic += "    }\n";
-        textPublic += "    \n";
-        textPublic += "    \n";
-        textPublic += "    function finalizeGenInputMask(bool refill, uint num) public onlyServer{\n";
-        textPublic += "        // TODO: provide & verify agreement proof of majority of servers\n";
-        textPublic += "        if (!refill) {\n";
-        textPublic += "            numTotalInputMask += num;\n";
-        textPublic += "        } else {\n";
-        textPublic += "            numTotalInputMask = numUsedInputMask + num;\n";
-        textPublic += "        }\n";
-        textPublic += "        emit FinalizeGenInputMask(num, numTotalInputMask);\n";
-        textPublic += "    }\n";
-        textPublic += "\n";
-        textPublic += "\n";
 
         textPublic += "    event GenStateMask(address server, uint initStateMaskIndex, uint num);\n";
         textPublic += "    event RecoverState(uint seqRecoverState);\n";

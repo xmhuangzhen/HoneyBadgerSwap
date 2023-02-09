@@ -19,6 +19,7 @@ services:
       - ./malicious-shamir-party.x:/usr/local/bin/malicious-shamir-party.x
       - ./random-triples.x:/usr/src/hbswap/random-triples.x
       - ./random-bits.x:/usr/src/hbswap/random-bits.x
+      - ./mal-shamir-offline.x:/usr/src/hbswap/mal-shamir-offline.x
       - ./libSPDZ.so:/usr/src/MP-SPDZ/libSPDZ.so
       - ./HOSTS.txt:/usr/src/hbswap/HOSTS.txt
     working_dir: /usr/src/hbswap
