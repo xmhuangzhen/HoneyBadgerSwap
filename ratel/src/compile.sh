@@ -30,7 +30,7 @@ compile_sol() {
 
 compile_mpc() {
   cd mpc
-  for d in *; do
+  for d in *.mpc; do
     ./../../../compile.py -v -C -F 128 $d
   done
   cd ..
@@ -62,6 +62,39 @@ init() {
   cp -r ratel/src/node_modules ratel/genfiles
 }
 
+#######################
+
+
+rm -rf ./ratel/mpc_out
+mkdir -p ./ratel/mpc_out
+
+#######################
+
+init
+
+cd ratel/genfiles
+
+#### compile ratel compiler
+compile_flexes
+####
+
+#### compile application
+IFS=','
+read -a strarr <<< "$apps"
+for app in "${strarr[@]}";
+do
+  parse $app
+done
+
+compile_mpc
+
+cd ../../
+
+#######################
+
+python3 -m ratel.src.scanner.deal_preprocessing $app
+
+#######################
 
 init
 
@@ -81,5 +114,8 @@ done
 
 compile_sol
 compile_mpc
-####
+
+cd ../../
+
+#######################
 

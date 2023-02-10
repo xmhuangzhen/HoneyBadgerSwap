@@ -22,6 +22,7 @@ services:
       - ./mal-shamir-offline.x:/usr/src/hbswap/mal-shamir-offline.x
       - ./libSPDZ.so:/usr/src/MP-SPDZ/libSPDZ.so
       - ./HOSTS.txt:/usr/src/hbswap/HOSTS.txt
+      - ./compilerLib.py:/usr/src/hbswap/Compiler/compilerLib.py
     working_dir: /usr/src/hbswap
     platform: "linux/amd64"
     command: tail -F anything

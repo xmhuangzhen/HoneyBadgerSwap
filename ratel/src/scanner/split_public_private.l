@@ -2,7 +2,7 @@
 
 %{
 
-
+#include <fstream>
 #include <string>
 #include <vector>
 #include <assert.h>
@@ -228,6 +228,15 @@ void addInputMaskCheck() {
         }
     }
 //    if (flag) textLine += "\n";
+    textLine += "\n";
+}
+
+void addPreprocessing() {
+    string filename = "/usr/src/hbswap/ratel/mpc_out/" + funcName + ".sol";
+    ifstream ifs(filename);
+    string content( (istreambuf_iterator<char>(ifs) ),
+                    (istreambuf_iterator<char>()    ) );
+    textLine += content;
     textLine += "\n";
 }
 
@@ -694,6 +703,7 @@ SPACE [ \t\r]+
 
             if (isFuncParam) {
                 addInputMaskCheck();
+                addPreprocessing();
 
                 isFuncParam = false;
                 args.clear();

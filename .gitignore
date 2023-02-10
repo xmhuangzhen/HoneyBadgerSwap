@@ -6,3 +6,4 @@ poa/data
 ratel/genfiles
 ratel/benchmark/data/*
 *.DS_Store
+ratel/mpc_out
