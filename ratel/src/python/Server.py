@@ -84,7 +84,7 @@ class Server:
             mask_idxes = re.split(",", request.match_info.get("mask_idxes"))
             res = ""
             for mask_idx in mask_idxes:
-                res += f"{',' if len(res) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_preprocessed_element_data(mask_idx))), 'big')}"
+                res += f"{',' if len(res) > 0 else ''}{int.from_bytes(bytes(self.db.Get(key_preprocessed_element_data(PreprocessedElement.INT, mask_idx))), 'big')}"
             data = {
                 "inputmask_shares": res,
             }
@@ -174,25 +174,13 @@ class Server:
         await site.start()
         await asyncio.sleep(100 * 3600)
 
+
     async def request_state_mask(self, num):
         tx = self.contract.functions.genStateMask(num).buildTransaction(
             {'from': self.account.address, 'gas': 1000000,
              'nonce': self.web3.eth.get_transaction_count(self.account.address)})
         sign_and_send(tx, self.web3, self.account)
 
-    # async def gen_random_field_elements(self, batch_size=preprocessed_element_gen_batch_size):
-    #     print(f'Generating {batch_size} random field elements... s-{self.serverID}')
-    #
-    #     cmd = f'./random-shamir.x -i {self.serverID} -N {self.players} -T {self.threshold} --nshares {batch_size} --prep-dir {INPUTMASK_SHARES_DIR} -P {prime}'
-    #     await execute_cmd(cmd)
-    #
-    #     file = location_inputmask(self.serverID, self.players)
-    #     shares = []
-    #     with open(file, "r") as f:
-    #         for line in f.readlines():
-    #             share = int(line) % prime
-    #             shares.append(share)
-    #     return shares
 
     async def gen_preprocessed_elements(self, element_type, batch_size=preprocessed_element_gen_batch_size):
         print(f'Generating {batch_size} {str(element_type)}... s-{self.serverID}')
@@ -266,6 +254,7 @@ class Server:
             for element_type in PreprocessedElement:
                 num_used = self.contract.functions.numUsedPreprocessedElement(element_type).call()
                 num_total = self.contract.functions.numTotalPreprocessedElement(element_type).call()
+                print(f'Preprocessing: {num_total - num_used} {str(element_type)} left...')
                 if num_total - num_used < threshold_available_preprocessed_elements:
                     print(f'Initialize {str(element_type)} generation process....')
                     tx = self.contract.functions.initGenPreprocessedElement(element_type, True).buildTransaction(
@@ -281,7 +270,7 @@ class Server:
                 #          'nonce': self.web3.eth.get_transaction_count(self.account.address)})
                 #     sign_and_send(tx, self.web3, self.account)
 
-            await asyncio.sleep(600)
+            await asyncio.sleep(10)
 
     async def prepare(self, repetition=1):
         # TODO: consider the ordering of crash recovery related functions

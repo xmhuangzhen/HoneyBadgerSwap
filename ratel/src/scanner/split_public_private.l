@@ -176,7 +176,6 @@ void addEventEmit() {
         textRecover += "\n";
     }
 
-    textPublic += "        uint seq" + funcName + " = ++taskCnt;\n";
     textPublic += "        opEvent[seq" + funcName + "] = \"" + funcName + "\";\n";
     textPublic += "        opContent[seq" + funcName + "] = abi.encode(";
     for (int i = 0; i < args.size(); i++) {
@@ -702,6 +701,9 @@ SPACE [ \t\r]+
             }
 
             if (isFuncParam) {
+                textLine += "        uint seq" + funcName + " = ++taskCnt;\n";
+                textLine += "\n";
+
                 addInputMaskCheck();
                 addPreprocessing();
 

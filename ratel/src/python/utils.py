@@ -2,6 +2,7 @@ import ast
 import asyncio
 import glob
 import json
+import shutil
 from enum import IntEnum
 
 import leveldb
@@ -152,7 +153,7 @@ def get_inverse(a):
 
 def recover_input(db, masked_value, idx):  # return: int
     try:
-        input_mask_share = db.Get(key_inputmask_index(idx))
+        input_mask_share = db.Get(key_preprocessed_element_data(PreprocessedElement.INT, idx))
     except KeyError:
         input_mask_share = bytes(0)
     input_mask_share = int.from_bytes(input_mask_share, 'big')
@@ -192,9 +193,7 @@ async def execute_cmd(cmd, info=''):
         returncode = proc.returncode
         if returncode != 0:
             print('ERROR!')
-        print(f'[stderr]\n{stderr.decode()}')
-        # if returncode != 0:
-        #     print(f'[stderr]\n{stderr.decode()}')
+            # print(f'[stderr]\n{stderr.decode()}')
 
         retry -= 1
 
@@ -432,11 +431,65 @@ class PreprocessedElement(IntEnum):
     TRIPLE = 2
 
 
+def touch_dir(path):
+    is_exist = os.path.exists(path)
+    if not is_exist:
+        os.makedirs(path)
+
+
+async def run_online(server_id, port, players, threshold, mpcProg, server, seq=0):
+    data_dir = f'offline_data/s{server_id}/{mpcProg}_port_{port}'
+    touch_dir(data_dir)
+    shutil.rmtree(data_dir)
+    touch_dir(f'{data_dir}/{players}-MSp-{prime_bit_length}')
+
+    with open(f'{data_dir}/{players}-MSp-{prime_bit_length}/Params-Data', 'w') as f:
+        f.write(str(prime))
+
+    preprocessing_req_file = f'/usr/src/hbswap/ratel/mpc_out/{mpcProg}.txt'
+    with open(preprocessing_req_file, 'r') as f:
+        for line in f.readlines():
+            element = line.split()
+            if element[1] == 'integer':
+                num = ((int(element[0]) - 1) // BUFFER_SIZE + 1) * BUFFER_SIZE
+                element_type = element[2][:-1].upper()
+
+                init_index = eval(f'server.contract.functions.initIndex{element_type}')(seq, mpcProg).call()
+                print('init_index', init_index)
+
+                data = b''
+                for index in range(init_index, init_index + num, BUFFER_SIZE):
+                    chunk = server.db.Get(key_preprocessed_element_data(PreprocessedElement[element_type], index))
+                    data += chunk
+
+                file = f'{data_dir}/{players}-MSp-{prime_bit_length}/{element[2].capitalize()}-MSp-P{server_id}'
+                print(f'write to {file}')
+                with open(file, "wb") as out_f:
+                    out_f.write(mal_shamir_sig + data)
+
+    cmd = f'{prog} -N {players} -T {threshold} -p {server_id} -pn {port} -P {prime} -ip HOSTS.txt -F --prep-dir {data_dir} -npfs {mpcProg}'
+    await execute_cmd(cmd, f'**** task seq {seq}')
+
+
+async def run_offline(server_id, port, players, threshold, mpcProg):
+    dir = f'offline_data/s{server_id}/{mpcProg}_port_{port}'
+    cmd = f'{offline_prog} -N {players} -T {threshold} -p {server_id} -pn {port} -P {prime} -ip HOSTS.txt --prep-dir {dir} -npfs {mpcProg}'
+    await execute_cmd(cmd)
+
+
+async def run_online_ONLY(server_id, port, players, threshold, mpcProg):
+    cmd = f'{prog} -N {players} -T {threshold} -p {server_id} -pn {port} -P {prime} -ip HOSTS.txt -npfs {mpcProg}'
+    await execute_cmd(cmd)
+
+
+
 prog = './malicious-shamir-party.x'
 offline_prog = './mal-shamir-offline.x'
 random_int_prog = './random-shamir.x'
 random_bit_prog = './random-bits.x'
 random_triple_prog = './random-triples.x'
+
+mal_shamir_sig = b'/\x00\x00\x00\x00\x00\x00\x00Shamir gfp\x00 \x00\x00\x00\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x14\xde\xf9\xde\xa2\xf7\x9c\xd6X\x12c\x1a\\\xf5\xd3\xed'
 
 ### blsPrime
 # prime = 52435875175126190479447740508185965837690552500527637822603658699938581184513

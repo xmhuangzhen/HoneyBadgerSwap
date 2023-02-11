@@ -31,6 +31,8 @@ SPACE [ \t\r]*
     textPublic += "\n";
 
     textPublic += "    uint public taskCnt;\n";
+    textPublic += "    mapping (uint => mapping (string => uint)) public initIndexBIT;\n";
+    textPublic += "    mapping (uint => mapping (string => uint)) public initIndexTRIPLE;\n";
     textPublic += "    mapping (uint => string) public opEvent;\n";
     textPublic += "    mapping (uint => bytes) public opContent;\n";
     textPublic += "\n";

@@ -163,8 +163,7 @@ void initPython() {
     textPythonUpper += "import asyncio\n";
     textPythonUpper += "import os\n";
     textPythonUpper += "import json\n";
-    textPythonUpper += "from ratel.src.python.utils import chunk_size, preprocessed_element_gen_batch_size, BUFFER_SIZE, key_preprocessed_element_data, key_preprocessed_element_version, PreprocessedElement, sleep_time, location_sharefile, mpcPort, prime, sz, int_to_hex, hex_to_int, recover_input, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof, key_state_mask, mpc_port, inv_10\n";
-    textPythonUpper += "from ratel.benchmark.src.test_mpc import run_online, run_offline\n";
+    textPythonUpper += "from ratel.src.python.utils import run_online, chunk_size, preprocessed_element_gen_batch_size, key_preprocessed_element_data, key_preprocessed_element_version, PreprocessedElement, sleep_time, location_sharefile, mpcPort, prime, sz, int_to_hex, hex_to_int, recover_input, mark_finish, read_db, write_db, bytes_to_int, bytes_to_list, bytes_to_dict, int_to_bytes, list_to_bytes, dict_to_bytes, execute_cmd, MultiAcquire, sign_and_send, verify_proof, key_state_mask, mpc_port, inv_10\n";
     textPythonUpper += "\n";
 
     textPythonUpper += "async def monitor(server):\n";
@@ -251,7 +250,7 @@ void finalizePython() {
     textPythonUpper += "    last_preprocessed_element_index = log['args']['lastPreprocessedElementIndex']\n";
     textPythonUpper += "    assert num_preprocessed_element == len(server.preprocessed_element_cache[element_type]) * chunk_size[element_type], f'inconsistent {element_type}'\n";
     textPythonUpper += "    version_bytes = server.preprocessed_element_version[element_type].to_bytes((server.preprocessed_element_version[element_type].bit_length() + 7) // 8, 'big')\n";
-    textPythonUpper += "    for (index, chunk) in zip(range(last_preprocessed_element_index - num_preprocessed_element, last_preprocessed_element_index, BUFFER_SIZE), server.preprocessed_element_cache[element_type]):\n";
+    textPythonUpper += "    for (index, chunk) in zip(range(last_preprocessed_element_index - num_preprocessed_element, last_preprocessed_element_index, chunk_size[element_type]), server.preprocessed_element_cache[element_type]):\n";
     textPythonUpper += "        if element_type == PreprocessedElement.INT:\n";
     textPythonUpper += "            server.db.Put(key_preprocessed_element_data(element_type, index), chunk.to_bytes((chunk.bit_length() + 7) //\n";
     textPythonUpper += "                                                                                        8, 'big'))\n";
@@ -701,7 +700,7 @@ void mpcInput() {
 
     /* python */
     string mpcName = mpcFile.substr(4, mpcFile.length() - 8);
-    textFuncLower += indent + "await run_online(server.serverID, port, server.players, server.threshold, \'" + mpcName + "\'";
+    textFuncLower += indent + "await run_online(server.serverID, port, server.players, server.threshold, \'" + mpcName + "\', server";
     if (!inPureMpc) {
         textFuncLower += ", seq" + funcName;
     }
