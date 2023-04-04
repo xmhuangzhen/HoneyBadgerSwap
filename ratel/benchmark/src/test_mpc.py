@@ -4,7 +4,7 @@ import shutil
 import sys
 import time
 
-from ratel.src.python.utils import mpc_port, repeat_experiment
+from ratel.src.python.utils import mpc_port, repeat_experiment, run_offline, run_online, run_online_ONLY
 
 
 def set_up_share_files(players, concurrency):

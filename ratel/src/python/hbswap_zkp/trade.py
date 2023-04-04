@@ -7,7 +7,7 @@ from web3 import Web3
 from web3.middleware import geth_poa_middleware
 from ratel.src.python.Client import get_inputmasks, reserveInput, get_secret_values
 from ratel.src.python.deploy import ws_provider, app_addr, token_addrs
-from ratel.src.python.utils import fp, prime, getAccount, sign_and_send, parse_contract, players, threshold, get_zkrp
+from ratel.src.python.utils import fp, prime, getAccount, sign_and_send, parse_contract, players, threshold, get_zkrp, generate_zkrp_mul
 
 
 def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
@@ -27,7 +27,7 @@ def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
     totalA = (1 + feeRate) * amtA
     totalB = (1 + feeRate) * amtB
 
-    proof1, commitment1, blinding1 = get_zkrp(amtA * amtB, '<=', 0)
+    Cz, Prf1, rx, ry = generate_zkrp_mul(amtA, amtB, '<=', 0)
     proof2, commitment2, blinding2 = get_zkrp(-totalA, '<=', balanceA)
     proof3, commitment3, blinding3 = get_zkrp(-totalB, '<=', balanceB)
 
@@ -39,11 +39,12 @@ def trade(appContract, tokenA, tokenB, amtA, amtB, account, web3, client_id):
                     f'op\t{op + 1}\t'
                     f'cur_time\t{t}\n')
 
-    idxAmtA, idxAmtB, idxzkp1, idxzkp2, idxzkp3 = reserveInput(web3, appContract, 5, account)
-    maskA, maskB, maskzkp1, maskzkp2, maskzkp3 = get_inputmasks(players(appContract), f'{idxAmtA},{idxAmtB},{idxzkp1},{idxzkp2},{idxzkp3}', threshold(appContract))
-    maskedAmtA, maskedAmtB, maskedzkp1, maskedzkp2, maskedzkp3 = (amtA + maskA) % prime, (amtB + maskB) % prime, (blinding1 + maskzkp1) % prime, (blinding2 + maskzkp2) % prime, (blinding3 + maskzkp3) % prime
+    idxAmtA, idxAmtB, idxzkp11, idxzkp12, idxzkp2, idxzkp3 = reserveInput(web3, appContract, 6, account)
+    maskA, maskB, maskzkp11, maskzkp12, maskzkp2, maskzkp3 = get_inputmasks(players(appContract), f'{idxAmtA},{idxAmtB},{idxzkp11},{idxzkp12},{idxzkp2},{idxzkp3}', threshold(appContract))
+    maskedAmtA, maskedAmtB, maskedzkp11,maskedzkp12, maskedzkp2, maskedzkp3 = (amtA + maskA) % prime, (amtB + maskB) % prime, (rx + maskzkp11) % prime, (ry + maskzkp12) % prime, (blinding2 + maskzkp2) % prime, (blinding3 + maskzkp3) % prime
 
-    zkp1 = [idxzkp1, maskedzkp1, proof1, commitment1]
+    # zkp1 = [idxzkp1, maskedzkp1, proof1, commitment1]
+    zkp1 = [idxzkp11, maskedzkp11, idxzkp12, maskedzkp12, Prf1, Cz]
     zkp2 = [idxzkp2, maskedzkp2, proof2, commitment2]
     zkp3 = [idxzkp3, maskedzkp3, proof3, commitment3]
     zkps = json.dumps([zkp1, zkp2, zkp3])

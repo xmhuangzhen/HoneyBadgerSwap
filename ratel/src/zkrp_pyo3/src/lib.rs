@@ -122,30 +122,43 @@ fn pedersen_commit(secret_value_bytes: [u8; 32], blinding_bytes: [u8; 32]) -> Py
 // }
 
 #[pyfunction]
-fn other_base_commit(g_x_bytes: [u8; 32], y_bytes: [u8; 32], blinding_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
-    // (g^x)^{secret_value} * h^{blinding} * g^{r}
-    let g_x = CompressedRistretto(g_x_bytes).decompress().unwrap();
-    let y = Scalar::from_bytes_mod_order(y_bytes);
-    let blinding = Scalar::from_bytes_mod_order(blinding_bytes);
+fn other_base_commit(g_bytes: [u8; 32], x_bytes: [u8; 32], h_bytes: [u8; 32], rx_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
+    // (g)^x * h^{rx}
+    let g = CompressedRistretto(g_bytes).decompress().unwrap();
+    let h = CompressedRistretto(h_bytes).decompress().unwrap();
+    let x = Scalar::from_bytes_mod_order(x_bytes);
+    let rx = Scalar::from_bytes_mod_order(rx_bytes);
+
+    let com = RistrettoPoint::multiscalar_mul(&[x, rx], &[g, h]);
+
+    Ok(com.compress().to_bytes())
+}
+other_base_commit_origin_H
+
+fn other_base_commit_origin_H(g_bytes: [u8; 32], x_bytes: [u8; 32], rx_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
+    // (g)^{x} * h^{rx} 
+    let g = CompressedRistretto(g_bytes).decompress().unwrap();
+    let x = Scalar::from_bytes_mod_order(x_bytes);
+    let rx = Scalar::from_bytes_mod_order(rx_bytes);
 
     let pc_gens = PedersenGens::default();
 
-    let g_xy_h_rz_com = RistrettoPoint::multiscalar_mul(&[y, blinding], &[g_x, pc_gens.B_blinding]);
+    let com = RistrettoPoint::multiscalar_mul(&[x, rx], &[g, pc_gens.B_blinding]);
 
 
-    Ok(g_xy_h_rz_com.compress().to_bytes())
+    Ok(com.compress().to_bytes())
 }
 
 #[pyfunction]
 fn product_com(x_bytes: [u8; 32], y_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
-    let one = Scalar::one();
+    // let x = CompressedRistretto(x_bytes).decompress().unwrap();
+    // let y = CompressedRistretto(y_bytes).decompress().unwrap();
+    let x = Scalar::from_bytes_mod_order(x_bytes);
+    let y = Scalar::from_bytes_mod_order(y_bytes);
 
-    let x = CompressedRistretto(read32(&x_bytes)).decompress().unwrap();
-    let y = CompressedRistretto(read32(&y_bytes)).decompress().unwrap();
-
-    let product_com = RistrettoPoint::multiscalar_mul(&[one, one], &[x, y]);
+    let product_com = (x * y).reduce();
     
-    Ok(product_com.compress().to_bytes())
+    Ok(product_com.to_bytes())
 }
 
 
@@ -251,6 +264,19 @@ fn gen_random_value(value_num: u64) -> PyResult<Vec<[u8; 32]>> {
     Ok(res_val)
 }
 
+#[pyfunction]
+fn get_challenge(com_kx: [u8, 32], com_ky: [u8, 32], com_kz: [u8, 32]) -> PyResult<[u8; 32]> {
+    let mut prover_transcript = Transcript::new(b"zkrpmul");
+    let mut c_bytes = [0u8; 64];
+    prover_transcript.commit_bytes(b"com_kx",com_kx.as_bytes());
+    prover_transcript.commit_bytes(b"com_ky",com_ky.as_bytes());
+    prover_transcript.commit_bytes(b"com_kz",com_kz.as_bytes());
+    prover_transcript.challenge_bytes(b"c", &mut c_bytes);
+    let c = Scalar::from_bytes_mod_order_wide(&c_bytes);
+    
+    Ok(c.to_bytes())
+}
+
 
 #[pyfunction]
 fn zkrp_prove_mul(x_v: u64, y_v: u64, rx_prime_bytes: [u8; 32], ry_prime_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
@@ -327,5 +353,7 @@ fn zkrp_pyo3(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(zkrp_verify_mul, m)?)?;
     m.add_function(wrap_pyfunction!(other_base_commit, m)?)?;
     m.add_function(wrap_pyfunction!(product_com, m)?)?;
+    m.add_function(wrap_pyfunction!(get_challenge, m)?)?;
+    m.add_function(wrap_pyfunction!(other_base_commit_origin_H, m)?)?;
     Ok(())
 }

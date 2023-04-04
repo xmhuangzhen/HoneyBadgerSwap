@@ -12,7 +12,7 @@ import time
 from gmpy import binary, mpz
 from gmpy2 import mpz_from_old_binary
 from zkrp_pyo3 import pedersen_aggregate, pedersen_commit, zkrp_verify, zkrp_prove, zkrp_prove_mul, zkrp_verify_mul, \
-    other_base_commit, product_com
+    other_base_commit, other_base_commit_origin_H, product_com, gen_random_value, get_challenge
 
 
 def parse_contract(name):
@@ -287,17 +287,19 @@ async def verify_proof(server, pflist):
 
     for pfexp in pflist:
         [x, zkpstmt, type_Mul, y, r] = pfexp
-        [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
-        # TODO:
-        # proof, commitment, blinding_ = zkrp_prove(2022, 32)
-        if proof is None or commitment is None or not zkrp_verify(proof, commitment):
-            print("[Error]: Committed secret value does not pass range proof verification!")
-            return False
-
-        blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
-        x, y, r = int(x), int(y), int(r)
 
         if type_Mul == 0:
+            [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
+
+            if proof is None or commitment is None or not zkrp_verify(proof, commitment):
+                print("[Error]: Committed secret value does not pass range proof verification!")
+                return False
+
+            blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
+            x, y, r = int(x), int(y), int(r)
+
+            ###################################################
+
             pfval = x % prime
             if pfval < 0:
                 pfval = (pfval % prime + prime) % prime
@@ -314,29 +316,41 @@ async def verify_proof(server, pflist):
             blinding_idx_request += f"{idxValueBlinding}"
 
         else:  ### x * y >= r
+            [idx_rx, masked_rx, idx_ry, masked_ry, prf, Cz] = zkpstmt
+            rx = recover_input(server.db, masked_rx, idx_rx)
+            ry = recover_input(server.db, masked_ry, idx_ry)
+
             if type_Mul >= 3:
                 x = -x
                 x = (x % prime + prime) % prime
-            ############# (1) compute g^[x] #############
+            ############# (1) compute g^[x]h^[rx] #############
             x_bytes = list(x.to_bytes(32, byteorder='little'))
-            g_x_share = pedersen_commit(x_bytes, zer_bytes)
-            server.zkrpShares[f'{idxValueBlinding}_{0}'] = g_x_share
+            rx_bytes = list(rx.to_bytes(32, byteorder='little'))
+            g_x_share = pedersen_commit(x_bytes, rx_bytes)
+            server.zkrpShares[f'{idx_rx}_{0}'] = g_x_share
             if len(blinding_idx_request):
                 blinding_idx_request += ","
-            blinding_idx_request += f"{idxValueBlinding}_{0}"
+            blinding_idx_request += f"{idx_rx}_{0}"
+
+            ############# (2) compute g^[y] #############
+            y_bytes = list(y.to_bytes(32, byteorder='little'))
+            ry_bytes = list(ry.to_bytes(32, byteorder='little'))
+            g_y_share = pedersen_commit(y_bytes, ry_bytes)
+            server.zkrpShares[f'{idx_ry}_{0}'] = g_y_share
+            if len(blinding_idx_request):
+                blinding_idx_request += ","
+            blinding_idx_request += f"{idx_ry}_{0}"
 
     # times.append(time.perf_counter())
     results_list = await server.get_zkrp_shares(players(server.contract), blinding_idx_request)
     # times.append(time.perf_counter())
 
     blindingy_idx_request = ""
+    cnt_res = 0
     for i in range(len(pflist)):
-        results, pfexp = results_list[i], pflist[i]
+        results, pfexp = results_list[cnt_res], pflist[i]
 
         [x, zkpstmt, type_Mul, y, r] = pfexp
-        [idxValueBlinding, maskedValueBlinding, _proof, commitment] = zkpstmt
-        blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
-        x, y, r = int(x), int(y), int(r)
 
         if type_Mul == 0:
             agg_commitment = pedersen_aggregate(results, [x + 1 for x in list(range(server.players))])
@@ -345,48 +359,98 @@ async def verify_proof(server, pflist):
                 return False
 
         else:  ### x * y >= r
-            results_g_x = results
-            g_x_bytes = pedersen_aggregate(results_g_x, [x + 1 for x in list(range(server.players))])
+            # [idxValueBlinding, maskedValueBlinding, _proof, commitment] = zkpstmt
+            # blinding = recover_input(server.db, maskedValueBlinding, idxValueBlinding)
+            # x, y, r = int(x), int(y), int(r)
 
-            ############# (2) compute (g^x)^[y] * h^[rz] #############
-            rz_bytes = list(blinding.to_bytes(32, byteorder='little'))
-            y_bytes = list(y.to_bytes(32, byteorder='little'))
-            g_xy_h_rz_bytes = other_base_commit(g_x_bytes, y_bytes, rz_bytes)
-            server.zkrpShares[f'{idxValueBlinding}_{1}'] = g_xy_h_rz_bytes
+            [idx_rx, masked_rx, idx_ry, masked_ry, prf, Cz] = zkpstmt
+            [Kx,Ky,Kz,sx,sy,sx_prime,sy_prime,sz_prime,c] = prf
 
-            if len(blindingy_idx_request):
-                blindingy_idx_request += ","
-            blindingy_idx_request += f"{idxValueBlinding}_{1}"
+            rx = recover_input(server.db, masked_rx, idx_rx)
+            ry = recover_input(server.db, masked_ry, idx_ry)
+
+            results_Cx = results
+            Cx_bytes = pedersen_aggregate(results_Cx, [x + 1 for x in list(range(server.players))])
+            cnt_res = cnt_res + 1
+
+            results_Cy = results_list[cnt_res]
+            Cy_bytes = pedersen_aggregate(results_Cy, [x + 1 for x in list(range(server.players))])
+            
+            # ############# (2) compute (g^x)^[y] * h^[rz] #############
+            # rz_bytes = list(blinding.to_bytes(32, byteorder='little'))
+            # y_bytes = list(y.to_bytes(32, byteorder='little'))
+            # g_xy_h_rz_bytes = other_base_commit(g_x_bytes, y_bytes, rz_bytes)
+            # server.zkrpShares[f'{idxValueBlinding}_{1}'] = g_xy_h_rz_bytes
+
+            # if len(blindingy_idx_request):
+            #     blindingy_idx_request += ","
+            # blindingy_idx_request += f"{idxValueBlinding}_{1}"
+
+            ############# (2) compute (g^sx) * h^sx_prime =?= Cx^c * Kx #############
+            sx_bytes = list(sx.to_bytes(32, byteorder='little'))
+            sx_prime_bytes = list(sx_prime.to_bytes(32, byteorder='little'))
+            Csx = pedersen_commit(sx_bytes,sx_prime_bytes)
+
+            c_bytes = list(c.to_bytes(32, byteorder='little'))
+            Kx_bytes = list(Kx.to_bytes(32, byteorder='little'))
+            Csx_rhs = other_base_commit(Cx_bytes,c_bytes,Kx_bytes,zer_bytes)
+
+            if Csx != Csx_rhs:
+                return False
+            
+            ############# (3) compute (g^sy) * h^sy_prime =?= Cy^c * Ky #############
+            sy_bytes = list(sy.to_bytes(32, byteorder='little'))
+            sy_prime_bytes = list(sy_prime.to_bytes(32, byteorder='little'))
+            Csy = pedersen_commit(sy_bytes,sy_prime_bytes)
+
+            Ky_bytes = list(Ky.to_bytes(32, byteorder='little'))
+            Csy_rhs = other_base_commit(Cy_bytes,c_bytes,Ky_bytes,zer_bytes)
+
+            if Csy != Csy_rhs:
+                return False
+        
+            ############# (4) compute (Cx^sy) * h^sz_prime =?= Cz^c * Kz #############
+            sz_prime_bytes = list(sz_prime.to_bytes(32, byteorder='little'))
+            Cz_lhs = other_base_commit_origin_H(Cx_bytes, sy_bytes, sz_prime_bytes)
+
+            Kz_bytes = list(Kz.to_bytes(32, byteorder='little'))
+            Cz_bytes = list(Cz.to_bytes(32, byteorder='little'))
+            Cz_rhs = other_base_commit(Cz_bytes,c_bytes,Kz_bytes,zer_bytes)
+
+            if Cz_lhs != Cz_rhs:
+                return False
+
+        cnt_res = cnt_res + 1
 
     # times.append(time.perf_counter())
 
-    if len(blindingy_idx_request):
-        resultsy_list = await server.get_zkrp_shares(players(server.contract), blindingy_idx_request)
-        # times.append(time.perf_counter())
+    # if len(blindingy_idx_request):
+    #     resultsy_list = await server.get_zkrp_shares(players(server.contract), blindingy_idx_request)
+    #     # times.append(time.perf_counter())
 
-        idx_y = 0
-        for i in range(len(pflist)):
-            pfexp = pflist[i]
+    #     idx_y = 0
+    #     for i in range(len(pflist)):
+    #         pfexp = pflist[i]
 
-            [x, zkpstmt, type_Mul, y, r] = pfexp
-            [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
+    #         [x, zkpstmt, type_Mul, y, r] = pfexp
+    #         [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
 
-            if type_Mul != 0:
-                r = -r
-                r = (r % prime + prime) % prime
+    #         if type_Mul != 0:
+    #             r = -r
+    #             r = (r % prime + prime) % prime
 
-                results_g_xy_h_rz = resultsy_list[idx_y]
-                agg_gxyhrz_commitment = pedersen_aggregate(results_g_xy_h_rz,
-                                                           [x + 1 for x in list(range(server.players))])
+    #             results_g_xy_h_rz = resultsy_list[idx_y]
+    #             agg_gxyhrz_commitment = pedersen_aggregate(results_g_xy_h_rz,
+    #                                                        [x + 1 for x in list(range(server.players))])
 
-                r_bytes = list(r.to_bytes(32, byteorder='little'))
-                g_r = pedersen_commit(r_bytes, zer_bytes)
+    #             r_bytes = list(r.to_bytes(32, byteorder='little'))
+    #             g_r = pedersen_commit(r_bytes, zer_bytes)
 
-                agg_commitment = product_com(g_r, agg_gxyhrz_commitment)
-                if agg_commitment != commitment:
-                    return False
+    #             agg_commitment = product_com(g_r, agg_gxyhrz_commitment)
+    #             if agg_commitment != commitment:
+    #                 return False
 
-                idx_y = idx_y + 1
+    #             idx_y = idx_y + 1
 
     # times.append(time.perf_counter())
     # with open(f'ratel/benchmark/data/latency_zkrp_verify_{server.serverID}.csv', 'a') as f:
@@ -423,6 +487,43 @@ def get_zkrp(secret_value, exp_str, r, isSfix=False):
     proof, commitment, blinding_bytes = zkrp_prove(value, bits)
     blinding = int.from_bytes(blinding_bytes, byteorder='little')
     return proof, commitment, blinding
+
+def generate_zkrp_mul(x, y, exp_str, r):
+    rv_list_bytes = gen_random_value(6)
+    rv_list = []
+    for i in range(len(rv_list_bytes)):
+        rv_list.append(int.from_bytes(rv_list_bytes[i], byteorder='little'))
+    rx, ry, rz, kx, ky, kx_prime, ky_prime, kz_prime = rv_list[0], rv_list[1], rv_list[2], rv_list[3], rv_list[4], rv_list[5], rv_list[6], rv_list[7]
+
+    if exp_str == '>=':
+        z = x*y - r
+    elif exp_str == '>':  # secret_value > r <==> secret_value - r -1 >= 0
+        z = x*y - r - 1
+    elif exp_str == '<=':  # secret_value <= r <==> r - secret_value >= 0
+        z = r - x*y
+        x = (prime-x)%prime
+    elif exp_str == '<':  # secret_value < r <==> r - secret_value - 1 >= 0
+        z = r - x*y - 1
+        x = (prime-x)%prime
+    z = (x*y+prime) % prime
+
+    x_bytes, y_bytes, z_bytes = x.to_bytes(32, byteorder='little'), y.to_bytes(32, byteorder='little'), z.to_bytes(32, byteorder='little')
+    blinding_z = (rx * y + rz) % prime
+    rx_bytes, ry_bytes, blinding_z_bytes = rx.to_bytes(32, byteorder='little'), ry.to_bytes(32, byteorder='little'), blinding_z.to_bytes(32, byteorder='little')
+    Cx, Cy, Cz = pedersen_commit(x_bytes,rx_bytes), pedersen_commit(y_bytes,ry_bytes), pedersen_commit(z_bytes, blinding_z_bytes)
+
+    z_v, blinding_kz = (x*ky) % prime
+    kx_bytes, ky_bytes, z_v_bytes = kx.to_bytes(32, byteorder='little'), ky.to_bytes(32, byteorder='little'), z_v.to_bytes(32, byteorder='little')
+    kx_prime_bytes, ky_prime_bytes, blinding_kz_bytes = kx_prime.to_bytes(32, byteorder='little'), ky_prime.to_bytes(32, byteorder='little'), blinding_kz.to_bytes(32, byteorder='little')
+    Kx, Ky, Kz = pedersen_commit(kx_bytes, kx_prime_bytes), pedersen_commit(ky_bytes, ky_prime_bytes), pedersen_commit(z_v_bytes, blinding_kz_bytes)
+
+    c = get_challenge(Kx, Ky, Kz)
+
+    sx, sy, sx_prime, sy_prime, sz_prime = (c*x + kx) % prime, (c*y + ky) % prime, (c*rx + kx_prime) % prime, (c*ry + ky_prime) % prime, (c*rz + kz_prime) % prime
+
+    prf = (Kx,Ky,Kz,sx,sy,sx_prime,sy_prime,sz_prime,c)
+    return Cz,prf,rx,ry
+
 
 
 class PreprocessedElement(IntEnum):

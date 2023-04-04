@@ -33,7 +33,9 @@ sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 
 #### pull docker image & enter the container
 ```
+sudo docker pull lilione/hbswap
 sudo docker pull initc3/honeybadgerswap:latest
+sudo docker tag lilione/hbswap hbswap:latest
 sudo docker tag initc3/honeybadgerswap:latest hbswap:latest
 sudo docker-compose up -d
 sudo docker exec -it honeybadgerswap_dev_1 bash
