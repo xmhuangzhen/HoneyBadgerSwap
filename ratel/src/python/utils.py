@@ -280,6 +280,7 @@ def dict_to_bytes(value):
 
 
 async def verify_proof(server, pflist):
+    # print('verifying proof')
     blinding_idx_request = ""
 
     # times = []
@@ -354,8 +355,12 @@ async def verify_proof(server, pflist):
 
         if type_Mul == 0:
             agg_commitment = pedersen_aggregate(results, [x + 1 for x in list(range(server.players))])
+            [idxValueBlinding, maskedValueBlinding, proof, commitment] = zkpstmt
 
             if agg_commitment != commitment:
+                print('error:',i)
+                print('agg_com:',agg_commitment)
+                print('comm:',commitment)
                 return False
 
         else:  ### x * y >= r
@@ -392,10 +397,12 @@ async def verify_proof(server, pflist):
             Csx = pedersen_commit(sx_bytes,sx_prime_bytes)
 
             c_bytes = list(c.to_bytes(32, byteorder='little'))
-            Kx_bytes = list(Kx.to_bytes(32, byteorder='little'))
-            Csx_rhs = other_base_commit(Cx_bytes,c_bytes,Kx_bytes,zer_bytes)
+            Cx_c = other_base_commit_origin_H(Cx_bytes,c_bytes,zer_bytes)
+            Csx_rhs = product_com(Cx_c,Kx,one_bytes)
 
             if Csx != Csx_rhs:
+                print('Csx:',Csx)
+                print('Csx_rhs:',Csx_rhs)
                 return False
             
             ############# (3) compute (g^sy) * h^sy_prime =?= Cy^c * Ky #############
@@ -403,21 +410,24 @@ async def verify_proof(server, pflist):
             sy_prime_bytes = list(sy_prime.to_bytes(32, byteorder='little'))
             Csy = pedersen_commit(sy_bytes,sy_prime_bytes)
 
-            Ky_bytes = list(Ky.to_bytes(32, byteorder='little'))
-            Csy_rhs = other_base_commit(Cy_bytes,c_bytes,Ky_bytes,zer_bytes)
+            Cy_c = other_base_commit_origin_H(Cy_bytes,c_bytes,zer_bytes)
+            Csy_rhs = product_com(Cy_c,Ky,one_bytes)
 
             if Csy != Csy_rhs:
+                print('Csy:',Csy)
+                print('Csy_rhs:',Csy_rhs)
                 return False
         
             ############# (4) compute (Cx^sy) * h^sz_prime =?= Cz^c * Kz #############
             sz_prime_bytes = list(sz_prime.to_bytes(32, byteorder='little'))
             Cz_lhs = other_base_commit_origin_H(Cx_bytes, sy_bytes, sz_prime_bytes)
 
-            Kz_bytes = list(Kz.to_bytes(32, byteorder='little'))
-            Cz_bytes = list(Cz.to_bytes(32, byteorder='little'))
-            Cz_rhs = other_base_commit(Cz_bytes,c_bytes,Kz_bytes,zer_bytes)
+            Cz_c = other_base_commit_origin_H(Cz,c_bytes,zer_bytes)
+            Cz_rhs = product_com(Cz_c,Kz,one_bytes)
 
             if Cz_lhs != Cz_rhs:
+                print('Cz_lhs:',Cz_lhs)
+                print('Cz_rhs:',Cz_rhs)
                 return False
 
         cnt_res = cnt_res + 1
@@ -489,7 +499,7 @@ def get_zkrp(secret_value, exp_str, r, isSfix=False):
     return proof, commitment, blinding
 
 def generate_zkrp_mul(x, y, exp_str, r):
-    rv_list_bytes = gen_random_value(6)
+    rv_list_bytes = gen_random_value(8)
     rv_list = []
     for i in range(len(rv_list_bytes)):
         rv_list.append(int.from_bytes(rv_list_bytes[i], byteorder='little'))
@@ -505,23 +515,64 @@ def generate_zkrp_mul(x, y, exp_str, r):
     elif exp_str == '<':  # secret_value < r <==> r - secret_value - 1 >= 0
         z = r - x*y - 1
         x = (prime-x)%prime
+
     z = (x*y+prime) % prime
+    x = (x%prime + prime) % prime
+    y = (y%prime + prime) % prime
 
     x_bytes, y_bytes, z_bytes = x.to_bytes(32, byteorder='little'), y.to_bytes(32, byteorder='little'), z.to_bytes(32, byteorder='little')
     blinding_z = (rx * y + rz) % prime
     rx_bytes, ry_bytes, blinding_z_bytes = rx.to_bytes(32, byteorder='little'), ry.to_bytes(32, byteorder='little'), blinding_z.to_bytes(32, byteorder='little')
     Cx, Cy, Cz = pedersen_commit(x_bytes,rx_bytes), pedersen_commit(y_bytes,ry_bytes), pedersen_commit(z_bytes, blinding_z_bytes)
 
-    z_v, blinding_kz = (x*ky) % prime
+    # print('Cx:',Cx)
+    # print('Cy:',Cy)
+
+    z_v, blinding_kz = (x*ky) % prime, (rx * ky % prime + kz_prime) % prime
     kx_bytes, ky_bytes, z_v_bytes = kx.to_bytes(32, byteorder='little'), ky.to_bytes(32, byteorder='little'), z_v.to_bytes(32, byteorder='little')
     kx_prime_bytes, ky_prime_bytes, blinding_kz_bytes = kx_prime.to_bytes(32, byteorder='little'), ky_prime.to_bytes(32, byteorder='little'), blinding_kz.to_bytes(32, byteorder='little')
     Kx, Ky, Kz = pedersen_commit(kx_bytes, kx_prime_bytes), pedersen_commit(ky_bytes, ky_prime_bytes), pedersen_commit(z_v_bytes, blinding_kz_bytes)
 
-    c = get_challenge(Kx, Ky, Kz)
+    c_bytes = get_challenge(Kx, Ky, Kz)
+    c = int.from_bytes(c_bytes, byteorder='little')
 
     sx, sy, sx_prime, sy_prime, sz_prime = (c*x + kx) % prime, (c*y + ky) % prime, (c*rx + kx_prime) % prime, (c*ry + ky_prime) % prime, (c*rz + kz_prime) % prime
+    # print(sx,sy,sx_prime,sy_prime)
 
     prf = (Kx,Ky,Kz,sx,sy,sx_prime,sy_prime,sz_prime,c)
+
+    # print('sx:',sx)
+    # print('test:',pedersen_commit(zer_bytes,zer_bytes))
+    # sx_bytes = list(sx.to_bytes(32, byteorder='little'))
+    # sx_prime_bytes = list(sx_prime.to_bytes(32, byteorder='little'))
+    # C_sx = pedersen_commit(sx_bytes, sx_prime_bytes)
+    # # print("C_sx:",C_sx)
+    # c_bytes1 = list(c.to_bytes(32, byteorder='little'))
+    # Cx_c = other_base_commit_origin_H(Cx,c_bytes1,zer_bytes)
+    # # print('Cx_c',Cx_c)
+    # Csx_rhs1 = product_com(Cx_c,Kx,one_bytes)
+    # # print('Csx_rhs1:',Csx_rhs1)
+    # # print('Kx',Kx)
+    
+    # # print('sy:',sy)
+    # sy_bytes = list(sy.to_bytes(32, byteorder='little'))
+    # sy_prime_bytes = list(sy_prime.to_bytes(32, byteorder='little'))
+    # C_sy = pedersen_commit(sy_bytes, sy_prime_bytes)
+    # # print("C_sy:",C_sy)
+    # Cy_c = other_base_commit_origin_H(Cy,c_bytes1,zer_bytes)
+    # Csy_rhs1 = product_com(Cy_c,Ky,one_bytes)
+    # print('Csy_rhs1:',Csy_rhs1)
+    # sz_prime_bytes = list(sz_prime.to_bytes(32, byteorder='little'))
+    # Cz_lhs = other_base_commit_origin_H(Cx, sy_bytes, sz_prime_bytes)
+
+    # Cz_c = other_base_commit_origin_H(Cz,c_bytes1,zer_bytes)
+    # Cz_rhs = product_com(Cz_c,Kz,one_bytes)
+
+    # print('Cz_lhs:',Cz_lhs)
+    # print('Cz_rhs:',Cz_rhs)
+
+    # time.sleep(50000)
+
     return Cz,prf,rx,ry
 
 
@@ -606,6 +657,8 @@ inverse_R = get_inverse(R)
 inv_10 = 723700557733226221397318656304299424085711635937990760600195093828545425099
 zer = 0
 zer_bytes = list(zer.to_bytes(32, byteorder='little'))
+one_number = 1
+one_bytes = list(one_number.to_bytes(32, byteorder='little'))
 
 fp = 2 ** 16
 decimal = 10 ** 15

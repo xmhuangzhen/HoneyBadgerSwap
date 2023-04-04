@@ -133,11 +133,12 @@ fn other_base_commit(g_bytes: [u8; 32], x_bytes: [u8; 32], h_bytes: [u8; 32], rx
 
     Ok(com.compress().to_bytes())
 }
-other_base_commit_origin_H
 
+
+#[pyfunction]
 fn other_base_commit_origin_H(g_bytes: [u8; 32], x_bytes: [u8; 32], rx_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
     // (g)^{x} * h^{rx} 
-    let g = CompressedRistretto(g_bytes).decompress().unwrap();
+    let g = CompressedRistretto(read32(&g_bytes)).decompress().unwrap();
     let x = Scalar::from_bytes_mod_order(x_bytes);
     let rx = Scalar::from_bytes_mod_order(rx_bytes);
 
@@ -150,15 +151,16 @@ fn other_base_commit_origin_H(g_bytes: [u8; 32], x_bytes: [u8; 32], rx_bytes: [u
 }
 
 #[pyfunction]
-fn product_com(x_bytes: [u8; 32], y_bytes: [u8; 32]) -> PyResult<[u8; 32]> {
+fn product_com(x_bytes: [u8; 32], y_bytes: [u8; 32], one_byte: [u8; 32]) -> PyResult<[u8; 32]> {
     // let x = CompressedRistretto(x_bytes).decompress().unwrap();
     // let y = CompressedRistretto(y_bytes).decompress().unwrap();
-    let x = Scalar::from_bytes_mod_order(x_bytes);
-    let y = Scalar::from_bytes_mod_order(y_bytes);
+    let x = CompressedRistretto(read32(&x_bytes)).decompress().unwrap();
+    let y = CompressedRistretto(read32(&y_bytes)).decompress().unwrap();
+    let o = Scalar::from_bytes_mod_order(one_byte);
 
-    let product_com = (x * y).reduce();
-    
-    Ok(product_com.to_bytes())
+    let res = RistrettoPoint::multiscalar_mul(&[o, o], &[x, y]);
+
+    Ok(res.compress().to_bytes())
 }
 
 
@@ -265,12 +267,18 @@ fn gen_random_value(value_num: u64) -> PyResult<Vec<[u8; 32]>> {
 }
 
 #[pyfunction]
-fn get_challenge(com_kx: [u8, 32], com_ky: [u8, 32], com_kz: [u8, 32]) -> PyResult<[u8; 32]> {
+fn get_challenge(com_kx: [u8; 32], com_ky: [u8; 32], com_kz: [u8; 32]) -> PyResult<[u8; 32]> {
     let mut prover_transcript = Transcript::new(b"zkrpmul");
     let mut c_bytes = [0u8; 64];
-    prover_transcript.commit_bytes(b"com_kx",com_kx.as_bytes());
-    prover_transcript.commit_bytes(b"com_ky",com_ky.as_bytes());
-    prover_transcript.commit_bytes(b"com_kz",com_kz.as_bytes());
+
+    let committed_kx_value = CompressedRistretto(read32(&com_kx));
+    let committed_ky_value = CompressedRistretto(read32(&com_ky));
+    let committed_kz_value = CompressedRistretto(read32(&com_kz));
+
+
+    prover_transcript.append_message(b"com_kx",committed_kx_value.as_bytes());
+    prover_transcript.append_message(b"com_ky",committed_ky_value.as_bytes());
+    prover_transcript.append_message(b"com_kz",committed_kz_value.as_bytes());
     prover_transcript.challenge_bytes(b"c", &mut c_bytes);
     let c = Scalar::from_bytes_mod_order_wide(&c_bytes);
     
@@ -304,9 +312,9 @@ fn zkrp_prove_mul(x_v: u64, y_v: u64, rx_prime_bytes: [u8; 32], ry_prime_bytes: 
 
     let mut prover_transcript = Transcript::new(b"zkrpmul");
     let mut c_bytes = [0u8; 64];
-    prover_transcript.commit_bytes(b"com_kx",com_kx.as_bytes());
-    prover_transcript.commit_bytes(b"com_ky",com_ky.as_bytes());
-    prover_transcript.commit_bytes(b"com_kz",com_kz.as_bytes());
+    prover_transcript.append_message(b"com_kx",com_kx.as_bytes());
+    prover_transcript.append_message(b"com_ky",com_ky.as_bytes());
+    prover_transcript.append_message(b"com_kz",com_kz.as_bytes());
     prover_transcript.challenge_bytes(b"c", &mut c_bytes);
     let c = Scalar::from_bytes_mod_order_wide(&c_bytes);
     
